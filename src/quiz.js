@@ -2,42 +2,52 @@ import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkles } from 'lucide-react';
 
 const QuizMTC = () => {
-  const [step, setStep] = useState('identificacao'); // 'identificacao', 'quiz', 'resultado'
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [respostas, setRespostas] = useState({});
-  const [dadosLead, setDadosLead] = useState({
-    NOME: '',
-    EMAIL: '',
-    CELULAR: ''
-  });
+  // Função para ler parâmetros da URL
+  const getUrlParams = () => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      nome: params.get('nome') || '',
+      email: params.get('email') || '',
+      celular: params.get('celular') || '',
+      leadId: params.get('leadId') || ''
+    };
+  };
 
-  // Definição das perguntas
+  const urlParams = getUrlParams();
+  
+  // Se tem dados na URL, pula identificação e vai direto pro quiz
+  const temDadosURL = urlParams.nome && urlParams.email && urlParams.celular;
+  
+  const [step, setStep] = useState(temDadosURL ? 'quiz' : 'identificacao');
+  const [dadosLead, setDadosLead] = useState({
+    NOME: urlParams.nome,
+    EMAIL: urlParams.email,
+    CELULAR: urlParams.celular,
+    LEAD_ID: urlParams.leadId
+  });
+  
+  const [perguntaAtual, setPerguntaAtual] = useState(0);
+  const [respostas, setRespostas] = useState({});
+  const [processando, setProcessando] = useState(false);
+  const [erro, setErro] = useState('');
+
+  // Perguntas do quiz
   const perguntas = [
     {
       id: 'P1',
-      numero: 1,
-      bloco: 'DOR',
-      icone: Activity,
-      cor: 'bg-red-500',
-      titulo: 'Intensidade da Dor',
-      pergunta: 'Qual destas situações MELHOR descreve o que você está vivendo AGORA?',
+      texto: 'Como você descreveria a intensidade das suas dores ou desconfortos?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Tenho dores constantes que limitam MUITO minha vida diária' },
-        { valor: 'B', texto: 'Sinto dores frequentes que me incomodam bastante' },
-        { valor: 'C', texto: 'Tenho desconfortos ocasionais que me preocupam' },
-        { valor: 'D', texto: 'Sinto rigidez ou cansaço, mas nada grave' },
-        { valor: 'E', texto: 'Não tenho dores, mas quero prevenir problemas futuros' }
+        { valor: 'A', texto: 'Dores constantes que limitam MUITO a vida diária', peso: 5 },
+        { valor: 'B', texto: 'Dores frequentes que incomodam bastante', peso: 4 },
+        { valor: 'C', texto: 'Desconfortos ocasionais que preocupam', peso: 3 },
+        { valor: 'D', texto: 'Rigidez ou cansaço, mas nada grave', peso: 2 },
+        { valor: 'E', texto: 'Sem dores, busco prevenção', peso: 1 }
       ]
     },
     {
       id: 'P2',
-      numero: 2,
-      bloco: 'MTC',
-      icone: Heart,
-      cor: 'bg-purple-500',
-      titulo: 'Localização da Dor',
-      pergunta: 'Onde você sente MAIS desconforto ou dor? (Selecione até 2 opções)',
+      texto: 'Onde você sente MAIS desconforto ou dor? (Selecione até 2 opções)',
       tipo: 'multiple',
       max: 2,
       opcoes: [
@@ -46,213 +56,163 @@ const QuizMTC = () => {
         { valor: 'C', texto: 'Pescoço, ombros ou tensão muscular', elemento: 'FÍGADO' },
         { valor: 'D', texto: 'Digestão, estômago ou cansaço extremo', elemento: 'BAÇO' },
         { valor: 'E', texto: 'Insônia, palpitações ou ansiedade', elemento: 'CORAÇÃO' },
-        { valor: 'F', texto: 'Respiração curta, resfriados frequentes', elemento: 'PULMÃO' }
+        { valor: 'F', texto: 'Respiração curta ou resfriados frequentes', elemento: 'PULMÃO' }
       ]
     },
     {
       id: 'P3',
-      numero: 3,
-      bloco: 'DOR',
-      icone: Activity,
-      cor: 'bg-red-500',
-      titulo: 'Histórico',
-      pergunta: 'Há quanto tempo você convive com essa situação?',
+      texto: 'Há quanto tempo você convive com esses sintomas?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Mais de 5 anos - já virou parte da minha vida' },
-        { valor: 'B', texto: 'Entre 2 e 5 anos - tentei várias coisas, mas não resolveu' },
-        { valor: 'C', texto: 'Entre 6 meses e 2 anos - está piorando progressivamente' },
-        { valor: 'D', texto: 'Menos de 6 meses - comecei a sentir recentemente' },
-        { valor: 'E', texto: 'Não tenho problema agora, mas quero prevenir' }
+        { valor: 'A', texto: 'Mais de 5 anos', peso: 5 },
+        { valor: 'B', texto: 'Entre 2 e 5 anos', peso: 4 },
+        { valor: 'C', texto: 'Entre 6 meses e 2 anos', peso: 3 },
+        { valor: 'D', texto: 'Menos de 6 meses', peso: 2 },
+        { valor: 'E', texto: 'Não tenho sintomas, busco prevenção', peso: 1 }
       ]
     },
     {
       id: 'P4',
-      numero: 4,
-      bloco: 'MTC',
-      icone: Heart,
-      cor: 'bg-purple-500',
-      titulo: 'Sintomas Físicos',
-      pergunta: 'Além da dor, qual(is) destes você TAMBÉM sente? (Selecione até 3)',
+      texto: 'Quais destes sintomas físicos você também percebe? (Selecione até 3)',
       tipo: 'multiple',
       max: 3,
       opcoes: [
-        { valor: 'A', texto: 'Cansaço extremo, falta de energia' },
-        { valor: 'B', texto: 'Sensação de frio, mãos/pés gelados' },
-        { valor: 'C', texto: 'Insônia, ansiedade, mente agitada' },
-        { valor: 'D', texto: 'Digestão ruim, inchaço, peso nas pernas' },
-        { valor: 'E', texto: 'Tensão muscular, irritabilidade' },
-        { valor: 'F', texto: 'Nenhum desses - só tenho a dor mesmo' }
+        { valor: 'A', texto: 'Cansaço extremo ou falta de energia', elemento: 'RIM' },
+        { valor: 'B', texto: 'Sensação de frio ou mãos/pés gelados', elemento: 'RIM' },
+        { valor: 'C', texto: 'Insônia, ansiedade ou mente agitada', elemento: 'CORAÇÃO' },
+        { valor: 'D', texto: 'Digestão ruim, inchaço ou peso nas pernas', elemento: 'BAÇO' },
+        { valor: 'E', texto: 'Tensão muscular ou irritabilidade', elemento: 'FÍGADO' },
+        { valor: 'F', texto: 'Nenhum desses', elemento: null }
       ]
     },
     {
       id: 'P5',
-      numero: 5,
-      bloco: 'MTC',
-      icone: Brain,
-      cor: 'bg-purple-500',
-      titulo: 'Sintomas Emocionais',
-      pergunta: 'Como você se SENTE emocionalmente quando sua dor/desconforto aparece?',
+      texto: 'Quando pensa nos seus problemas de saúde, como você se sente emocionalmente?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Frustrada e irritada - "de novo isso!"' },
-        { valor: 'B', texto: 'Preocupada e ansiosa - "e se piorar?"' },
-        { valor: 'C', texto: 'Triste e desanimada - "nunca vou melhorar"' },
-        { valor: 'D', texto: 'Com medo - "vou perder minha independência"' },
-        { valor: 'E', texto: 'Sem esperança - "é assim mesmo, fazer o quê"' },
-        { valor: 'F', texto: 'Normal, não me abala emocionalmente' }
+        { valor: 'A', texto: 'Frustrada e irritada', elemento: 'FÍGADO' },
+        { valor: 'B', texto: 'Preocupada e ansiosa', elemento: 'BAÇO' },
+        { valor: 'C', texto: 'Triste e desanimada', elemento: 'PULMÃO' },
+        { valor: 'D', texto: 'Com medo', elemento: 'RIM' },
+        { valor: 'E', texto: 'Sem esperança', elemento: 'CORAÇÃO' },
+        { valor: 'F', texto: 'Normal, não me abala muito', elemento: null }
       ]
     },
     {
       id: 'P6',
-      numero: 6,
-      bloco: 'ESPERANÇA',
-      icone: Sparkles,
-      cor: 'bg-blue-500',
-      titulo: 'Tentativas Anteriores',
-      pergunta: 'O que você JÁ TENTOU para melhorar sua saúde?',
+      texto: 'Você já tentou outros tratamentos antes?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Muitas coisas: remédios, fisioterapia, massagem... nada resolveu' },
-        { valor: 'B', texto: 'Algumas coisas (2-3 tratamentos), sem resultado duradouro' },
-        { valor: 'C', texto: 'Poucas coisas - só remédios que o médico passou' },
-        { valor: 'D', texto: 'Nada específico ainda - estou começando a buscar soluções' },
-        { valor: 'E', texto: 'Não preciso de tratamento - busco conhecimento preventivo' }
+        { valor: 'A', texto: 'Sim, muitas coisas, mas nada resolveu de verdade', peso: 5 },
+        { valor: 'B', texto: 'Sim, algumas coisas (2-3), mas sem resultado duradouro', peso: 4 },
+        { valor: 'C', texto: 'Sim, poucas coisas, mais remédios', peso: 3 },
+        { valor: 'D', texto: 'Não, nada específico ainda', peso: 2 },
+        { valor: 'E', texto: 'Não preciso de tratamento no momento', peso: 1 }
       ]
     },
     {
       id: 'P7',
-      numero: 7,
-      bloco: 'ARQUÉTIPO',
-      icone: Heart,
-      cor: 'bg-pink-500',
-      titulo: 'Preocupação Principal',
-      pergunta: 'Quando você pensa no seu futuro, o que MAIS te preocupa?',
+      texto: 'Qual é a sua maior preocupação em relação à sua saúde?',
+      subtexto: 'Queremos focar no que mais importa para você',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Perder minha autonomia e ter que depender dos meus filhos' },
-        { valor: 'B', texto: 'Não conseguir mais fazer as coisas que gosto (viajar, cuidar da casa)' },
-        { valor: 'C', texto: 'Ficar cada vez pior e sem solução real' },
-        { valor: 'D', texto: 'Não estar bem para cuidar da minha família' },
-        { valor: 'E', texto: 'Não realizar meus sonhos e planos para essa fase da vida' }
+        { valor: 'A', texto: 'Perder minha autonomia e depender dos meus filhos', peso: 5 },
+        { valor: 'B', texto: 'Não conseguir mais fazer as coisas que gosto', peso: 4 },
+        { valor: 'C', texto: 'Ficar cada vez pior se não cuidar agora', peso: 4 },
+        { valor: 'D', texto: 'Não estar bem para cuidar da família', peso: 3 },
+        { valor: 'E', texto: 'Não conseguir realizar meus sonhos', peso: 3 }
       ]
     },
     {
-      id: 'P8A',
-      numero: 8,
-      bloco: 'URGÊNCIA',
-      icone: Activity,
-      cor: 'bg-orange-500',
-      titulo: 'Urgência',
-      pergunta: 'Pensando na sua saúde e bem-estar, qual frase te representa melhor AGORA?',
+      id: 'P8',
+      texto: 'Como você avalia sua urgência em resolver esse problema?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Não aguento mais sofrer com isso - preciso de uma solução URGENTE' },
-        { valor: 'B', texto: 'Estou muito incomodada e quero resolver de vez - chegou a hora' },
-        { valor: 'C', texto: 'Quero melhorar e estou aberta a conhecer uma solução' },
-        { valor: 'D', texto: 'Busco alternativas, mas ainda estou pesquisando' },
-        { valor: 'E', texto: 'Só vim conhecer por curiosidade, sem urgência' }
-      ]
-    },
-    {
-      id: 'P8B',
-      numero: 9,
-      bloco: 'EVENTO',
-      icone: Sparkles,
-      cor: 'bg-yellow-500',
-      titulo: 'Participação no Evento',
-      pergunta: 'Sobre o evento onde vamos apresentar a oferta completa da Black November Vitalícia:',
-      tipo: 'single',
-      opcoes: [
-        { valor: 'A', texto: 'Vou participar COM CERTEZA - estou pronta para garantir' },
-        { valor: 'B', texto: 'Vou participar e estou muito interessada - quero entender tudo' },
-        { valor: 'C', texto: 'Pretendo participar - preciso ver se cabe no meu momento' },
-        { valor: 'D', texto: 'Ainda não sei se vou conseguir participar' },
-        { valor: 'E', texto: 'Só me cadastrei para conhecer, sem compromisso' }
+        { valor: 'A', texto: 'Não aguento mais, preciso de ajuda URGENTE', peso: 5 },
+        { valor: 'B', texto: 'Estou muito incomodada, chegou a hora de agir', peso: 4 },
+        { valor: 'C', texto: 'Quero melhorar e estou aberta a soluções', peso: 3 },
+        { valor: 'D', texto: 'Estou buscando alternativas e pesquisando', peso: 2 },
+        { valor: 'E', texto: 'Só estou curiosa, sem urgência real', peso: 1 }
       ]
     },
     {
       id: 'P9',
-      numero: 10,
-      bloco: 'PERFIL',
-      icone: Brain,
-      cor: 'bg-indigo-500',
-      titulo: 'Faixa Etária',
-      pergunta: 'Qual é a sua faixa etária?',
+      texto: 'Sobre participar do nosso evento ao vivo exclusivo:',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Menos que 18 anos' },
-        { valor: 'B', texto: '18 a 24 anos' },
-        { valor: 'C', texto: '25 a 34 anos' },
-        { valor: 'D', texto: '35 a 44 anos' },
-        { valor: 'E', texto: '45 a 54 anos' },
-        { valor: 'F', texto: '55 a 64 anos' },
-        { valor: 'G', texto: '65 a 74 anos' },
-        { valor: 'H', texto: '75 a 84 anos' }
+        { valor: 'A', texto: 'Vou participar COM CERTEZA, estou pronta pra mudar', peso: 5 },
+        { valor: 'B', texto: 'Vou participar e estou bem interessada', peso: 4 },
+        { valor: 'C', texto: 'Pretendo participar se conseguir', peso: 3 },
+        { valor: 'D', texto: 'Ainda não sei se vou conseguir', peso: 2 },
+        { valor: 'E', texto: 'Só me cadastrei para conhecer', peso: 1 }
       ]
     },
     {
       id: 'P10',
-      numero: 11,
-      bloco: 'PERFIL',
-      icone: Sparkles,
-      cor: 'bg-green-500',
-      titulo: 'Renda Mensal',
-      pergunta: 'Qual é a sua renda mensal hoje?',
+      texto: 'Qual é a sua faixa etária?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Não possuo renda no momento' },
-        { valor: 'B', texto: 'Média de R$ 1.000 por mês' },
-        { valor: 'C', texto: 'Média de R$ 2.000 por mês' },
-        { valor: 'D', texto: 'Média de R$ 3.000 por mês' },
-        { valor: 'E', texto: 'Média de R$ 4.000 por mês' },
-        { valor: 'F', texto: 'Média de R$ 5.000 por mês' },
-        { valor: 'G', texto: 'Até R$ 7.000 por mês' },
-        { valor: 'H', texto: 'Até R$ 10.000 por mês' },
-        { valor: 'I', texto: 'Até R$ 15.000 por mês' },
-        { valor: 'J', texto: 'Mais de R$ 20.000 por mês' }
+        { valor: 'A', texto: 'Menos de 18 anos' },
+        { valor: 'B', texto: '18-24 anos' },
+        { valor: 'C', texto: '25-34 anos' },
+        { valor: 'D', texto: '35-44 anos' },
+        { valor: 'E', texto: '45-54 anos' },
+        { valor: 'F', texto: '55-64 anos' },
+        { valor: 'G', texto: '65-74 anos' },
+        { valor: 'H', texto: '75-84 anos' }
       ]
     },
     {
       id: 'P11',
-      numero: 12,
-      bloco: 'CONFIANÇA',
-      icone: Heart,
-      cor: 'bg-rose-500',
-      titulo: 'Relacionamento',
-      pergunta: 'Você já é / foi minha aluna ou aluno em algum dos meus cursos pagos?',
+      texto: 'Qual é a sua renda mensal aproximada?',
+      subtexto: 'Essa pergunta é importante para eu poder adaptar nosso treinamento à renda da maioria durante o curso ;)',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Ainda não sou aluno(a)' },
-        { valor: 'B', texto: 'Sim, sou / fui aluno(a)' }
+        { valor: 'A', texto: 'Sem renda no momento' },
+        { valor: 'B', texto: 'Até R$ 1.000' },
+        { valor: 'C', texto: 'Até R$ 2.000' },
+        { valor: 'D', texto: 'Até R$ 3.000' },
+        { valor: 'E', texto: 'Até R$ 4.000' },
+        { valor: 'F', texto: 'Até R$ 5.000' },
+        { valor: 'G', texto: 'Até R$ 7.000' },
+        { valor: 'H', texto: 'Até R$ 10.000' },
+        { valor: 'I', texto: 'Até R$ 15.000' },
+        { valor: 'J', texto: 'Mais de R$ 20.000' }
       ]
     },
     {
       id: 'P12',
-      numero: 13,
-      bloco: 'CONFIANÇA',
-      icone: Brain,
-      cor: 'bg-rose-500',
-      titulo: 'Tempo de Relacionamento',
-      pergunta: 'Há quanto tempo você me conhece?',
+      texto: 'Você já é ou foi aluno(a) do Mestre Ye?',
+      subtexto: 'Isso nos ajuda a personalizar melhor sua experiência no evento',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Conheci agora através da indicação de amigos/familiares' },
-        { valor: 'B', texto: 'Conheci agora através dos anúncios do evento' },
-        { valor: 'C', texto: 'Há pouco tempo (cerca de 1 a 3 meses)' },
-        { valor: 'D', texto: 'Há mais ou menos 6 meses' },
+        { valor: 'A', texto: 'Ainda não sou aluno(a)' },
+        { valor: 'B', texto: 'Sim, sou ou já fui aluno(a)' }
+      ]
+    },
+    {
+      id: 'P13',
+      texto: 'Há quanto tempo você conhece o trabalho do Mestre Ye?',
+      tipo: 'single',
+      opcoes: [
+        { valor: 'A', texto: 'Conheci agora através de amigos ou familiares' },
+        { valor: 'B', texto: 'Conheci agora através de anúncios' },
+        { valor: 'C', texto: 'Há pouco tempo (1-3 meses)' },
+        { valor: 'D', texto: 'Há cerca de 6 meses' },
         { valor: 'E', texto: 'Há bastante tempo (mais de 1 ano)' }
       ]
     }
   ];
 
-  const perguntaAtual = perguntas[currentQuestion];
-  const totalPerguntas = perguntas.length;
-  const progresso = ((currentQuestion + 1) / totalPerguntas) * 100;
+  // Validações
+  const validarEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
 
-  // Handlers
-  const handleLeadDataChange = (campo, valor) => {
-    setDadosLead(prev => ({ ...prev, [campo]: valor }));
+  const validarCelular = (celular) => {
+    const re = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
+    return re.test(celular);
   };
 
   const formatarCelular = (valor) => {
@@ -263,309 +223,332 @@ const QuizMTC = () => {
     return numeros.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
   };
 
-  const validarIdentificacao = () => {
-    if (dadosLead.NOME.trim().length < 3) {
-      alert('Por favor, digite seu nome completo (mínimo 3 caracteres)');
-      return false;
+  // Handlers
+  const handleInputChange = (campo, valor) => {
+    if (campo === 'CELULAR') {
+      valor = formatarCelular(valor);
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(dadosLead.EMAIL)) {
-      alert('Por favor, digite um email válido');
-      return false;
-    }
-    const celularNumeros = dadosLead.CELULAR.replace(/\D/g, '');
-    if (celularNumeros.length < 10) {
-      alert('Por favor, digite um celular válido com DDD');
-      return false;
-    }
-    return true;
+    setDadosLead(prev => ({ ...prev, [campo]: valor }));
+    setErro('');
   };
 
-  const iniciarQuiz = () => {
-    if (validarIdentificacao()) {
-      setStep('quiz');
+  const handleIniciarQuiz = () => {
+    if (!dadosLead.NOME || dadosLead.NOME.length < 3) {
+      setErro('Por favor, digite seu nome completo');
+      return;
     }
+    if (!validarEmail(dadosLead.EMAIL)) {
+      setErro('Por favor, digite um email válido');
+      return;
+    }
+    if (!validarCelular(dadosLead.CELULAR)) {
+      setErro('Por favor, digite um celular válido no formato (00) 00000-0000');
+      return;
+    }
+    setStep('quiz');
   };
 
-  const handleResposta = (valor) => {
-    const pergunta = perguntaAtual;
+  const handleResposta = (perguntaId, valor) => {
+    const pergunta = perguntas[perguntaAtual];
     
     if (pergunta.tipo === 'single') {
-      setRespostas(prev => ({ ...prev, [pergunta.id]: valor }));
+      setRespostas(prev => ({ ...prev, [perguntaId]: valor }));
     } else {
-      // Múltipla escolha
-      const atual = respostas[pergunta.id] || [];
-      if (atual.includes(valor)) {
+      const respostaAtual = respostas[perguntaId] || [];
+      if (respostaAtual.includes(valor)) {
         setRespostas(prev => ({
           ...prev,
-          [pergunta.id]: atual.filter(v => v !== valor)
+          [perguntaId]: respostaAtual.filter(v => v !== valor)
         }));
       } else {
-        if (atual.length < pergunta.max) {
+        if (respostaAtual.length < pergunta.max) {
           setRespostas(prev => ({
             ...prev,
-            [pergunta.id]: [...atual, valor]
+            [perguntaId]: [...respostaAtual, valor]
           }));
         }
       }
     }
   };
 
-  const podeAvancar = () => {
-    const resposta = respostas[perguntaAtual.id];
-    if (perguntaAtual.tipo === 'single') {
-      return resposta !== undefined;
-    } else {
-      return resposta && resposta.length > 0;
-    }
-  };
-
   const proximaPergunta = () => {
-    if (currentQuestion < totalPerguntas - 1) {
-      setCurrentQuestion(prev => prev + 1);
+    if (perguntaAtual < perguntas.length - 1) {
+      setPerguntaAtual(perguntaAtual + 1);
     } else {
       finalizarQuiz();
     }
   };
 
-  const perguntaAnterior = () => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
+  const voltarPergunta = () => {
+    if (perguntaAtual > 0) {
+      setPerguntaAtual(perguntaAtual - 1);
     }
   };
 
-  const finalizarQuiz = async () => {
-  setStep('resultado');
-  console.log('Enviando para a API...');
-  console.log('Dados do Lead:', dadosLead);
-  console.log('Respostas:', respostas);
-
-  try {
-    const response = await fetch('http://localhost:3001/api/quiz/submit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        lead: dadosLead,
-        respostas: respostas,
-      }),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      console.log('Dados salvos com sucesso!', result);
+  const respostaAtualValida = () => {
+    const pergunta = perguntas[perguntaAtual];
+    const resposta = respostas[pergunta.id];
+    
+    if (pergunta.tipo === 'single') {
+      return !!resposta;
     } else {
-      console.error('Erro ao salvar os dados:', result);
+      return resposta && resposta.length > 0;
     }
+  };
+
+const finalizarQuiz = async () => {
+  console.log('\n🔵 INICIANDO FINALIZAÇÃO DO QUIZ');
+  console.log('==================================');
+  
+  setProcessando(true);
+  
+  try {
+    // 1. Preparar dados
+    console.log('📝 Preparando dados...');
+    const payload = {
+      lead: {
+        NOME: dadosLead.NOME,
+        EMAIL: dadosLead.EMAIL,
+        CELULAR: dadosLead.CELULAR
+      },
+      respostas: respostas
+    };
+    
+    console.log('📦 Payload preparado:');
+    console.log(JSON.stringify(payload, null, 2));
+    
+    // 2. Determinar URL
+    const apiUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001/api/quiz/submit'
+      : '/api/quiz/submit';
+    
+    console.log('🌐 URL da API:', apiUrl);
+    
+    // 3. Fazer requisição
+    console.log('📤 Enviando requisição...');
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    console.log('📥 Resposta recebida!');
+    console.log('  Status:', response.status);
+    console.log('  Status Text:', response.statusText);
+    console.log('  OK:', response.ok);
+    
+    // 4. Processar resposta
+    let result;
+    try {
+      const responseText = await response.text();
+      console.log('📄 Response Text:', responseText);
+      
+      result = JSON.parse(responseText);
+      console.log('✅ JSON parseado:', result);
+    } catch (parseError) {
+      console.error('❌ Erro ao parsear JSON:', parseError);
+      throw new Error('Resposta da API não é um JSON válido');
+    }
+    
+    // 5. Verificar sucesso
+    if (!response.ok) {
+      console.error('❌ Resposta não OK!');
+      console.error('  Status:', response.status);
+      console.error('  Resultado:', result);
+      throw new Error(result.error || result.detalhes || `Erro HTTP ${response.status}`);
+    }
+    
+    if (result.success) {
+      console.log('✅ QUIZ SALVO COM SUCESSO!');
+      console.log('  Lead ID:', result.lead_id);
+      console.log('  Diagnóstico:', result.diagnostico);
+      
+      setStep('resultado');
+      
+      setTimeout(() => {
+        console.log('🔄 Redirecionando...');
+        window.location.href = 'https://black.qigongbrasil.com/diagnostico';
+      }, 2000);
+    } else {
+      throw new Error(result.message || 'Erro desconhecido');
+    }
+    
   } catch (error) {
-    console.error('Falha na comunicação com a API:', error);
+    console.error('\n❌ ERRO CAPTURADO:');
+    console.error('==================================');
+    console.error('Tipo:', error.constructor.name);
+    console.error('Mensagem:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('==================================\n');
+    
+    setErro(`Erro ao enviar o quiz: ${error.message}`);
+    
+    // Mostrar alerta para o usuário
+    alert(`Erro ao finalizar quiz:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
+    
+  } finally {
+    setProcessando(false);
+    console.log('🔵 Finalização concluída (sucesso ou erro)');
   }
 };
 
-  // Renderização da tela de identificação
+  const progresso = ((perguntaAtual + 1) / perguntas.length) * 100;
+
+  // Render da tela de identificação
   if (step === 'identificacao') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-cyan-500/20 shadow-2xl p-8">
           <div className="text-center mb-8">
-            <div className="mb-6">
-              <div className="inline-block bg-black/30 backdrop-blur-sm px-4 py-2 rounded-full mb-4">
-                <span className="text-cyan-400 font-bold tracking-wider">BLACK NOVEMBER</span>
-              </div>
-              <h1 className="text-white font-bold mb-2" style={{ fontSize: '1.5rem' }}>
-                DA SAÚDE VITALÍCIA
-              </h1>
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-300">
-                <span>COM MESTRE YE</span>
-              </div>
+            <div className="mb-4 text-cyan-400">
+              <Sparkles className="w-16 h-16 mx-auto" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
-              Diagnóstico Personalizado
-            </h2>
-            <p className="text-lg text-cyan-300">
+            <h1 className="text-4xl font-bold text-white mb-2">BLACK NOVEMBER</h1>
+            <h2 className="text-3xl font-bold text-cyan-400 mb-4">DA SAÚDE VITALÍCIA</h2>
+            <p className="text-slate-300 text-lg">COM MESTRE YE</p>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-2xl font-bold text-white mb-4">Diagnóstico Personalizado</h3>
+            <p className="text-slate-300 mb-4">
               Descubra seu perfil energético segundo a Medicina Tradicional Chinesa
             </p>
           </div>
 
-          {/* Card de Identificação */}
-          <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-cyan-500/20">
-            <h2 className="text-2xl font-bold text-white mb-2">
-              Vamos começar!
-            </h2>
-            <p className="text-cyan-300 mb-6">
-              Preencha seus dados para receber seu diagnóstico personalizado:
-            </p>
-
-            <div className="space-y-5">
-              {/* Nome */}
-              <div>
-                <label className="block text-sm font-medium text-cyan-300 mb-2">
-                  Nome Completo *
-                </label>
-                <input
-                  type="text"
-                  value={dadosLead.NOME}
-                  onChange={(e) => handleLeadDataChange('NOME', e.target.value)}
-                  placeholder="Digite seu nome completo"
-                  className="w-full px-4 py-3 bg-slate-900/50 border-2 border-cyan-500/30 rounded-lg focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none transition text-white placeholder-gray-500"
-                />
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-cyan-300 mb-2">
-                  E-mail *
-                </label>
-                <input
-                  type="email"
-                  value={dadosLead.EMAIL}
-                  onChange={(e) => handleLeadDataChange('EMAIL', e.target.value)}
-                  placeholder="seu@email.com"
-                  className="w-full px-4 py-3 bg-slate-900/50 border-2 border-cyan-500/30 rounded-lg focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none transition text-white placeholder-gray-500"
-                />
-              </div>
-
-              {/* Celular */}
-              <div>
-                <label className="block text-sm font-medium text-cyan-300 mb-2">
-                  Celular (WhatsApp) *
-                </label>
-                <input
-                  type="tel"
-                  value={dadosLead.CELULAR}
-                  onChange={(e) => handleLeadDataChange('CELULAR', formatarCelular(e.target.value))}
-                  placeholder="(00) 00000-0000"
-                  className="w-full px-4 py-3 bg-slate-900/50 border-2 border-cyan-500/30 rounded-lg focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 outline-none transition text-white placeholder-gray-500"
-                />
-                <p className="mt-2 text-sm text-gray-400">
-                  Enviaremos seu diagnóstico personalizado por WhatsApp
-                </p>
-              </div>
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="block text-slate-300 mb-2">Nome Completo *</label>
+              <input
+                type="text"
+                value={dadosLead.NOME}
+                onChange={(e) => handleInputChange('NOME', e.target.value)}
+                placeholder="Digite seu nome completo"
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+              />
             </div>
 
-            {/* Botão */}
-            <button
-              onClick={iniciarQuiz}
-              className="w-full mt-8 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-900 font-bold py-4 rounded-lg hover:from-cyan-400 hover:to-cyan-500 transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/50"
-            >
-              INICIAR DIAGNÓSTICO →
-            </button>
+            <div>
+              <label className="block text-slate-300 mb-2">E-mail *</label>
+              <input
+                type="email"
+                value={dadosLead.EMAIL}
+                onChange={(e) => handleInputChange('EMAIL', e.target.value)}
+                placeholder="seu@email.com"
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
 
-            {/* Info */}
-            <div className="mt-6 p-4 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
-              <p className="text-sm text-cyan-300 text-center">
-                🔒 Seus dados estão seguros • ⏱️ Tempo estimado: 4 minutos
-              </p>
+            <div>
+              <label className="block text-slate-300 mb-2">Celular (WhatsApp) *</label>
+              <input
+                type="tel"
+                value={dadosLead.CELULAR}
+                onChange={(e) => handleInputChange('CELULAR', e.target.value)}
+                placeholder="(00) 00000-0000"
+                maxLength="15"
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+              />
             </div>
           </div>
+
+          {erro && (
+            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
+              {erro}
+            </div>
+          )}
+
+          <div className="text-center mb-6">
+            <p className="text-slate-400 text-sm mb-2">
+              🔒 Seus dados estão seguros • ⏱️ Tempo estimado: 4 minutos
+            </p>
+          </div>
+
+          <button
+            onClick={handleIniciarQuiz}
+            className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-slate-900 font-bold py-4 px-6 rounded-lg transition-all duration-200 shadow-lg shadow-cyan-500/50 flex items-center justify-center gap-2"
+          >
+            INICIAR DIAGNÓSTICO
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
     );
   }
 
-  // Renderização do Quiz
+  // Render da tela de quiz
   if (step === 'quiz') {
-    const Icon = perguntaAtual.icone;
-    
+    const pergunta = perguntas[perguntaAtual];
+    const respostaAtual = respostas[pergunta.id];
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 py-8 px-4">
-        <div className="max-w-3xl mx-auto">
-          {/* Barra de Progresso */}
-          <div className="mb-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center p-4">
+        <div className="max-w-3xl w-full">
+          {/* Barra de progresso */}
+          <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-cyan-300">
-                Pergunta {currentQuestion + 1} de {totalPerguntas}
-              </span>
-              <span className="text-sm font-bold text-cyan-400">
-                {Math.round(progresso)}%
-              </span>
+              <span className="text-slate-300 text-sm">Pergunta {perguntaAtual + 1} de {perguntas.length}</span>
+              <span className="text-cyan-400 text-sm font-bold">{Math.round(progresso)}%</span>
             </div>
-            <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden border border-cyan-500/20">
-              <div 
-                className="h-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-300 shadow-lg shadow-cyan-500/50"
+            <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-500 shadow-lg shadow-cyan-500/50"
                 style={{ width: `${progresso}%` }}
               />
             </div>
           </div>
 
-          {/* Card da Pergunta */}
-          <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-8 mb-6 border border-cyan-500/20">
-            {/* Badge do Bloco */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className={`${perguntaAtual.cor} p-2 rounded-lg shadow-lg`}>
-                <Icon className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-sm font-semibold text-cyan-400 uppercase tracking-wide">
-                {perguntaAtual.bloco}
-              </span>
-            </div>
+          {/* Card da pergunta */}
+          <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-cyan-500/20 shadow-2xl p-8 mb-6">
+            <h3 className="text-2xl font-bold text-white mb-6">
+              {pergunta.texto}
+            </h3>
 
-            {/* Título e Pergunta */}
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-6">
-              {perguntaAtual.pergunta}
-            </h2>
+            {pergunta.tipo === 'multiple' && (
+              <p className="text-cyan-400 text-sm mb-4">
+                Você pode selecionar até {pergunta.max} opções • Selecionadas: {respostaAtual ? respostaAtual.length : 0}
+              </p>
+            )}
 
-            {/* Opções */}
             <div className="space-y-3">
-              {perguntaAtual.opcoes.map((opcao) => {
-                const isSelected = perguntaAtual.tipo === 'single'
-                  ? respostas[perguntaAtual.id] === opcao.valor
-                  : (respostas[perguntaAtual.id] || []).includes(opcao.valor);
+              {pergunta.opcoes.map((opcao) => {
+                const selecionada = pergunta.tipo === 'single'
+                  ? respostaAtual === opcao.valor
+                  : respostaAtual && respostaAtual.includes(opcao.valor);
 
                 return (
                   <button
                     key={opcao.valor}
-                    onClick={() => handleResposta(opcao.valor)}
-                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                      isSelected
-                        ? 'border-cyan-400 bg-cyan-500/20 shadow-lg shadow-cyan-500/30'
-                        : 'border-slate-600 bg-slate-900/30 hover:border-cyan-500/50 hover:bg-slate-700/30'
+                    onClick={() => handleResposta(pergunta.id, opcao.valor)}
+                    className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                      selecionada
+                        ? 'bg-cyan-500/20 border-cyan-500 text-white'
+                        : 'bg-slate-700/30 border-slate-600 text-slate-300 hover:border-cyan-500/50 hover:bg-slate-700/50'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center mt-0.5 ${
-                        isSelected 
-                          ? 'border-cyan-400 bg-cyan-500' 
-                          : 'border-slate-500'
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                        selecionada ? 'border-cyan-500 bg-cyan-500' : 'border-slate-500'
                       }`}>
-                        {isSelected && (
-                          <CheckCircle className="w-4 h-4 text-white" />
+                        {selecionada && (
+                          <div className="w-2 h-2 bg-slate-900 rounded-full"></div>
                         )}
                       </div>
-                      <div>
-                        <span className={`font-medium ${isSelected ? 'text-white' : 'text-gray-300'}`}>
-                          {opcao.texto}
-                        </span>
-                        {opcao.elemento && (
-                          <span className="ml-2 text-xs bg-cyan-500/30 text-cyan-300 px-2 py-1 rounded border border-cyan-500/50">
-                            {opcao.elemento}
-                          </span>
-                        )}
-                      </div>
+                      <span className="font-medium">{opcao.texto}</span>
                     </div>
                   </button>
                 );
               })}
             </div>
-
-            {/* Info múltipla escolha */}
-            {perguntaAtual.tipo === 'multiple' && (
-              <p className="mt-4 text-sm text-cyan-300 text-center">
-                Você pode selecionar até {perguntaAtual.max} opções • 
-                Selecionadas: {(respostas[perguntaAtual.id] || []).length}
-              </p>
-            )}
           </div>
 
-          {/* Botões de Navegação */}
+          {/* Botões de navegação */}
           <div className="flex gap-4">
-            {currentQuestion > 0 && (
+            {perguntaAtual > 0 && (
               <button
-                onClick={perguntaAnterior}
-                className="flex-1 bg-slate-700/50 text-cyan-300 font-semibold py-4 rounded-lg hover:bg-slate-700 transition flex items-center justify-center gap-2 border border-slate-600"
+                onClick={voltarPergunta}
+                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Voltar
@@ -574,15 +557,26 @@ const QuizMTC = () => {
             
             <button
               onClick={proximaPergunta}
-              disabled={!podeAvancar()}
-              className={`flex-1 font-bold py-4 rounded-lg transition flex items-center justify-center gap-2 ${
-                podeAvancar()
-                  ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-900 hover:from-cyan-400 hover:to-cyan-500 shadow-lg shadow-cyan-500/50'
-                  : 'bg-slate-700/30 text-slate-500 cursor-not-allowed border border-slate-700'
+              disabled={!respostaAtualValida() || processando}
+              className={`flex-1 font-bold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+                respostaAtualValida() && !processando
+                  ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-slate-900 shadow-lg shadow-cyan-500/50'
+                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
               }`}
             >
-              {currentQuestion === totalPerguntas - 1 ? 'FINALIZAR' : 'PRÓXIMA'}
-              <ChevronRight className="w-5 h-5" />
+              {processando ? (
+                'Processando...'
+              ) : perguntaAtual === perguntas.length - 1 ? (
+                <>
+                  Finalizar
+                  <CheckCircle className="w-5 h-5" />
+                </>
+              ) : (
+                <>
+                  Próxima
+                  <ChevronRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -590,56 +584,44 @@ const QuizMTC = () => {
     );
   }
 
-  // Renderização do Resultado (placeholder)
+  // Render da tela de resultado (mostra "Enviando..." antes de redirecionar)
   if (step === 'resultado') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 py-12 px-4">
-        <div className="max-w-3xl mx-auto text-center">
-          <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl shadow-2xl p-12 border border-cyan-500/20">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-full mb-6 shadow-lg shadow-cyan-500/50">
-              <CheckCircle className="w-10 h-10 text-white" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center p-4">
+        <div className="max-w-2xl w-full bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-cyan-500/20 shadow-2xl p-8 text-center">
+          <div className="mb-6">
+            <div className="w-20 h-20 mx-auto mb-4 relative">
+              <div className="absolute inset-0 border-4 border-cyan-500/30 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin"></div>
             </div>
-            
-            <h1 className="text-3xl font-bold text-white mb-4">
-              Diagnóstico Concluído, {dadosLead.NOME.split(' ')[0]}!
-            </h1>
-            
-            <p className="text-lg text-cyan-300 mb-8">
-              Estamos processando suas respostas e gerando seu diagnóstico personalizado...
-            </p>
-
-            <div className="bg-slate-900/50 rounded-xl p-6 mb-8 border border-cyan-500/20">
-              <p className="text-gray-300">
-                📧 Enviaremos seu resultado completo para: <br />
-                <span className="font-semibold text-cyan-400">{dadosLead.EMAIL}</span>
-              </p>
-              <p className="text-gray-300 mt-2">
-                📱 E também no WhatsApp: <br />
-                <span className="font-semibold text-cyan-400">{dadosLead.CELULAR}</span>
-              </p>
-            </div>
-
-            <div className="p-6 bg-cyan-500/10 rounded-xl border-2 border-cyan-500/30">
-              <p className="text-lg font-semibold text-cyan-400 mb-2">
-                🎯 Próximo Passo: Evento Exclusivo
-              </p>
-              <p className="text-white mb-3">
-                <span className="font-bold text-cyan-300">03 de Novembro às 20h</span>
-              </p>
-              <p className="text-gray-300">
-                No evento ao vivo, revelaremos a oferta completa do 
-                <span className="font-bold text-cyan-400"> Super Combo Black November Vitalícia </span>
-                e o método específico para seu perfil!
-              </p>
-            </div>
-
-            <button
-              onClick={() => console.log('Redirecionar para página do evento')}
-              className="mt-8 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-900 font-bold py-4 px-8 rounded-lg hover:from-cyan-400 hover:to-cyan-500 transition-all transform hover:scale-105 shadow-lg shadow-cyan-500/50"
-            >
-              QUERO PARTICIPAR DO EVENTO →
-            </button>
           </div>
+          
+          <h2 className="text-3xl font-bold text-white mb-4">
+            ✅ Diagnóstico Concluído!
+          </h2>
+          
+          <p className="text-xl text-slate-300 mb-6">
+            Suas respostas foram salvas com sucesso!
+          </p>
+          
+          <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-6 mb-6">
+            <p className="text-cyan-300 text-lg font-semibold mb-2">
+              📤 Enviando seus dados...
+            </p>
+            <p className="text-slate-400 text-sm">
+              Você será redirecionado automaticamente em instantes
+            </p>
+          </div>
+          
+          <p className="text-slate-400 text-sm">
+            Se não for redirecionado automaticamente,{' '}
+            <a 
+              href="https://black.qigongbrasil.com/diagnostico"
+              className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
+            >
+              clique aqui
+            </a>
+          </p>
         </div>
       </div>
     );

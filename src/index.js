@@ -1,3 +1,4 @@
+import './index.css';  // ← MUITO IMPORTANTE!
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import Quiz from './quiz.js'; // Importa o seu componente do quiz
