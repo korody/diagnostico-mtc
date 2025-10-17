@@ -369,7 +369,7 @@ const finalizarQuiz = async () => {
       
       setTimeout(() => {
         console.log('🔄 Redirecionando...');
-        window.location.href = 'https://black.qigongbrasil.com/diagnostico';
+        window.top.location.href = 'https://black.qigongbrasil.com/diagnostico';
       }, 2000);
     } else {
       throw new Error(result.message || 'Erro desconhecido');

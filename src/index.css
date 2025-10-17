@@ -2,16 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   RESET E CONFIGURAÇÕES GLOBAIS
+   ======================================== */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+html {
+  scroll-behavior: smooth;
+  min-height: 100vh;
+}
+
+html, body, #root {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+/* ========================================
+   BACKGROUND TEXTURIZADO
+   ======================================== */
+
 body {
+  position: relative;
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  
+  /* Background com gradiente + imagem */
+  background-color: #0f172a;
+  background-image: 
+    linear-gradient(
+      rgba(15, 23, 42, 0.65), 
+      rgba(15, 23, 42, 0.70)
+    ),
+    url("https://content.app-sources.com/s/0427860594847682/uploads/Images/back-ruido-0398738.jpg?format=webp");
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+}
+
+/* Container principal */
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* ========================================
+   RESPONSIVIDADE MOBILE
+   ======================================== */
+
+/* Mobile: background-attachment fixed causa problemas no iOS */
+@media (max-width: 768px) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
+/* ========================================
+   SCROLLBAR PERSONALIZADA
+   ======================================== */
+
+/* Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.5);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(6, 182, 212, 0.8);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.5) rgba(15, 23, 42, 0.5);
+}
+
+/* ========================================
+   ANIMAÇÕES E TRANSIÇÕES
+   ======================================== */
+
+/* Transição suave para elementos interativos */
+button, a, input, textarea, select {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Foco acessível para navegação por teclado */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid #06b6d4;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   UTILITÁRIOS CUSTOMIZADOS
+   ======================================== */
+
+/* Animação de fade-in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ========================================
+   ACESSIBILIDADE
+   ======================================== */
+
+/* Screen readers only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ========================================
+   PERFORMANCE E OTIMIZAÇÕES
+   ======================================== */
+
+/* Otimização de renderização */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+/* Remove tap highlight azul no mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Previne zoom no double-tap em iOS */
+button, input, textarea, select {
+  touch-action: manipulation;
+}
+
+/* Melhora rendering de textos */
+body {
+  text-rendering: optimizeLegibility;
 }
