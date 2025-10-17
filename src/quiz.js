@@ -4,14 +4,24 @@ import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkle
 const QuizMTC = () => {
   // Função para ler parâmetros da URL
   const getUrlParams = () => {
-    const params = new URLSearchParams(window.location.search);
-    return {
-      nome: params.get('nome') || '',
-      email: params.get('email') || '',
-      celular: params.get('celular') || '',
-      leadId: params.get('leadId') || ''
-    };
+  const params = new URLSearchParams(window.location.search);
+  
+  // Função helper para capturar múltiplas variações
+  const getParam = (...keys) => {
+    for (const key of keys) {
+      const value = params.get(key);
+      if (value) return decodeURIComponent(value);
+    }
+    return '';
   };
+  
+  return {
+    nome: getParam('nome', 'name', 'first_name', 'firstname'),
+    email: getParam('email', 'e-mail', 'mail'),
+    celular: getParam('celular', 'telefone', 'phone', 'whatsapp', 'tel'),
+    leadId: getParam('leadId', 'lead_id', 'id')
+  };
+};
 
   const urlParams = getUrlParams();
   
