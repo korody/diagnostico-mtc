@@ -389,10 +389,16 @@ const QuizMTC = () => {
   const progresso = ((perguntaAtual + 1) / perguntas.length) * 100;
 
   // Render da tela de identificação
-  if (step === 'identificacao') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'transparent' }}>
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 animate-fade-in">
+  // Render da tela de identificação
+if (step === 'identificacao') {
+  return (
+    <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+      <div className="w-full max-w-lg mx-auto">
+        
+        {/* Popup Card Branco */}
+        <div className="bg-white rounded-3xl shadow-2xl p-8 animate-fade-in">
+          
+          {/* Header */}
           <div className="text-center mb-8">
             <div className="mb-4 text-cyan-500">
               <Sparkles className="w-12 h-12 mx-auto" />
@@ -404,6 +410,7 @@ const QuizMTC = () => {
             <p className="text-slate-600 text-sm">COM MESTRE YE</p>
           </div>
 
+          {/* Título da Seção */}
           <div className="mb-6">
             <h3 className="text-xl font-bold text-slate-900 mb-2">Diagnóstico Personalizado</h3>
             <p className="text-slate-600 text-sm">
@@ -411,6 +418,7 @@ const QuizMTC = () => {
             </p>
           </div>
 
+          {/* Formulário */}
           <div className="space-y-4 mb-6">
             <div>
               <label className="block text-slate-700 text-sm font-medium mb-2">
@@ -453,18 +461,21 @@ const QuizMTC = () => {
             </div>
           </div>
 
+          {/* Mensagem de Erro */}
           {erro && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
               ⚠️ {erro}
             </div>
           )}
 
+          {/* Info de Segurança */}
           <div className="text-center mb-6">
             <p className="text-slate-500 text-xs">
               🔒 Seus dados estão seguros • ⏱️ Tempo estimado: 4 minutos
             </p>
           </div>
 
+          {/* Botão Principal */}
           <button
             onClick={handleIniciarQuiz}
             className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-2 transform hover:scale-[1.02]"
@@ -473,137 +484,156 @@ const QuizMTC = () => {
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
+        
       </div>
-    );
-  }
+    </div>
+  );
+} 
 
   // Render da tela de quiz
-  if (step === 'quiz') {
-    const pergunta = perguntas[perguntaAtual];
-    const respostaAtual = respostas[pergunta.id];
+  // Render da tela de quiz
+if (step === 'quiz') {
+  const pergunta = perguntas[perguntaAtual];
+  const respostaAtual = respostas[pergunta.id];
 
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'transparent' }}>
-        <div className="w-full max-w-2xl">
-          <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-cyan-600 text-sm font-medium">Pergunta {perguntaAtual + 1}</span>
-              <span className="text-cyan-500 text-sm font-bold">{Math.round(progresso)}%</span>
-            </div>
-            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-cyan-500 via-cyan-500 to-blue-500 transition-all duration-500"
-                style={{ width: `${progresso}%` }}
-              />
-            </div>
+  return (
+    <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+      
+      {/* Container do Popup */}
+      <div className="w-full max-w-2xl mx-auto">
+        
+        {/* Barra de Progresso */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-cyan-500 text-sm font-medium">Pergunta {perguntaAtual + 1}</span>
+            <span className="text-cyan-500 text-sm font-bold">{Math.round(progresso)}%</span>
           </div>
-
-          <div className="bg-white rounded-3xl shadow-2xl p-8 mb-4 animate-fade-in">
-            <h3 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">
-              {pergunta.texto}
-            </h3>
-
-            {pergunta.subtexto && (
-              <p className="text-slate-600 text-sm mb-6 italic border-l-4 border-cyan-500 pl-4 py-2 bg-cyan-50 rounded">
-                💡 {pergunta.subtexto}
-              </p>
-            )}
-
-            {pergunta.tipo === 'multiple' && (
-              <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 mb-6">
-                <p className="text-cyan-700 text-sm font-medium">
-                  📌 Você pode selecionar até {pergunta.max} opções
-                  {respostaAtual && respostaAtual.length > 0 && (
-                    <span className="ml-2 font-bold">
-                      • {respostaAtual.length} de {pergunta.max} selecionada{respostaAtual.length > 1 ? 's' : ''}
-                    </span>
-                  )}
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {pergunta.opcoes.map((opcao) => {
-                const selecionada = pergunta.tipo === 'single'
-                  ? respostaAtual === opcao.valor
-                  : respostaAtual && respostaAtual.includes(opcao.valor);
-
-                return (
-                  <button
-                    key={opcao.valor}
-                    onClick={() => handleResposta(pergunta.id, opcao.valor)}
-                    className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left transform hover:scale-[1.01] ${
-                      selecionada
-                        ? 'bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-500 shadow-md'
-                        : 'bg-slate-50 border-slate-300 hover:border-cyan-400 hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                        selecionada ? 'border-cyan-500 bg-cyan-500' : 'border-slate-400'
-                      }`}>
-                        {selecionada && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
-                        )}
-                      </div>
-                      <span className={`font-medium ${selecionada ? 'text-slate-900' : 'text-slate-700'}`}>
-                        {opcao.texto}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            {perguntaAtual > 0 && (
-              <button
-                onClick={voltarPergunta}
-                className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border-2 border-slate-300 hover:border-slate-400 shadow-lg"
-              >
-                <ChevronLeft className="w-5 h-5" />
-                Voltar
-              </button>
-            )}
-            
-            <button
-              onClick={proximaPergunta}
-              disabled={!respostaAtualValida() || processando}
-              className={`flex-1 font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
-                respostaAtualValida() && !processando
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 transform hover:scale-[1.02]'
-                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-              }`}
-            >
-              {processando ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Processando...
-                </>
-              ) : perguntaAtual === perguntas.length - 1 ? (
-                <>
-                  Finalizar
-                  <CheckCircle className="w-5 h-5" />
-                </>
-              ) : (
-                <>
-                  Próxima
-                  <ChevronRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
+          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 via-cyan-500 to-blue-500 transition-all duration-500"
+              style={{ width: `${progresso}%` }}
+            />
           </div>
         </div>
+
+        {/* Popup Card Branco da Pergunta */}
+        <div className="bg-white rounded-3xl shadow-2xl p-8 mb-4 animate-fade-in">
+          
+          {/* Título da Pergunta */}
+          <h3 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">
+            {pergunta.texto}
+          </h3>
+
+          {/* Subtexto (se houver) */}
+          {pergunta.subtexto && (
+            <p className="text-slate-600 text-sm mb-6 italic border-l-4 border-cyan-500 pl-4 py-2 bg-cyan-50 rounded">
+              💡 {pergunta.subtexto}
+            </p>
+          )}
+
+          {/* Info para perguntas múltiplas */}
+          {pergunta.tipo === 'multiple' && (
+            <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 mb-6">
+              <p className="text-cyan-700 text-sm font-medium">
+                📌 Você pode selecionar até {pergunta.max} opções
+                {respostaAtual && respostaAtual.length > 0 && (
+                  <span className="ml-2 font-bold">
+                    • {respostaAtual.length} de {pergunta.max} selecionada{respostaAtual.length > 1 ? 's' : ''}
+                  </span>
+                )}
+              </p>
+            </div>
+          )}
+
+          {/* Opções de Resposta */}
+          <div className="space-y-3">
+            {pergunta.opcoes.map((opcao) => {
+              const selecionada = pergunta.tipo === 'single'
+                ? respostaAtual === opcao.valor
+                : respostaAtual && respostaAtual.includes(opcao.valor);
+
+              return (
+                <button
+                  key={opcao.valor}
+                  onClick={() => handleResposta(pergunta.id, opcao.valor)}
+                  className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left transform hover:scale-[1.01] ${
+                    selecionada
+                      ? 'bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-500 shadow-md'
+                      : 'bg-slate-50 border-slate-300 hover:border-cyan-400 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                      selecionada ? 'border-cyan-500 bg-cyan-500' : 'border-slate-400'
+                    }`}>
+                      {selecionada && (
+                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                      )}
+                    </div>
+                    <span className={`font-medium ${selecionada ? 'text-slate-900' : 'text-slate-700'}`}>
+                      {opcao.texto}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Botões de Navegação */}
+        <div className="flex gap-3">
+          {perguntaAtual > 0 && (
+            <button
+              onClick={voltarPergunta}
+              className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border-2 border-slate-300 hover:border-slate-400 shadow-lg"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Voltar
+            </button>
+          )}
+          
+          <button
+            onClick={proximaPergunta}
+            disabled={!respostaAtualValida() || processando}
+            className={`flex-1 font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
+              respostaAtualValida() && !processando
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 transform hover:scale-[1.02]'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {processando ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                Processando...
+              </>
+            ) : perguntaAtual === perguntas.length - 1 ? (
+              <>
+                Finalizar
+                <CheckCircle className="w-5 h-5" />
+              </>
+            ) : (
+              <>
+                Próxima
+                <ChevronRight className="w-5 h-5" />
+              </>
+            )}
+          </button>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   // Render da tela de resultado
-  if (step === 'resultado') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'transparent' }}>
-        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 text-center animate-fade-in">
+if (step === 'resultado') {
+  return (
+    <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+      <div className="w-full max-w-lg mx-auto">
+        
+        {/* Popup Branco de Sucesso */}
+        <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-fade-in">
+          
+          {/* Ícone de Loading */}
           <div className="mb-6">
             <div className="w-20 h-20 mx-auto mb-4 relative">
               <div className="absolute inset-0 border-4 border-cyan-200 rounded-full"></div>
@@ -612,14 +642,17 @@ const QuizMTC = () => {
             </div>
           </div>
           
+          {/* Título */}
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             ✅ Diagnóstico Concluído!
           </h2>
           
+          {/* Descrição */}
           <p className="text-xl text-slate-600 mb-6">
             Suas respostas foram salvas com sucesso!
           </p>
           
+          {/* Box de Status */}
           <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 mb-6">
             <p className="text-cyan-700 text-lg font-semibold mb-2">
               📤 Enviando seus dados...
@@ -629,6 +662,7 @@ const QuizMTC = () => {
             </p>
           </div>
           
+          {/* Link Manual */}
           <p className="text-slate-500 text-sm">
             Se não for redirecionado automaticamente,{' '}
             <a 
@@ -639,9 +673,11 @@ const QuizMTC = () => {
             </a>
           </p>
         </div>
+        
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return null;
 };
