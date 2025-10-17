@@ -122,7 +122,7 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', message: 'API funcionando!' });
 });
 
-app.post('/api/quiz/submit', async (req, res) => {
+app.post('/api/submit', async (req, res) => {
   try {
     const { lead, respostas } = req.body;
     

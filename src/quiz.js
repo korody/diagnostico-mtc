@@ -319,8 +319,8 @@ const finalizarQuiz = async () => {
     
     // 2. Determinar URL
     const apiUrl = window.location.hostname === 'localhost' 
-      ? 'http://localhost:3001/api/quiz/submit'
-      : '/api/quiz/submit';
+  ? 'http://localhost:3001/api/submit'
+  : '/api/submit';
     
     console.log('🌐 URL da API:', apiUrl);
     
