@@ -4,24 +4,24 @@ import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkle
 const QuizMTC = () => {
   // Função para ler parâmetros da URL
   const getUrlParams = () => {
-  const params = new URLSearchParams(window.location.search);
-  
-  // Função helper para capturar múltiplas variações
-  const getParam = (...keys) => {
-    for (const key of keys) {
-      const value = params.get(key);
-      if (value) return decodeURIComponent(value);
-    }
-    return '';
+    const params = new URLSearchParams(window.location.search);
+    
+    // Função helper para capturar múltiplas variações
+    const getParam = (...keys) => {
+      for (const key of keys) {
+        const value = params.get(key);
+        if (value) return decodeURIComponent(value);
+      }
+      return '';
+    };
+    
+    return {
+      nome: getParam('nome', 'name', 'first_name', 'firstname'),
+      email: getParam('email', 'e-mail', 'mail'),
+      celular: getParam('celular', 'telefone', 'phone', 'whatsapp', 'tel'),
+      leadId: getParam('leadId', 'lead_id', 'id')
+    };
   };
-  
-  return {
-    nome: getParam('nome', 'name', 'first_name', 'firstname'),
-    email: getParam('email', 'e-mail', 'mail'),
-    celular: getParam('celular', 'telefone', 'phone', 'whatsapp', 'tel'),
-    leadId: getParam('leadId', 'lead_id', 'id')
-  };
-};
 
   const urlParams = getUrlParams();
   
@@ -306,178 +306,168 @@ const QuizMTC = () => {
     }
   };
 
-const finalizarQuiz = async () => {
-  console.log('\n🔵 INICIANDO FINALIZAÇÃO DO QUIZ');
-  console.log('==================================');
-  
-  setProcessando(true);
-  
-  try {
-    // 1. Preparar dados
-    console.log('📝 Preparando dados...');
-    const payload = {
-      lead: {
-        NOME: dadosLead.NOME,
-        EMAIL: dadosLead.EMAIL,
-        CELULAR: dadosLead.CELULAR
-      },
-      respostas: respostas
-    };
+  const finalizarQuiz = async () => {
+    console.log('\n🔵 INICIANDO FINALIZAÇÃO DO QUIZ');
+    console.log('==================================');
     
-    console.log('📦 Payload preparado:');
-    console.log(JSON.stringify(payload, null, 2));
+    setProcessando(true);
     
-    // 2. Determinar URL
-    const apiUrl = window.location.hostname === 'localhost' 
-  ? 'http://localhost:3001/api/submit'
-  : '/api/submit';
-    
-    console.log('🌐 URL da API:', apiUrl);
-    
-    // 3. Fazer requisição
-    console.log('📤 Enviando requisição...');
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    console.log('📥 Resposta recebida!');
-    console.log('  Status:', response.status);
-    console.log('  Status Text:', response.statusText);
-    console.log('  OK:', response.ok);
-    
-    // 4. Processar resposta
-    let result;
     try {
-      const responseText = await response.text();
-      console.log('📄 Response Text:', responseText);
+      const payload = {
+        lead: {
+          NOME: dadosLead.NOME,
+          EMAIL: dadosLead.EMAIL,
+          CELULAR: dadosLead.CELULAR
+        },
+        respostas: respostas
+      };
       
-      result = JSON.parse(responseText);
-      console.log('✅ JSON parseado:', result);
-    } catch (parseError) {
-      console.error('❌ Erro ao parsear JSON:', parseError);
-      throw new Error('Resposta da API não é um JSON válido');
-    }
-    
-    // 5. Verificar sucesso
-    if (!response.ok) {
-      console.error('❌ Resposta não OK!');
-      console.error('  Status:', response.status);
-      console.error('  Resultado:', result);
-      throw new Error(result.error || result.detalhes || `Erro HTTP ${response.status}`);
-    }
-    
-    if (result.success) {
-      console.log('✅ QUIZ SALVO COM SUCESSO!');
-      console.log('  Lead ID:', result.lead_id);
-      console.log('  Diagnóstico:', result.diagnostico);
+      console.log('📦 Payload preparado:', JSON.stringify(payload, null, 2));
       
-      setStep('resultado');
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api/submit'
+        : '/api/submit';
       
-      setTimeout(() => {
-        console.log('🔄 Redirecionando...');
-        window.top.location.href = 'https://black.qigongbrasil.com/diagnostico';
-      }, 2000);
-    } else {
-      throw new Error(result.message || 'Erro desconhecido');
+      console.log('🌐 URL da API:', apiUrl);
+      console.log('📤 Enviando requisição...');
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      console.log('📥 Resposta recebida! Status:', response.status);
+      
+      let result;
+      try {
+        const responseText = await response.text();
+        console.log('📄 Response Text:', responseText);
+        result = JSON.parse(responseText);
+        console.log('✅ JSON parseado:', result);
+      } catch (parseError) {
+        console.error('❌ Erro ao parsear JSON:', parseError);
+        throw new Error('Resposta da API não é um JSON válido');
+      }
+      
+      if (!response.ok) {
+        console.error('❌ Resposta não OK! Status:', response.status);
+        throw new Error(result.error || result.detalhes || `Erro HTTP ${response.status}`);
+      }
+      
+      if (result.success) {
+        console.log('✅ QUIZ SALVO COM SUCESSO!');
+        console.log('  Lead ID:', result.lead_id);
+        console.log('  Diagnóstico:', result.diagnostico);
+        
+        setStep('resultado');
+        
+        setTimeout(() => {
+          console.log('🔄 Redirecionando...');
+          window.top.location.href = 'https://black.qigongbrasil.com/diagnostico';
+        }, 2000);
+      } else {
+        throw new Error(result.message || 'Erro desconhecido');
+      }
+      
+    } catch (error) {
+      console.error('\n❌ ERRO CAPTURADO:');
+      console.error('Tipo:', error.constructor.name);
+      console.error('Mensagem:', error.message);
+      
+      setErro(`Erro ao enviar o quiz: ${error.message}`);
+      alert(`Erro ao finalizar quiz:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
+      
+    } finally {
+      setProcessando(false);
+      console.log('🔵 Finalização concluída');
     }
-    
-  } catch (error) {
-    console.error('\n❌ ERRO CAPTURADO:');
-    console.error('==================================');
-    console.error('Tipo:', error.constructor.name);
-    console.error('Mensagem:', error.message);
-    console.error('Stack:', error.stack);
-    console.error('==================================\n');
-    
-    setErro(`Erro ao enviar o quiz: ${error.message}`);
-    
-    // Mostrar alerta para o usuário
-    alert(`Erro ao finalizar quiz:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
-    
-  } finally {
-    setProcessando(false);
-    console.log('🔵 Finalização concluída (sucesso ou erro)');
-  }
-};
+  };
 
   const progresso = ((perguntaAtual + 1) / perguntas.length) * 100;
 
   // Render da tela de identificação
   if (step === 'identificacao') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-cyan-500/20 shadow-2xl p-8">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'transparent' }}>
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 animate-fade-in">
           <div className="text-center mb-8">
-            <div className="mb-4 text-cyan-400">
-              <Sparkles className="w-16 h-16 mx-auto" />
+            <div className="mb-4 text-cyan-500">
+              <Sparkles className="w-12 h-12 mx-auto" />
             </div>
-            <h1 className="text-4xl font-bold text-white mb-2">BLACK NOVEMBER</h1>
-            <h2 className="text-3xl font-bold text-cyan-400 mb-4">DA SAÚDE VITALÍCIA</h2>
-            <p className="text-slate-300 text-lg">COM MESTRE YE</p>
+            <h1 className="text-3xl font-bold text-slate-900 mb-1">BLACK NOVEMBER</h1>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent mb-3">
+              DA SAÚDE VITALÍCIA
+            </h2>
+            <p className="text-slate-600 text-sm">COM MESTRE YE</p>
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-2xl font-bold text-white mb-4">Diagnóstico Personalizado</h3>
-            <p className="text-slate-300 mb-4">
+          <div className="mb-6">
+            <h3 className="text-xl font-bold text-slate-900 mb-2">Diagnóstico Personalizado</h3>
+            <p className="text-slate-600 text-sm">
               Descubra seu perfil energético segundo a Medicina Tradicional Chinesa
             </p>
           </div>
 
           <div className="space-y-4 mb-6">
             <div>
-              <label className="block text-slate-300 mb-2">Nome Completo *</label>
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                Nome Completo *
+              </label>
               <input
                 type="text"
                 value={dadosLead.NOME}
                 onChange={(e) => handleInputChange('NOME', e.target.value)}
                 placeholder="Digite seu nome completo"
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-slate-300 mb-2">E-mail *</label>
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                E-mail *
+              </label>
               <input
                 type="email"
                 value={dadosLead.EMAIL}
                 onChange={(e) => handleInputChange('EMAIL', e.target.value)}
                 placeholder="seu@email.com"
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-slate-300 mb-2">Celular (WhatsApp) *</label>
+              <label className="block text-slate-700 text-sm font-medium mb-2">
+                Celular (WhatsApp) *
+              </label>
               <input
                 type="tel"
                 value={dadosLead.CELULAR}
                 onChange={(e) => handleInputChange('CELULAR', e.target.value)}
                 placeholder="(00) 00000-0000"
                 maxLength="15"
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
               />
             </div>
           </div>
 
           {erro && (
-            <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
-              {erro}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              ⚠️ {erro}
             </div>
           )}
 
           <div className="text-center mb-6">
-            <p className="text-slate-400 text-sm mb-2">
+            <p className="text-slate-500 text-xs">
               🔒 Seus dados estão seguros • ⏱️ Tempo estimado: 4 minutos
             </p>
           </div>
 
           <button
             onClick={handleIniciarQuiz}
-            className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-slate-900 font-bold py-4 px-6 rounded-lg transition-all duration-200 shadow-lg shadow-cyan-500/50 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-2 transform hover:scale-[1.02]"
           >
             INICIAR DIAGNÓSTICO
             <ChevronRight className="w-5 h-5" />
@@ -493,32 +483,43 @@ const finalizarQuiz = async () => {
     const respostaAtual = respostas[pergunta.id];
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center p-4">
-        <div className="max-w-3xl w-full">
-          {/* Barra de progresso */}
-          <div className="mb-6">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'transparent' }}>
+        <div className="w-full max-w-2xl">
+          <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-slate-300 text-sm">Pergunta {perguntaAtual + 1} de {perguntas.length}</span>
-              <span className="text-cyan-400 text-sm font-bold">{Math.round(progresso)}%</span>
+              <span className="text-cyan-600 text-sm font-medium">Pergunta {perguntaAtual + 1}</span>
+              <span className="text-cyan-500 text-sm font-bold">{Math.round(progresso)}%</span>
             </div>
-            <div className="w-full h-3 bg-slate-700/50 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-cyan-400 to-cyan-600 transition-all duration-500 shadow-lg shadow-cyan-500/50"
+                className="h-full bg-gradient-to-r from-cyan-500 via-cyan-500 to-blue-500 transition-all duration-500"
                 style={{ width: `${progresso}%` }}
               />
             </div>
           </div>
 
-          {/* Card da pergunta */}
-          <div className="bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-cyan-500/20 shadow-2xl p-8 mb-6">
-            <h3 className="text-2xl font-bold text-white mb-6">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 mb-4 animate-fade-in">
+            <h3 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">
               {pergunta.texto}
             </h3>
 
-            {pergunta.tipo === 'multiple' && (
-              <p className="text-cyan-400 text-sm mb-4">
-                Você pode selecionar até {pergunta.max} opções • Selecionadas: {respostaAtual ? respostaAtual.length : 0}
+            {pergunta.subtexto && (
+              <p className="text-slate-600 text-sm mb-6 italic border-l-4 border-cyan-500 pl-4 py-2 bg-cyan-50 rounded">
+                💡 {pergunta.subtexto}
               </p>
+            )}
+
+            {pergunta.tipo === 'multiple' && (
+              <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3 mb-6">
+                <p className="text-cyan-700 text-sm font-medium">
+                  📌 Você pode selecionar até {pergunta.max} opções
+                  {respostaAtual && respostaAtual.length > 0 && (
+                    <span className="ml-2 font-bold">
+                      • {respostaAtual.length} de {pergunta.max} selecionada{respostaAtual.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </p>
+              </div>
             )}
 
             <div className="space-y-3">
@@ -531,21 +532,23 @@ const finalizarQuiz = async () => {
                   <button
                     key={opcao.valor}
                     onClick={() => handleResposta(pergunta.id, opcao.valor)}
-                    className={`w-full p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                    className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left transform hover:scale-[1.01] ${
                       selecionada
-                        ? 'bg-cyan-500/20 border-cyan-500 text-white'
-                        : 'bg-slate-700/30 border-slate-600 text-slate-300 hover:border-cyan-500/50 hover:bg-slate-700/50'
+                        ? 'bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-500 shadow-md'
+                        : 'bg-slate-50 border-slate-300 hover:border-cyan-400 hover:bg-slate-100'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                        selecionada ? 'border-cyan-500 bg-cyan-500' : 'border-slate-500'
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                        selecionada ? 'border-cyan-500 bg-cyan-500' : 'border-slate-400'
                       }`}>
                         {selecionada && (
-                          <div className="w-2 h-2 bg-slate-900 rounded-full"></div>
+                          <div className="w-2 h-2 bg-white rounded-full"></div>
                         )}
                       </div>
-                      <span className="font-medium">{opcao.texto}</span>
+                      <span className={`font-medium ${selecionada ? 'text-slate-900' : 'text-slate-700'}`}>
+                        {opcao.texto}
+                      </span>
                     </div>
                   </button>
                 );
@@ -553,12 +556,11 @@ const finalizarQuiz = async () => {
             </div>
           </div>
 
-          {/* Botões de navegação */}
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             {perguntaAtual > 0 && (
               <button
                 onClick={voltarPergunta}
-                className="flex-1 bg-slate-700 hover:bg-slate-600 text-white font-bold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border-2 border-slate-300 hover:border-slate-400 shadow-lg"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Voltar
@@ -568,14 +570,17 @@ const finalizarQuiz = async () => {
             <button
               onClick={proximaPergunta}
               disabled={!respostaAtualValida() || processando}
-              className={`flex-1 font-bold py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 ${
+              className={`flex-1 font-bold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg ${
                 respostaAtualValida() && !processando
-                  ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-slate-900 shadow-lg shadow-cyan-500/50'
-                  : 'bg-slate-700/50 text-slate-500 cursor-not-allowed'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 transform hover:scale-[1.02]'
+                  : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
               {processando ? (
-                'Processando...'
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Processando...
+                </>
               ) : perguntaAtual === perguntas.length - 1 ? (
                 <>
                   Finalizar
@@ -594,40 +599,41 @@ const finalizarQuiz = async () => {
     );
   }
 
-  // Render da tela de resultado (mostra "Enviando..." antes de redirecionar)
+  // Render da tela de resultado
   if (step === 'resultado') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex items-center justify-center p-4">
-        <div className="max-w-2xl w-full bg-slate-800/80 backdrop-blur-sm rounded-2xl border border-cyan-500/20 shadow-2xl p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'transparent' }}>
+        <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 text-center animate-fade-in">
           <div className="mb-6">
             <div className="w-20 h-20 mx-auto mb-4 relative">
-              <div className="absolute inset-0 border-4 border-cyan-500/30 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-cyan-200 rounded-full"></div>
               <div className="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin"></div>
+              <CheckCircle className="absolute inset-0 m-auto w-10 h-10 text-cyan-500" />
             </div>
           </div>
           
-          <h2 className="text-3xl font-bold text-white mb-4">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">
             ✅ Diagnóstico Concluído!
           </h2>
           
-          <p className="text-xl text-slate-300 mb-6">
+          <p className="text-xl text-slate-600 mb-6">
             Suas respostas foram salvas com sucesso!
           </p>
           
-          <div className="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-6 mb-6">
-            <p className="text-cyan-300 text-lg font-semibold mb-2">
+          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 mb-6">
+            <p className="text-cyan-700 text-lg font-semibold mb-2">
               📤 Enviando seus dados...
             </p>
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-600 text-sm">
               Você será redirecionado automaticamente em instantes
             </p>
           </div>
           
-          <p className="text-slate-400 text-sm">
+          <p className="text-slate-500 text-sm">
             Se não for redirecionado automaticamente,{' '}
             <a 
               href="https://black.qigongbrasil.com/diagnostico"
-              className="text-cyan-400 hover:text-cyan-300 underline font-semibold"
+              className="text-cyan-500 hover:text-cyan-600 underline font-semibold transition-colors"
             >
               clique aqui
             </a>
