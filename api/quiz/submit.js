@@ -7,8 +7,8 @@ const fs = require('fs');
 const path = require('path');
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_KEY
 );
 
 // Carregar diagnósticos do JSON
