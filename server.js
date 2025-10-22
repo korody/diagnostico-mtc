@@ -152,6 +152,82 @@ app.get('/', (req, res) => {
   });
 });
 
+// ===== ROTA: ENVIO WHATSAPP MANUAL =====
+app.post('/api/whatsapp/send', async (req, res) => {
+  try {
+    const { phone, customMessage, leadId } = req.body;
+    
+    console.log('\n📤 ENVIO MANUAL WHATSAPP');
+    
+    let phoneToUse = phone;
+    let messageToSend = customMessage;
+    
+    // Se forneceu leadId, buscar dados do lead
+    if (leadId) {
+      const { data: lead, error } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .eq('id', leadId)
+        .single();
+      
+      if (error || !lead) {
+        return res.status(404).json({
+          success: false,
+          error: 'Lead não encontrado'
+        });
+      }
+      
+      phoneToUse = lead.celular;
+      messageToSend = customMessage || lead.script_abertura;
+    }
+    
+    if (!phoneToUse || !messageToSend) {
+      return res.status(400).json({
+        success: false,
+        error: 'Telefone e mensagem são obrigatórios'
+      });
+    }
+    
+    const phoneNormalized = normalizePhone(phoneToUse);
+    const phoneForUnnichat = `55${phoneNormalized}`;
+    
+    console.log('📱 Enviando para:', phoneForUnnichat);
+    
+    const msgResponse = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        phone: phoneForUnnichat,
+        messageText: messageToSend
+      })
+    });
+    
+    const msgResult = await msgResponse.json();
+    
+    if (msgResult.code && msgResult.code !== '200') {
+      throw new Error(msgResult.message || 'Erro ao enviar');
+    }
+    
+    console.log('✅ Mensagem enviada!\n');
+    
+    res.json({
+      success: true,
+      phone: phoneNormalized,
+      message: 'Mensagem enviada com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('❌ Erro:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // ===== ROTA: SUBMIT QUIZ =====
 app.post('/api/submit', async (req, res) => {
   try {
