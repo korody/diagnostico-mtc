@@ -179,6 +179,15 @@
       transform: none;
     }
 
+    .btn-secondary {
+      background: #10b981;
+      margin-top: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: #059669;
+    }
+
     .result {
       margin-top: 20px;
       padding: 15px;
@@ -216,6 +225,30 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .lead-info {
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .lead-info.show {
+      display: block;
+    }
+
+    .lead-info h3 {
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 10px;
+    }
+
+    .lead-info p {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 5px 0;
+    }
   </style>
 </head>
 <body>
@@ -231,33 +264,33 @@
     </div>
 
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('phone')">📱 Por Telefone</button>
-      <button class="tab" onclick="switchTab('lead')">👤 Por Lead ID</button>
+      <button class="tab active" onclick="switchTab('custom')">✍️ Mensagem Custom</button>
+      <button class="tab" onclick="switchTab('diagnostico')">📋 Enviar Diagnóstico</button>
     </div>
 
-    <div id="phone-tab" class="tab-content active">
+    <div id="custom-tab" class="tab-content active">
       <div class="info-box">
-        💡 Envia mensagem personalizada para qualquer número
+        ✍️ Envia mensagem personalizada para qualquer número
       </div>
 
-      <form id="phoneForm">
+      <form id="customForm">
         <div class="form-group">
-          <label for="phone">Número do WhatsApp:</label>
+          <label for="customPhone">Número do WhatsApp:</label>
           <input 
             type="tel" 
-            id="phone" 
-            name="phone"
+            id="customPhone" 
+            name="customPhone"
             placeholder="11999999999" 
             required
           >
         </div>
 
         <div class="form-group">
-          <label for="message">Mensagem de Teste:</label>
+          <label for="customMessage">Mensagem Personalizada:</label>
           <textarea 
-            id="message" 
-            name="message"
-            placeholder="Digite sua mensagem de teste aqui..."
+            id="customMessage" 
+            name="customMessage"
+            placeholder="Digite sua mensagem aqui..."
             required
           >🚀 Teste do sistema de envio automático via WhatsApp!
 
@@ -265,63 +298,85 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
         </div>
 
         <button type="submit" class="btn">
-          Enviar Mensagem de Teste
+          Enviar Mensagem Personalizada
         </button>
       </form>
     </div>
 
-    <div id="lead-tab" class="tab-content">
+    <div id="diagnostico-tab" class="tab-content">
       <div class="info-box">
-        👤 Envia mensagem usando os dados do lead do banco
+        📋 Busca lead pelo telefone e envia o diagnóstico completo automaticamente
       </div>
 
-      <form id="leadForm">
+      <form id="diagnosticoSearchForm">
         <div class="form-group">
-          <label for="leadId">ID do Lead:</label>
+          <label for="diagnosticoPhone">Telefone do Lead:</label>
           <input 
-            type="text" 
-            id="leadId" 
-            name="leadId"
-            placeholder="cole o UUID do lead aqui" 
+            type="tel" 
+            id="diagnosticoPhone" 
+            name="diagnosticoPhone"
+            placeholder="11999999999" 
             required
           >
         </div>
 
         <button type="submit" class="btn">
-          Enviar para Lead
+          🔍 Buscar e Enviar Diagnóstico
         </button>
       </form>
+
+      <div id="leadInfo" class="lead-info">
+        <h3>📋 Dados do Lead:</h3>
+        <p><strong>Nome:</strong> <span id="leadName"></span></p>
+        <p><strong>Telefone:</strong> <span id="leadPhoneDisplay"></span></p>
+        <p><strong>Elemento:</strong> <span id="leadElement"></span></p>
+        <p><strong>Score:</strong> <span id="leadScore"></span></p>
+      </div>
     </div>
 
     <div id="result" class="result"></div>
   </div>
 
   <script>
-    // 🎯 DETECÇÃO AUTOMÁTICA DE AMBIENTE
     const hostname = window.location.hostname;
     const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
-    const isProduction = !isLocalhost;
-    
-    // Configurar URL da API baseado no ambiente
-    const API_URL = isProduction 
-      ? window.location.origin  // Em produção usa o mesmo domínio
-      : 'http://localhost:3001'; // Em local usa porta 3001
 
-    // Atualizar badge visual
+    const API_URL = isLocalhost
+      ? 'http://localhost:3001'
+      : 'https://quiz-mtc-api.vercel.app';
+
     const envBadge = document.getElementById('envBadge');
     const warningBox = document.getElementById('warningBox');
-    
-    if (isProduction) {
-      envBadge.textContent = '🔴 PRODUÇÃO';
-      envBadge.className = 'env-badge prod';
-      warningBox.classList.add('show');
-    } else {
-      envBadge.textContent = '🟡 TESTE (localhost)';
-      envBadge.className = 'env-badge dev';
+
+    // Detectar ambiente da API (não do frontend)
+    async function detectarAmbiente() {
+      try {
+        const response = await fetch(`${API_URL}/api/status`);
+        const data = await response.json();
+        
+        const isProduction = data.environment === 'production';
+        
+        if (isProduction) {
+          envBadge.textContent = '🔴 PRODUÇÃO';
+          envBadge.className = 'env-badge prod';
+          warningBox.classList.add('show');
+        } else {
+          envBadge.textContent = '🟡 TESTE (development)';
+          envBadge.className = 'env-badge dev';
+        }
+        
+        console.log('🔧 Ambiente da API:', data.environment);
+        console.log('🔗 API URL:', API_URL);
+        
+      } catch (error) {
+        envBadge.textContent = '❌ ERRO ao detectar';
+        envBadge.className = 'env-badge prod';
+        console.error('Erro ao detectar ambiente:', error);
+      }
     }
 
-    console.log('🔧 Ambiente detectado:', isProduction ? 'PRODUÇÃO' : 'TESTE');
-    console.log('🔗 API URL:', API_URL);
+    // Chamar na inicialização
+    detectarAmbiente();
 
     function switchTab(tab) {
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -331,6 +386,7 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
       document.getElementById(tab + '-tab').classList.add('active');
       
       hideResult();
+      document.getElementById('leadInfo').classList.remove('show');
     }
 
     function showResult(message, isSuccess) {
@@ -343,8 +399,8 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
       document.getElementById('result').classList.remove('show');
     }
 
-    // Envio por telefone
-    document.getElementById('phoneForm').addEventListener('submit', async (e) => {
+    // ABA 1: Envio de mensagem customizada
+    document.getElementById('customForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       hideResult();
       
@@ -353,8 +409,8 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
       btn.disabled = true;
       btn.innerHTML = '<span class="loading"></span> Enviando...';
       
-      const phone = document.getElementById('phone').value;
-      const message = document.getElementById('message').value;
+      const phone = document.getElementById('customPhone').value;
+      const message = document.getElementById('customMessage').value;
       
       try {
         const response = await fetch(`${API_URL}/api/whatsapp/send`, {
@@ -380,36 +436,64 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
       }
     });
 
-    // Envio por Lead ID
-    document.getElementById('leadForm').addEventListener('submit', async (e) => {
+    // ABA 2: Buscar lead e enviar diagnóstico
+    document.getElementById('diagnosticoSearchForm').addEventListener('submit', async (e) => {
       e.preventDefault();
       hideResult();
+      document.getElementById('leadInfo').classList.remove('show');
       
       const btn = e.target.querySelector('.btn');
       const originalText = btn.textContent;
       btn.disabled = true;
-      btn.innerHTML = '<span class="loading"></span> Enviando...';
+      btn.innerHTML = '<span class="loading"></span> Buscando lead...';
       
-      const leadId = document.getElementById('leadId').value;
+      const phone = document.getElementById('diagnosticoPhone').value;
       
       try {
-        const response = await fetch(`${API_URL}/api/whatsapp/send`, {
+        // Buscar lead
+        const searchResponse = await fetch(`${API_URL}/api/lead/buscar?phone=${phone}`);
+        const searchData = await searchResponse.json();
+        
+        if (!searchData.success || !searchData.lead) {
+          showResult('❌ Lead não encontrado com esse telefone.', false);
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+        
+        const lead = searchData.lead;
+        
+        // Mostrar dados do lead
+        document.getElementById('leadName').textContent = lead.nome;
+        document.getElementById('leadPhoneDisplay').textContent = lead.celular;
+        document.getElementById('leadElement').textContent = lead.elemento_principal || 'N/A';
+        document.getElementById('leadScore').textContent = lead.lead_score || 0;
+        document.getElementById('leadInfo').classList.add('show');
+        
+        btn.innerHTML = '<span class="loading"></span> Enviando diagnóstico...';
+        
+        // Enviar diagnóstico
+        const sendResponse = await fetch(`${API_URL}/api/whatsapp/send`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({ leadId })
+          body: JSON.stringify({ 
+            phone: lead.celular,
+            customMessage: lead.diagnostico_completo || lead.script_abertura
+          })
         });
         
-        const data = await response.json();
+        const sendData = await sendResponse.json();
         
-        if (data.success) {
-          showResult(`✅ Mensagem enviada para ${data.phone}! Verifique o WhatsApp.`, true);
+        if (sendData.success) {
+          showResult(`✅ Diagnóstico completo enviado para ${lead.nome}! Verifique o WhatsApp.`, true);
         } else {
-          showResult('❌ Erro: ' + (data.error || 'Erro desconhecido'), false);
+          showResult('❌ Erro ao enviar: ' + (sendData.error || 'Erro desconhecido'), false);
         }
+        
       } catch (error) {
-        showResult('❌ Erro ao conectar com o servidor: ' + error.message, false);
+        showResult('❌ Erro: ' + error.message, false);
       } finally {
         btn.disabled = false;
         btn.textContent = originalText;

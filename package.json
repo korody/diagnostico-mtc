@@ -11,6 +11,9 @@
     "send:prod": "cross-env NODE_ENV=production node enviar-campanhas-lotes.js",
     "verify:test": "cross-env NODE_ENV=development node verificar-leads.js",
     "verify:prod": "cross-env NODE_ENV=production node verificar-leads.js",
+    "monitor:prod": "cross-env NODE_ENV=production node monitorar-envio.js",
+    "gatilho:test": "cross-env NODE_ENV=development node gatilho-automacao-por-telefone.js",
+    "gatilho:prod": "cross-env NODE_ENV=production node gatilho-automacao-por-telefone.js",
     "template:test": "cross-env NODE_ENV=development node enviar-template-com-gatilho.js",
     "template:prod": "cross-env NODE_ENV=production node enviar-template-com-gatilho.js",
     "dev": "npm run api & npm start"

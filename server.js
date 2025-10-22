@@ -152,6 +152,55 @@ app.get('/', (req, res) => {
   });
 });
 
+// ===== ROTA: STATUS/AMBIENTE =====
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    environment: isProduction ? 'production' : 'development',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ===== ROTA: BUSCAR LEAD POR TELEFONE =====
+app.get('/api/lead/buscar', async (req, res) => {
+  try {
+    const { phone } = req.query;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Telefone é obrigatório'
+      });
+    }
+    
+    const phoneNormalized = normalizePhone(phone);
+    
+    const { data: lead, error } = await supabase
+      .from('quiz_leads')
+      .select('*')
+      .eq('celular', phoneNormalized)
+      .single();
+    
+    if (error || !lead) {
+      return res.json({
+        success: false,
+        message: 'Lead não encontrado'
+      });
+    }
+    
+    res.json({
+      success: true,
+      lead: lead
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // ===== ROTA: ENVIO WHATSAPP MANUAL =====
 app.post('/api/whatsapp/send', async (req, res) => {
   try {
@@ -329,33 +378,82 @@ app.post('/api/submit', async (req, res) => {
   }
 });
 
-// ===== WEBHOOK: VER RESULTADOS =====
+// ===== WEBHOOK: VER RESULTADOS (CORRIGIDO) =====
 app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
   try {
     console.log('\n📥 WEBHOOK RECEBIDO');
-
-    const { data: leads, error: leadError } = await supabase
-      .from('quiz_leads')
-      .select('*')
-      .not('celular', 'is', null)
-      .order('updated_at', { ascending: false })
-      .limit(5);
-
-    if (leadError || !leads || leads.length === 0) {
-      console.error('❌ Nenhum lead encontrado');
-      return res.json({ success: false, message: 'Nenhum lead encontrado' });
+    console.log('📋 Payload completo:', JSON.stringify(req.body, null, 2));
+    
+    // ✅ TENTAR IDENTIFICAR O LEAD PELO WEBHOOK
+    const webhookData = req.body;
+    
+    // O Unnichat pode enviar o telefone em diferentes campos
+    let phoneFromWebhook = 
+      webhookData.phone || 
+      webhookData.from || 
+      webhookData.contact?.phone ||
+      webhookData.number ||
+      webhookData.phoneNumber;
+    
+    console.log('📱 Telefone recebido do webhook:', phoneFromWebhook);
+    
+    let lead = null;
+    
+    // ✅ MÉTODO 1: Se o webhook enviou o telefone, buscar por ele
+    if (phoneFromWebhook) {
+      // Limpar o telefone (remover +55, espaços, etc)
+      const phoneClean = phoneFromWebhook.replace(/\D/g, '').replace(/^55/, '');
+      
+      console.log('🔍 Buscando lead por telefone:', phoneClean);
+      
+      const { data: leadByPhone, error } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .eq('celular', phoneClean)
+        .single();
+      
+      if (!error && leadByPhone) {
+        lead = leadByPhone;
+        console.log('✅ Lead identificado por telefone:', lead.nome);
+      } else {
+        console.log('⚠️ Lead não encontrado por telefone');
+      }
+    }
+    
+    // ✅ MÉTODO 2 (FALLBACK): Se não identificou, pegar o último com template_enviado
+    if (!lead) {
+      console.log('🔍 Fallback: Buscando último lead com status template_enviado');
+      
+      const { data: leads } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .eq('whatsapp_status', 'template_enviado')
+        .order('whatsapp_sent_at', { ascending: false })
+        .limit(1);
+      
+      if (leads && leads.length > 0) {
+        lead = leads[0];
+        console.log('⚠️ Lead identificado por fallback:', lead.nome);
+        console.log('   (Último a receber template)');
+      }
     }
 
-    const lead = leads.find(l => 
-      l.whatsapp_status === 'template_enviado' || 
-      l.whatsapp_status === 'sent'
-    ) || leads[0];
+    // ❌ Se ainda não encontrou, erro crítico
+    if (!lead) {
+      console.error('❌ ERRO: Nenhum lead identificado!');
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Lead não identificado' 
+      });
+    }
 
     console.log('✅ Lead identificado:', lead.nome);
+    console.log('📱 Telefone:', lead.celular);
+    console.log('🎯 Elemento:', lead.elemento_principal);
 
-    const phoneForUnnichat = `55${normalizePhone(lead.celular)}`;
+    const phoneForUnnichat = `55${lead.celular}`;
 
-    // Criar/atualizar contato
+    // Atualizar/criar contato
     try {
       await fetch(`${UNNICHAT_API_URL}/contact`, {
         method: 'POST',
@@ -375,14 +473,14 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
     } catch (error) {
-      console.log('⚠️ Aviso:', error.message);
+      console.log('⚠️ Aviso contato:', error.message);
     }
 
+    // Preparar diagnóstico
     const primeiroNome = lead.nome.split(' ')[0];
     const diagnosticoCompleto = lead.diagnostico_completo || 
       'Seu diagnóstico está sendo processado. Em breve você receberá todas as informações!';
 
-    // Adicionar formatação WhatsApp
     const diagnosticoFormatado = diagnosticoCompleto
       .replace(/🔥 DIAGNÓSTICO:/g, '*🔥 DIAGNÓSTICO:*')
       .replace(/O que seu corpo está dizendo:/g, '*O que seu corpo está dizendo:*')
@@ -402,6 +500,7 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
 
     console.log('📨 Enviando diagnóstico...');
     
+    // Enviar diagnóstico
     const msgResponse = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
       method: 'POST',
       headers: {
@@ -440,7 +539,8 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
       metadata: { 
         action: 'ver_resultados',
         unnichat_response: msgResult,
-        triggered_by_webhook: true
+        triggered_by_webhook: true,
+        webhook_payload: webhookData
       },
       sent_at: new Date().toISOString()
     });
