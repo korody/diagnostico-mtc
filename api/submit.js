@@ -2,6 +2,15 @@
 // API ENDPOINT: /api/quiz/submit
 // ========================================
 
+// Preparar dados para salvar
+const dadosParaSalvar = {
+  nome: lead.NOME,
+  email: lead.EMAIL,
+  celular: normalizePhone(lead.CELULAR), // ← NORMALIZA
+  respostas: respostas,
+  // ... resto
+};
+
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
