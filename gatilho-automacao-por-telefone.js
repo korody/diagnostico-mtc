@@ -4,8 +4,11 @@
 const { createClient } = require('@supabase/supabase-js');
 const { normalizePhone } = require('./api/utils/phone');
 
-const isProduction = process.env.NODE_ENV === 'production';
-const envFile = isProduction ? '.env.production' : '.env.staging';
+// const isProduction = process.env.NODE_ENV === 'production';
+// const envFile = isProduction ? '.env.production' : '.env.staging';
+
+const isProduction = true; // <- FORCE TRUE
+const envFile = '.env.production'; // <- FORCE PRODUCTION
 
 require('dotenv').config({ path: envFile });
 

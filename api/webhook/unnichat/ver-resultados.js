@@ -1,25 +1,47 @@
-// api/webhook/unnichat/ver-resultados.js
+// ========================================
+// WEBHOOK: Ver Resultados (Vercel Serverless)
+// URL: /api/webhook-ver-resultados
+// ========================================
+
 const { createClient } = require('@supabase/supabase-js');
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_KEY
 );
 
 const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL || 'https://unnichat.com.br/api';
 const UNNICHAT_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
 
+/**
+ * Normaliza telefone para busca
+ */
+function normalizePhone(phone) {
+  if (!phone) return null;
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('55')) {
+    cleaned = cleaned.substring(2);
+  }
+  return cleaned;
+}
+
 module.exports = async (req, res) => {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
-      success: false, 
-      error: 'Método não permitido' 
-    });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     console.log('\n📥 WEBHOOK RECEBIDO');
-    console.log('📋 Payload completo:', JSON.stringify(req.body, null, 2));
+    console.log('📋 Payload:', JSON.stringify(req.body, null, 2));
     
     const webhookData = req.body;
     
@@ -41,13 +63,13 @@ module.exports = async (req, res) => {
     let lead = null;
     
     // ========================================
-    // MÉTODO 1: BUSCAR POR TELEFONE (MÚLTIPLAS TENTATIVAS)
+    // MÉTODO 1: BUSCAR POR TELEFONE
     // ========================================
     if (phoneFromWebhook) {
-      const phoneClean = phoneFromWebhook.replace(/\D/g, '').replace(/^55/, '');
+      const phoneClean = normalizePhone(phoneFromWebhook);
       console.log('🔍 Telefone normalizado:', phoneClean);
       
-      // TENTATIVA 1: Busca exata
+      // Buscar exato
       console.log('🔍 Tentativa 1: Busca exata por telefone...');
       const { data: leadExato } = await supabase
         .from('quiz_leads')
@@ -60,7 +82,7 @@ module.exports = async (req, res) => {
         console.log('✅ Lead encontrado (busca exata):', lead.nome);
       }
       
-      // TENTATIVA 2: Buscar pelos últimos 9 dígitos
+      // Buscar pelos últimos 9 dígitos
       if (!lead && phoneClean.length >= 9) {
         const ultimos9 = phoneClean.slice(-9);
         console.log('🔍 Tentativa 2: Busca pelos últimos 9 dígitos:', ultimos9);
@@ -74,25 +96,6 @@ module.exports = async (req, res) => {
         if (leadsParecidos && leadsParecidos.length > 0) {
           lead = leadsParecidos[0];
           console.log('✅ Lead encontrado (últimos 9 dígitos):', lead.nome);
-          console.log('   Telefone no banco:', lead.celular);
-        }
-      }
-      
-      // TENTATIVA 3: Buscar pelos últimos 8 dígitos
-      if (!lead && phoneClean.length >= 8) {
-        const ultimos8 = phoneClean.slice(-8);
-        console.log('🔍 Tentativa 3: Busca pelos últimos 8 dígitos:', ultimos8);
-        
-        const { data: leadsParecidos } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${ultimos8}`)
-          .limit(5);
-        
-        if (leadsParecidos && leadsParecidos.length > 0) {
-          lead = leadsParecidos[0];
-          console.log('✅ Lead encontrado (últimos 8 dígitos):', lead.nome);
-          console.log('   Telefone no banco:', lead.celular);
         }
       }
     }
@@ -116,26 +119,7 @@ module.exports = async (req, res) => {
     }
     
     // ========================================
-    // MÉTODO 3: FALLBACK POR NOME
-    // ========================================
-    if (!lead && nameFromWebhook) {
-      console.log('🔍 Fallback: Buscando por nome:', nameFromWebhook);
-      
-      const { data: leadsByName } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .ilike('nome', `%${nameFromWebhook}%`)
-        .limit(5);
-      
-      if (leadsByName && leadsByName.length > 0) {
-        lead = leadsByName[0];
-        console.log('⚠️ Lead encontrado por NOME:', lead.nome);
-        console.log('   (Múltiplos resultados possíveis)');
-      }
-    }
-    
-    // ========================================
-    // MÉTODO 4: FALLBACK FINAL - Último com template_enviado
+    // MÉTODO 3: FALLBACK FINAL
     // ========================================
     if (!lead) {
       console.log('🔍 Fallback final: Último lead com template_enviado');
@@ -150,37 +134,27 @@ module.exports = async (req, res) => {
       if (leads && leads.length > 0) {
         lead = leads[0];
         console.log('⚠️ Lead identificado por fallback final:', lead.nome);
-        console.log('   Telefone:', lead.celular);
       }
     }
 
-    // ❌ Se ainda não encontrou
+    // ❌ Se não encontrou
     if (!lead) {
       console.error('❌ ERRO: Nenhum lead identificado!');
-      console.error('   Telefone buscado:', phoneFromWebhook);
-      console.error('   Email buscado:', emailFromWebhook);
-      console.error('   Nome buscado:', nameFromWebhook);
-      
       return res.status(404).json({ 
         success: false, 
-        message: 'Lead não identificado',
-        debug: {
-          phone: phoneFromWebhook,
-          email: emailFromWebhook,
-          name: nameFromWebhook
-        }
+        message: 'Lead não identificado' 
       });
     }
 
-    console.log('\n✅ LEAD FINAL IDENTIFICADO:');
+    console.log('\n✅ LEAD IDENTIFICADO:');
     console.log('   Nome:', lead.nome);
     console.log('   Telefone:', lead.celular);
-    console.log('   Email:', lead.email);
     console.log('   Elemento:', lead.elemento_principal);
 
+    // Preparar telefone para Unnichat
     const phoneForUnnichat = `55${lead.celular.replace(/\D/g, '')}`;
 
-    // Atualizar/criar contato no Unnichat
+    // Atualizar contato
     try {
       await fetch(`${UNNICHAT_API_URL}/contact`, {
         method: 'POST',
@@ -227,7 +201,7 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
 
     console.log('📨 Enviando diagnóstico...');
     
-    // Enviar diagnóstico via Unnichat
+    // Enviar diagnóstico
     const msgResponse = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
       method: 'POST',
       headers: {
@@ -249,7 +223,7 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
 
     console.log('✅ Diagnóstico enviado com sucesso!\n');
 
-    // Atualizar status no banco
+    // Atualizar status
     await supabase
       .from('quiz_leads')
       .update({
@@ -267,13 +241,10 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
         action: 'ver_resultados',
         unnichat_response: msgResult,
         triggered_by_webhook: true,
-        webhook_payload: webhookData,
-        search_method: phoneFromWebhook ? 'phone' : emailFromWebhook ? 'email' : 'fallback'
+        webhook_payload: webhookData
       },
       sent_at: new Date().toISOString()
     });
-
-    console.log('========================================\n');
 
     res.json({ 
       success: true, 
@@ -284,12 +255,6 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
 
   } catch (error) {
     console.error('❌ Erro no webhook:', error.message);
-    console.error('Stack:', error.stack);
-    
-    res.status(500).json({ 
-      success: false, 
-      error: 'Erro interno do servidor',
-      details: error.message 
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 };
