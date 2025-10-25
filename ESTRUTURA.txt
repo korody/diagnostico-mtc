@@ -1,0 +1,47 @@
+📦 quiz-mtc/
+├── 📁 api
+│   ├── 📁 admin
+│   ├── 📁 cron
+│   ├── 📁 leads
+│   ├── 📁 utils
+│   │   ├── 📄 logger.js
+│   │   ├── 📄 phone.js
+│   │   └── 📄 unnichat.js
+│   ├── 📁 whatsapp
+│   │   └── 📄 send.js
+│   ├── 📄 diagnosticos.json
+│   └── 📄 submit.js
+├── 📁 lib
+│   └── 📄 calculos.js
+├── 📁 public
+│   ├── 📁 images
+│   │   └── 📄 background.webp
+│   ├── 📄 index.html
+│   └── 📄 test-whatsapp.html
+├── 📁 src
+│   ├── 📄 index.css
+│   ├── 📄 index.js
+│   └── 📄 quiz.js
+├── 📄 .env.test
+├── 📄 .gitignore
+├── 📄 .vercelignore
+├── 📄 enviar-campanhas-lotes.js
+├── 📄 enviar-template-com-gatilho.js
+├── 📄 ESTRUTURA.txt
+├── 📄 gatilho-automacao-por-telefone.js
+├── 📄 monitorar-envio.js
+├── 📄 mostrar-estrutura.js
+├── 📄 package.json
+├── 📄 postcss.config.js
+├── 📄 readme-producao.md
+├── 📄 server.js
+├── 📄 tailwind.config.js
+├── 📄 test-buscar-contato.js
+├── 📄 test-criar-contato.js
+├── 📄 test-template-all.js
+├── 📄 test-template-simples.js
+├── 📄 test-template-single.js
+├── 📄 test-unnichat-send.js
+├── 📄 test-webhook-manual.js
+├── 📄 vercel.json
+└── 📄 verificar-leads.js

@@ -35,7 +35,10 @@ if (!UNNICHAT_TOKEN) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-const diagnosticosData = JSON.parse(fs.readFileSync('./api/diagnosticos.json', 'utf8'));
+const path = require('path');
+const diagnosticos = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'api', 'diagnosticos.json'), 'utf-8')
+);
 
 console.log('\n🚀 ========================================');
 console.log('   API Quiz MTC');
@@ -378,16 +381,15 @@ app.post('/api/submit', async (req, res) => {
   }
 });
 
-// ===== WEBHOOK: VER RESULTADOS (CORRIGIDO) =====
+// ===== WEBHOOK: VER RESULTADOS (MELHORADO) =====
 app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
   try {
     console.log('\n📥 WEBHOOK RECEBIDO');
     console.log('📋 Payload completo:', JSON.stringify(req.body, null, 2));
     
-    // ✅ TENTAR IDENTIFICAR O LEAD PELO WEBHOOK
     const webhookData = req.body;
     
-    // O Unnichat pode enviar o telefone em diferentes campos
+    // Extrair dados do webhook
     let phoneFromWebhook = 
       webhookData.phone || 
       webhookData.from || 
@@ -395,34 +397,114 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
       webhookData.number ||
       webhookData.phoneNumber;
     
-    console.log('📱 Telefone recebido do webhook:', phoneFromWebhook);
+    const emailFromWebhook = webhookData.email || webhookData.contact?.email;
+    const nameFromWebhook = webhookData.name || webhookData.contact?.name;
+    
+    console.log('📱 Telefone recebido:', phoneFromWebhook);
+    console.log('📧 Email recebido:', emailFromWebhook);
+    console.log('👤 Nome recebido:', nameFromWebhook);
     
     let lead = null;
     
-    // ✅ MÉTODO 1: Se o webhook enviou o telefone, buscar por ele
+    // ========================================
+    // MÉTODO 1: BUSCAR POR TELEFONE (MÚLTIPLAS TENTATIVAS)
+    // ========================================
     if (phoneFromWebhook) {
-      // Limpar o telefone (remover +55, espaços, etc)
       const phoneClean = phoneFromWebhook.replace(/\D/g, '').replace(/^55/, '');
+      console.log('🔍 Telefone normalizado:', phoneClean);
       
-      console.log('🔍 Buscando lead por telefone:', phoneClean);
-      
-      const { data: leadByPhone, error } = await supabase
+      // TENTATIVA 1: Buscar exato
+      console.log('🔍 Tentativa 1: Busca exata por telefone...');
+      const { data: leadExato } = await supabase
         .from('quiz_leads')
         .select('*')
         .eq('celular', phoneClean)
-        .single();
+        .maybeSingle();
       
-      if (!error && leadByPhone) {
-        lead = leadByPhone;
-        console.log('✅ Lead identificado por telefone:', lead.nome);
-      } else {
-        console.log('⚠️ Lead não encontrado por telefone');
+      if (leadExato) {
+        lead = leadExato;
+        console.log('✅ Lead encontrado (busca exata):', lead.nome);
+      }
+      
+      // TENTATIVA 2: Buscar pelos últimos 9 dígitos (ignora DDD variações)
+      if (!lead && phoneClean.length >= 9) {
+        const ultimos9 = phoneClean.slice(-9);
+        console.log('🔍 Tentativa 2: Busca pelos últimos 9 dígitos:', ultimos9);
+        
+        const { data: leadsParecidos } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .ilike('celular', `%${ultimos9}%`)
+          .limit(5);
+        
+        if (leadsParecidos && leadsParecidos.length > 0) {
+          lead = leadsParecidos[0];
+          console.log('✅ Lead encontrado (últimos 9 dígitos):', lead.nome);
+          console.log('   Telefone no banco:', lead.celular);
+        }
+      }
+      
+      // TENTATIVA 3: Buscar com LIKE parcial (últimos 8 dígitos)
+      if (!lead && phoneClean.length >= 8) {
+        const ultimos8 = phoneClean.slice(-8);
+        console.log('🔍 Tentativa 3: Busca pelos últimos 8 dígitos:', ultimos8);
+        
+        const { data: leadsParecidos } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .ilike('celular', `%${ultimos8}`)
+          .limit(5);
+        
+        if (leadsParecidos && leadsParecidos.length > 0) {
+          lead = leadsParecidos[0];
+          console.log('✅ Lead encontrado (últimos 8 dígitos):', lead.nome);
+          console.log('   Telefone no banco:', lead.celular);
+        }
       }
     }
     
-    // ✅ MÉTODO 2 (FALLBACK): Se não identificou, pegar o último com template_enviado
+    // ========================================
+    // MÉTODO 2: FALLBACK POR EMAIL
+    // ========================================
+    if (!lead && emailFromWebhook) {
+      console.log('🔍 Fallback: Buscando por email:', emailFromWebhook);
+      
+      const { data: leadByEmail } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .eq('email', emailFromWebhook)
+        .maybeSingle();
+      
+      if (leadByEmail) {
+        lead = leadByEmail;
+        console.log('✅ Lead encontrado por EMAIL:', lead.nome);
+      }
+    }
+    
+    // ========================================
+    // MÉTODO 3: FALLBACK POR NOME (último recurso)
+    // ========================================
+    if (!lead && nameFromWebhook) {
+      console.log('🔍 Fallback: Buscando por nome:', nameFromWebhook);
+      
+      const { data: leadsByName } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .ilike('nome', `%${nameFromWebhook}%`)
+        .limit(5);
+      
+      if (leadsByName && leadsByName.length > 0) {
+        lead = leadsByName[0];
+        console.log('⚠️ Lead encontrado por NOME:', lead.nome);
+        console.log('   (Múltiplos resultados possíveis)');
+      }
+    }
+    
+    // ========================================
+    // MÉTODO 4: FALLBACK FINAL - Último com template_enviado
+    // ========================================
     if (!lead) {
-      console.log('🔍 Fallback: Buscando último lead com status template_enviado');
+      console.log('🔍 Fallback final: Último lead com template_enviado');
       
       const { data: leads } = await supabase
         .from('quiz_leads')
@@ -433,25 +515,31 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
       
       if (leads && leads.length > 0) {
         lead = leads[0];
-        console.log('⚠️ Lead identificado por fallback:', lead.nome);
-        console.log('   (Último a receber template)');
+        console.log('⚠️ Lead identificado por fallback final:', lead.nome);
+        console.log('   Telefone:', lead.celular);
       }
     }
 
-    // ❌ Se ainda não encontrou, erro crítico
+    // ❌ Se ainda não encontrou
     if (!lead) {
       console.error('❌ ERRO: Nenhum lead identificado!');
+      console.error('   Telefone buscado:', phoneFromWebhook);
+      console.error('   Email buscado:', emailFromWebhook);
+      console.error('   Nome buscado:', nameFromWebhook);
+      
       return res.status(404).json({ 
         success: false, 
         message: 'Lead não identificado' 
       });
     }
 
-    console.log('✅ Lead identificado:', lead.nome);
-    console.log('📱 Telefone:', lead.celular);
-    console.log('🎯 Elemento:', lead.elemento_principal);
+    console.log('\n✅ LEAD FINAL IDENTIFICADO:');
+    console.log('   Nome:', lead.nome);
+    console.log('   Telefone:', lead.celular);
+    console.log('   Email:', lead.email);
+    console.log('   Elemento:', lead.elemento_principal);
 
-    const phoneForUnnichat = `55${lead.celular}`;
+    const phoneForUnnichat = `55${lead.celular.replace(/\D/g, '')}`;
 
     // Atualizar/criar contato
     try {
@@ -540,7 +628,8 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
         action: 'ver_resultados',
         unnichat_response: msgResult,
         triggered_by_webhook: true,
-        webhook_payload: webhookData
+        webhook_payload: webhookData,
+        search_method: phoneFromWebhook ? 'phone' : emailFromWebhook ? 'email' : 'fallback'
       },
       sent_at: new Date().toISOString()
     });
@@ -558,6 +647,180 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
   }
 });
 
+// ===== ROTA: ENVIO EM MASSA - CONVITE AMIGOS =====
+app.post('/api/send-bulk-referral', async (req, res) => {
+  try {
+    const { mode = 'test', limit = 10, offset = 0, specific_phone = null } = req.body;
+
+    console.log('\n📨 ========================================');
+    console.log('   ENVIO EM MASSA - CONVITE AMIGOS');
+    console.log('========================================');
+    console.log('🎯 Modo:', mode);
+    console.log('📱 Telefone específico:', specific_phone || 'Não');
+    console.log('========================================\n');
+    
+    // Buscar leads da tabela quiz_leads
+    let query = supabase
+      .from('quiz_leads')
+      .select('id, nome, celular, email, created_at')
+      .not('celular', 'is', null);
+
+    if (specific_phone) {
+      const phoneNormalized = normalizePhone(specific_phone);
+      query = query.eq('celular', phoneNormalized);
+      console.log(`🔍 Buscando: ${phoneNormalized}`);
+    } else {
+      query = query.order('created_at', { ascending: false });
+      
+      if (mode === 'test') {
+        query = query.limit(limit);
+      } else {
+        query = query.range(offset, offset + limit - 1);
+      }
+    }
+
+    const { data: leads, error: fetchError } = await query;
+
+    if (fetchError) {
+      throw new Error(`Erro ao buscar leads: ${fetchError.message}`);
+    }
+
+    console.log(`📋 ${leads.length} leads encontrados\n`);
+
+    const results = {
+      total: leads.length,
+      success: 0,
+      failed: 0,
+      errors: [],
+      messages_sent: 0
+    };
+
+    const DELAY_BETWEEN_MESSAGES = 2000;
+    const DELAY_BETWEEN_LEADS = 3000;
+
+    for (const lead of leads) {
+      try {
+        const phoneForUnnichat = `55${lead.celular}`;
+        const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${lead.celular}&utm_content=msg-inicial-desafio`;
+        
+        console.log(`\n👤 ${lead.nome}`);
+        console.log(`📱 ${phoneForUnnichat}`);
+        
+        const message1 = `*Quer ganhar acesso ao SUPER COMBO Vitalício do Mestre Ye, sem pagar nada?*
+
+Preparamos algo muito especial para você: o *Desafio da Vitalidade*.
+
+Durante as próximas semanas, você vai receber *missões simples durante as Lives de Aquecimento da Black November da Saúde Vitalícia*.
+
+Cada missão vai te aproximar mais do *equilíbrio, da leveza e da vitalidade que o seu corpo merece.* 🀄
+
+*Veja como participar:*
+
+1. Compartilhe suas missões no Instagram Stories e marque *@mestre_ye*;
+2. Convide amigos e familiares para o evento através do seu link único`;
+
+        const message2 = `Para aumentar suas chances de ganhar o *SUPER COMBO Vitalício do Mestre Ye*, compartilhe o link abaixo com o máximo de amigos e familiares.
+
+Cada pessoa que se inscrever através do seu link único aumenta suas chances de ser o grande vencedor ou vencedrora!
+
+*Seu link de compartilhamento*:
+${referralLink}
+
+Compartilhe vitalidade. Inspire transformação`;
+
+        // Mensagem 1
+        console.log(`📤 Enviando 1/2...`);
+        const response1 = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            phone: phoneForUnnichat,
+            messageText: message1
+          })
+        });
+
+        const data1 = await response1.json();
+        if (data1.code && data1.code !== '200') {
+          throw new Error(`Msg 1: ${data1.message || 'Erro'}`);
+        }
+
+        results.messages_sent++;
+        console.log(`✅ 1/2 enviada`);
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_MESSAGES));
+
+        // Mensagem 2
+        console.log(`📤 Enviando 2/2...`);
+        const response2 = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            phone: phoneForUnnichat,
+            messageText: message2
+          })
+        });
+
+        const data2 = await response2.json();
+        if (data2.code && data2.code !== '200') {
+          throw new Error(`Msg 2: ${data2.message || 'Erro'}`);
+        }
+
+        results.messages_sent++;
+        console.log(`✅ 2/2 enviada`);
+
+        // Log no banco
+        await supabase.from('whatsapp_logs').insert([
+          {
+            lead_id: lead.id,
+            phone: lead.celular,
+            status: 'bulk_referral_sent',
+            metadata: { referral_link: referralLink, message: 1 },
+            sent_at: new Date().toISOString()
+          },
+          {
+            lead_id: lead.id,
+            phone: lead.celular,
+            status: 'bulk_referral_sent',
+            metadata: { referral_link: referralLink, message: 2 },
+            sent_at: new Date().toISOString()
+          }
+        ]);
+
+        results.success++;
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_LEADS));
+
+      } catch (error) {
+        results.failed++;
+        results.errors.push({
+          lead_id: lead.id,
+          nome: lead.nome,
+          telefone: lead.celular,
+          error: error.message
+        });
+        console.error(`❌ Erro:`, error.message);
+      }
+    }
+
+    console.log('\n========================================');
+    console.log(`✅ Sucesso: ${results.success} | ❌ Falhas: ${results.failed}`);
+    console.log('========================================\n');
+
+    res.json(results);
+
+  } catch (error) {
+    console.error('\n❌ ERRO:', error.message);
+    res.status(500).json({ 
+      error: 'Erro ao processar',
+      details: error.message 
+    });
+  }
+});
+
 // ========================================
 // INICIAR SERVIDOR
 // ========================================
@@ -572,5 +835,6 @@ app.listen(PORT, () => {
   console.log('   Rotas disponíveis:');
   console.log('   • POST /api/submit (Quiz)');
   console.log('   • POST /webhook/unnichat/ver-resultados (Webhook)');
+  console.log('   • POST /api/send-bulk-referral (Envio em massa)');
   console.log('=========================================\n');
 });

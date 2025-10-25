@@ -1,4 +1,5 @@
 node_modules
+server-local.js
 .env.local
 .env
 .DS_Store

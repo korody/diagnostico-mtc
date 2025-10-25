@@ -1,4 +1,4 @@
-// enviar-campanhas-lotes.js - VERSÃO SEGURA PARA ENVIO EM MASSA
+// enviar-campanhas-lotes.js - COM PAGINAÇÃO COMPLETA
 const { createClient } = require('@supabase/supabase-js');
 
 // ========================================
@@ -18,6 +18,9 @@ const LOTE_SIZE = parseInt(process.env.LOTE_SIZE) || 10;
 const DELAY_ENTRE_ENVIOS = parseInt(process.env.DELAY_ENTRE_ENVIOS) || 4000;
 const DELAY_ENTRE_LOTES = parseInt(process.env.DELAY_ENTRE_LOTES) || 30000;
 
+// 🔒 LIMITE PARA TESTE (mude para null para enviar todos)
+const LIMITE_TESTE = 500;
+
 // Validar variáveis críticas
 if (!supabaseUrl || !supabaseKey || !GATILHO_URL) {
   console.error('❌ ERRO: Variáveis de ambiente não configuradas!');
@@ -27,6 +30,48 @@ if (!supabaseUrl || !supabaseKey || !GATILHO_URL) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// ========================================
+// FUNÇÃO: BUSCAR TODOS OS LEADS (COM PAGINAÇÃO)
+// ========================================
+async function buscarTodosLeads() {
+  console.log('🔍 Buscando total de leads...');
+  
+  // Primeiro, contar quantos existem
+  const { count } = await supabase
+    .from('quiz_leads')
+    .select('*', { count: 'exact', head: true })
+    .not('celular', 'is', null);
+  
+  console.log(`📊 Total de leads com telefone: ${count}`);
+  
+  // Buscar todos em lotes de 1000
+  let allLeads = [];
+  let offset = 0;
+  const BATCH_SIZE = 1000;
+  
+  while (offset < count) {
+    console.log(`   Carregando leads ${offset + 1} a ${Math.min(offset + BATCH_SIZE, count)}...`);
+    
+    const { data, error } = await supabase
+      .from('quiz_leads')
+      .select('*')
+      .not('celular', 'is', null)
+      .order('lead_score', { ascending: true }) // Menor score primeiro
+      .range(offset, offset + BATCH_SIZE - 1);
+    
+    if (error) {
+      console.error('❌ Erro ao buscar leads:', error.message);
+      throw error;
+    }
+    
+    allLeads = allLeads.concat(data);
+    offset += BATCH_SIZE;
+  }
+  
+  console.log(`✅ Total carregado: ${allLeads.length} leads\n`);
+  return allLeads;
+}
 
 // ========================================
 // FUNÇÃO PRINCIPAL
@@ -40,47 +85,52 @@ async function enviarEmLotes() {
   console.log('⏱️  Delay entre envios:', DELAY_ENTRE_ENVIOS/1000 + 's');
   console.log('⏸️  Delay entre lotes:', DELAY_ENTRE_LOTES/1000 + 's');
   console.log('🔗 Gatilho:', GATILHO_URL.substring(0, 50) + '...');
-  console.log('========================================\n');
   
-  console.log('🔍 Buscando leads no Supabase...\n');
-  
-  const { data: allLeads, error } = await supabase
-    .from('quiz_leads')
-    .select('*')
-    .not('celular', 'is', null)
-    .order('lead_score', { ascending: false });
-  
-  if (error) {
-    console.error('❌ Erro ao buscar leads:', error.message);
-    return;
+  if (LIMITE_TESTE) {
+    console.log('🔒 MODO TESTE: Limite de', LIMITE_TESTE, 'leads');
   }
   
-  console.log(`📊 Total de leads no banco: ${allLeads?.length || 0}\n`);
+  console.log('========================================\n');
+  
+  // BUSCAR TODOS OS LEADS (COM PAGINAÇÃO)
+  const allLeads = await buscarTodosLeads();
   
   // Filtrar apenas os que não receberam ainda
-  const leads = allLeads.filter(lead => 
+  const leadsElegiveis = allLeads.filter(lead => 
     !lead.whatsapp_status || 
     lead.whatsapp_status === 'AGUARDANDO_CONTATO' ||
     lead.whatsapp_status === 'failed'
   );
   
-  if (!leads || leads.length === 0) {
+  console.log(`📋 Leads elegíveis (não enviados): ${leadsElegiveis.length}\n`);
+  
+  if (!leadsElegiveis || leadsElegiveis.length === 0) {
     console.log('✅ Nenhum lead elegível encontrado!');
     console.log('💡 Todos os leads já receberam o template.\n');
     return;
   }
   
-  const leadsParaEnviar = leads; // ENVIAR TODOS OS ELEGÍVEIS
+  // 🔒 APLICAR LIMITE DE TESTE
+  const leadsParaEnviar = LIMITE_TESTE 
+    ? leadsElegiveis.slice(0, LIMITE_TESTE) 
+    : leadsElegiveis;
   
-  console.log(`✅ ${leadsParaEnviar.length} leads elegíveis encontrados!\n`);
+  console.log(`✅ ${leadsParaEnviar.length} leads selecionados para envio!\n`);
+  
+  if (LIMITE_TESTE && leadsElegiveis.length > LIMITE_TESTE) {
+    console.log(`⚠️  ATENÇÃO: Modo teste ativo!`);
+    console.log(`   Enviando para ${LIMITE_TESTE} de ${leadsElegiveis.length} leads elegíveis\n`);
+  }
+  
   console.log('📋 Primeiros 10 leads que receberão template:');
   leadsParaEnviar.slice(0, 10).forEach((lead, i) => {
     console.log(`   ${i+1}. ${lead.nome} - ${lead.celular} - Score: ${lead.lead_score} - ${lead.elemento_principal || 'N/A'}`);
   });
   
   if (leadsParaEnviar.length > 10) {
-    console.log(`   ... e mais ${leadsParaEnviar.length - 10} leads\n`);
+    console.log(`   ... e mais ${leadsParaEnviar.length - 10} leads`);
   }
+  console.log('');
   
   // ========================================
   // CONFIRMAÇÃO DE SEGURANÇA
@@ -91,15 +141,22 @@ async function enviarEmLotes() {
   );
   
   console.log('\n⚠️  ========================================');
-  console.log('   CONFIRMAÇÃO DE ENVIO EM MASSA');
+  console.log('   CONFIRMAÇÃO DE ENVIO');
   console.log('========================================');
   console.log('📊 Total de leads:', leadsParaEnviar.length);
   console.log('📦 Total de lotes:', totalLotes);
   console.log('⏱️  Tempo estimado:', tempoEstimadoMinutos, 'minutos');
   console.log('🔥 Ambiente:', isProduction ? 'PRODUÇÃO (REAL)' : 'TESTE');
+  
+  if (LIMITE_TESTE) {
+    console.log('🔒 Modo:', 'TESTE - Limite de', LIMITE_TESTE, 'leads');
+  } else {
+    console.log('🚨 Modo:', 'ENVIO TOTAL');
+  }
+  
   console.log('========================================\n');
   
-  if (leadsParaEnviar.length > 50) {
+  if (leadsParaEnviar.length > 5 && !LIMITE_TESTE) {
     console.log('💡 DICAS IMPORTANTES:');
     console.log('   • Mantenha este terminal aberto');
     console.log('   • Mantenha internet estável');
@@ -108,6 +165,9 @@ async function enviarEmLotes() {
     
     console.log('⏳ Iniciando em 10 segundos...\n');
     await new Promise(resolve => setTimeout(resolve, 10000));
+  } else {
+    console.log('⏳ Iniciando em 3 segundos...\n');
+    await new Promise(resolve => setTimeout(resolve, 3000));
   }
   
   // ========================================
@@ -183,43 +243,6 @@ async function enviarEmLotes() {
         console.log(`   ❌ Erro: ${error.message}`);
         totalErros++;
         
-        // 🔄 RETRY: Tentar novamente se for erro de rede
-        if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('ECONNREFUSED')) {
-          console.log('   🔄 Tentando novamente em 10s...');
-          await new Promise(resolve => setTimeout(resolve, 10000));
-          
-          try {
-            const retryResponse = await fetch(GATILHO_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: lead.nome,
-                email: lead.email || `${lead.celular}@placeholder.com`,
-                phone: `55${lead.celular}`
-              })
-            });
-            
-            if (retryResponse.ok) {
-              console.log('   ✅ Sucesso na 2ª tentativa!\n');
-              totalEnviados++;
-              totalErros--;
-              
-              await supabase
-                .from('quiz_leads')
-                .update({
-                  whatsapp_status: 'template_enviado',
-                  whatsapp_sent_at: new Date().toISOString(),
-                  whatsapp_attempts: 1
-                })
-                .eq('id', lead.id);
-              
-              continue;
-            }
-          } catch (retryError) {
-            console.log('   ❌ Falhou na 2ª tentativa\n');
-          }
-        }
-        
         // Salvar erro no banco
         await supabase
           .from('quiz_leads')
@@ -240,7 +263,10 @@ async function enviarEmLotes() {
     // Checkpoint após cada lote
     console.log(`\n💾 Checkpoint: ${totalEnviados}/${leadsParaEnviar.length} enviados`);
     console.log(`   ✅ Sucesso: ${totalEnviados} | ❌ Erros: ${totalErros}`);
-    console.log(`   📊 Taxa: ${((totalEnviados / (totalEnviados + totalErros)) * 100).toFixed(1)}%`);
+    
+    if (totalEnviados + totalErros > 0) {
+      console.log(`   📊 Taxa: ${((totalEnviados / (totalEnviados + totalErros)) * 100).toFixed(1)}%`);
+    }
     
     // Pausa extra a cada 50 leads
     if (totalEnviados % 50 === 0 && totalEnviados > 0 && loteAtual < totalLotes) {
@@ -260,6 +286,7 @@ async function enviarEmLotes() {
   // ========================================
   const fimCampanha = new Date();
   const duracaoMinutos = Math.round((fimCampanha - inicioCampanha) / 60000);
+  const duracaoSegundos = Math.round((fimCampanha - inicioCampanha) / 1000);
   
   console.log('\n\n🎉 ========================================');
   console.log('   CAMPANHA FINALIZADA!');
@@ -267,22 +294,26 @@ async function enviarEmLotes() {
   console.log('✅ Total enviados:', totalEnviados);
   console.log('❌ Total erros:', totalErros);
   console.log('📊 Taxa de sucesso:', ((totalEnviados / leadsParaEnviar.length) * 100).toFixed(1) + '%');
-  console.log('⏱️  Duração:', duracaoMinutos, 'minutos');
-  console.log('🕐 Início:', inicioCampanha.toLocaleTimeString());
-  console.log('🕐 Fim:', fimCampanha.toLocaleTimeString());
+  console.log('⏱️  Duração:', duracaoMinutos > 0 ? duracaoMinutos + ' minutos' : duracaoSegundos + ' segundos');
+  console.log('🕐 Início:', inicioCampanha.toLocaleTimeString('pt-BR'));
+  console.log('🕐 Fim:', fimCampanha.toLocaleTimeString('pt-BR'));
   console.log('========================================\n');
   
   console.log('📱 PRÓXIMOS PASSOS:');
   console.log('1. Os leads receberão o template no WhatsApp');
   console.log('2. Quando clicarem em "VER RESULTADOS", o webhook é acionado');
   console.log('3. O diagnóstico completo é enviado automaticamente');
-  console.log('4. Monitore os resultados no Supabase ou rode: npm run verify:prod\n');
+  console.log('4. Monitore os resultados: npm run verify:prod\n');
   
   if (totalErros > 0) {
     console.log('⚠️  ATENÇÃO:');
     console.log(`   ${totalErros} leads falharam no envio`);
-    console.log('   Você pode reenviar apenas para os que falharam rodando este script novamente');
-    console.log('   (ele envia apenas para status AGUARDANDO_CONTATO ou failed)\n');
+    console.log('   Reenviar: npm run send:prod (só reenvia os que falharam)\n');
+  }
+  
+  if (LIMITE_TESTE) {
+    console.log('💡 PARA ENVIAR PARA TODOS:');
+    console.log('   Edite: const LIMITE_TESTE = null;\n');
   }
 }
 

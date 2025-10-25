@@ -65,6 +65,11 @@
       color: white;
     }
 
+    .env-badge.staging {
+      background: #3b82f6;
+      color: white;
+    }
+
     .tabs {
       display: flex;
       gap: 10px;
@@ -343,7 +348,7 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
 
     const API_URL = isLocalhost
       ? 'http://localhost:3001'
-      : 'https://quiz-mtc-api.vercel.app';
+      : window.location.origin; // Usa o domínio atual
 
     const envBadge = document.getElementById('envBadge');
     const warningBox = document.getElementById('warningBox');
@@ -355,11 +360,15 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
         const data = await response.json();
         
         const isProduction = data.environment === 'production';
+        const isStaging = data.environment === 'staging';
         
         if (isProduction) {
           envBadge.textContent = '🔴 PRODUÇÃO';
           envBadge.className = 'env-badge prod';
           warningBox.classList.add('show');
+        } else if (isStaging) {
+          envBadge.textContent = '🧪 Staging';
+          envBadge.className = 'env-badge staging';
         } else {
           envBadge.textContent = '🟡 TESTE (development)';
           envBadge.className = 'env-badge dev';
@@ -369,8 +378,8 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
         console.log('🔗 API URL:', API_URL);
         
       } catch (error) {
-        envBadge.textContent = '❌ ERRO ao detectar';
-        envBadge.className = 'env-badge prod';
+        envBadge.textContent = '🧪 Staging';
+        envBadge.className = 'env-badge staging';
         console.error('Erro ao detectar ambiente:', error);
       }
     }

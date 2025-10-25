@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste WhatsApp - Quiz MTC</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .env-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .env-badge.dev {
+      background: #fbbf24;
+      color: #78350f;
+    }
+
+    .env-badge.prod {
+      background: #dc2626;
+      color: white;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .tab.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .info-box {
+      background: #eff6ff;
+      border-left: 4px solid #3b82f6;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1e40af;
+    }
+
+    .warning-box {
+      background: #fef2f2;
+      border-left: 4px solid #dc2626;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #991b1b;
+      display: none;
+    }
+
+    .warning-box.show {
+      display: block;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn:hover {
+      background: #5568d3;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: #10b981;
+      margin-top: 10px;
+    }
+
+    .btn-secondary:hover {
+      background: #059669;
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .result.success {
+      background: #d1fae5;
+      color: #065f46;
+      border-left: 4px solid #10b981;
+    }
+
+    .result.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border-left: 4px solid #ef4444;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .lead-info {
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .lead-info.show {
+      display: block;
+    }
+
+    .lead-info h3 {
+      font-size: 14px;
+      color: #374151;
+      margin-bottom: 10px;
+    }
+
+    .lead-info p {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📱 Teste de Envio WhatsApp</h1>
+      <p>Sistema de envio automático - Quiz MTC</p>
+      <span id="envBadge" class="env-badge">Detectando...</span>
+    </div>
+
+    <div id="warningBox" class="warning-box">
+      ⚠️ <strong>ATENÇÃO:</strong> Você está em PRODUÇÃO! As mensagens serão enviadas para o banco de dados REAL.
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('custom')">✍️ Mensagem Custom</button>
+      <button class="tab" onclick="switchTab('diagnostico')">📋 Enviar Diagnóstico</button>
+    </div>
+
+    <div id="custom-tab" class="tab-content active">
+      <div class="info-box">
+        ✍️ Envia mensagem personalizada para qualquer número
+      </div>
+
+      <form id="customForm">
+        <div class="form-group">
+          <label for="customPhone">Número do WhatsApp:</label>
+          <input 
+            type="tel" 
+            id="customPhone" 
+            name="customPhone"
+            placeholder="11999999999" 
+            required
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="customMessage">Mensagem Personalizada:</label>
+          <textarea 
+            id="customMessage" 
+            name="customMessage"
+            placeholder="Digite sua mensagem aqui..."
+            required
+          >🚀 Teste do sistema de envio automático via WhatsApp!
+
+Se você recebeu esta mensagem, significa que o sistema está funcionando perfeitamente! 💚</textarea>
+        </div>
+
+        <button type="submit" class="btn">
+          Enviar Mensagem Personalizada
+        </button>
+      </form>
+    </div>
+
+    <div id="diagnostico-tab" class="tab-content">
+      <div class="info-box">
+        📋 Busca lead pelo telefone e envia o diagnóstico completo automaticamente
+      </div>
+
+      <form id="diagnosticoSearchForm">
+        <div class="form-group">
+          <label for="diagnosticoPhone">Telefone do Lead:</label>
+          <input 
+            type="tel" 
+            id="diagnosticoPhone" 
+            name="diagnosticoPhone"
+            placeholder="11999999999" 
+            required
+          >
+        </div>
+
+        <button type="submit" class="btn">
+          🔍 Buscar e Enviar Diagnóstico
+        </button>
+      </form>
+
+      <div id="leadInfo" class="lead-info">
+        <h3>📋 Dados do Lead:</h3>
+        <p><strong>Nome:</strong> <span id="leadName"></span></p>
+        <p><strong>Telefone:</strong> <span id="leadPhoneDisplay"></span></p>
+        <p><strong>Elemento:</strong> <span id="leadElement"></span></p>
+        <p><strong>Score:</strong> <span id="leadScore"></span></p>
+      </div>
+    </div>
+
+    <div id="result" class="result"></div>
+  </div>
+
+  <script>
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+
+    const API_URL = isLocalhost
+      ? 'http://localhost:3001'
+      : 'https://quiz-mtc-api.vercel.app';
+
+    const envBadge = document.getElementById('envBadge');
+    const warningBox = document.getElementById('warningBox');
+
+    // Detectar ambiente da API (não do frontend)
+    async function detectarAmbiente() {
+      try {
+        const response = await fetch(`${API_URL}/api/status`);
+        const data = await response.json();
+        
+        const isProduction = data.environment === 'production';
+        
+        if (isProduction) {
+          envBadge.textContent = '🔴 PRODUÇÃO';
+          envBadge.className = 'env-badge prod';
+          warningBox.classList.add('show');
+        } else {
+          envBadge.textContent = '🟡 TESTE (development)';
+          envBadge.className = 'env-badge dev';
+        }
+        
+        console.log('🔧 Ambiente da API:', data.environment);
+        console.log('🔗 API URL:', API_URL);
+        
+      } catch (error) {
+        envBadge.textContent = '❌ ERRO ao detectar';
+        envBadge.className = 'env-badge prod';
+        console.error('Erro ao detectar ambiente:', error);
+      }
+    }
+
+    // Chamar na inicialização
+    detectarAmbiente();
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById(tab + '-tab').classList.add('active');
+      
+      hideResult();
+      document.getElementById('leadInfo').classList.remove('show');
+    }
+
+    function showResult(message, isSuccess) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = message;
+      resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error') + ' show';
+    }
+
+    function hideResult() {
+      document.getElementById('result').classList.remove('show');
+    }
+
+    // ABA 1: Envio de mensagem customizada
+    document.getElementById('customForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideResult();
+      
+      const btn = e.target.querySelector('.btn');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Enviando...';
+      
+      const phone = document.getElementById('customPhone').value;
+      const message = document.getElementById('customMessage').value;
+      
+      try {
+        const response = await fetch(`${API_URL}/api/whatsapp/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ phone, customMessage: message })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showResult('✅ Mensagem enviada com sucesso! Verifique seu WhatsApp.', true);
+        } else {
+          showResult('❌ Erro: ' + (data.error || 'Erro desconhecido'), false);
+        }
+      } catch (error) {
+        showResult('❌ Erro ao conectar com o servidor: ' + error.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+
+    // ABA 2: Buscar lead e enviar diagnóstico
+    document.getElementById('diagnosticoSearchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideResult();
+      document.getElementById('leadInfo').classList.remove('show');
+      
+      const btn = e.target.querySelector('.btn');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span> Buscando lead...';
+      
+      const phone = document.getElementById('diagnosticoPhone').value;
+      
+      try {
+        // Buscar lead
+        const searchResponse = await fetch(`${API_URL}/api/lead/buscar?phone=${phone}`);
+        const searchData = await searchResponse.json();
+        
+        if (!searchData.success || !searchData.lead) {
+          showResult('❌ Lead não encontrado com esse telefone.', false);
+          btn.disabled = false;
+          btn.textContent = originalText;
+          return;
+        }
+        
+        const lead = searchData.lead;
+        
+        // Mostrar dados do lead
+        document.getElementById('leadName').textContent = lead.nome;
+        document.getElementById('leadPhoneDisplay').textContent = lead.celular;
+        document.getElementById('leadElement').textContent = lead.elemento_principal || 'N/A';
+        document.getElementById('leadScore').textContent = lead.lead_score || 0;
+        document.getElementById('leadInfo').classList.add('show');
+        
+        btn.innerHTML = '<span class="loading"></span> Enviando diagnóstico...';
+        
+        // Enviar diagnóstico
+        const sendResponse = await fetch(`${API_URL}/api/whatsapp/send`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ 
+            phone: lead.celular,
+            customMessage: lead.diagnostico_completo || lead.script_abertura
+          })
+        });
+        
+        const sendData = await sendResponse.json();
+        
+        if (sendData.success) {
+          showResult(`✅ Diagnóstico completo enviado para ${lead.nome}! Verifique o WhatsApp.`, true);
+        } else {
+          showResult('❌ Erro ao enviar: ' + (sendData.error || 'Erro desconhecido'), false);
+        }
+        
+      } catch (error) {
+        showResult('❌ Erro: ' + error.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    });
+  </script>
+</body>
+</html>

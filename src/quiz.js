@@ -450,13 +450,20 @@ if (step === 'identificacao') {
               <label className="block text-slate-700 text-sm font-medium mb-2">
                 Celular (WhatsApp) *
               </label>
+              
+              {/* 📱 Aviso importante */}
+              <p className="text-sm text-blue-600 mb-2 flex items-center">
+                <span className="mr-1">📱</span>
+                Revise com atenção! Seu diagnóstico será enviado via WhatsApp.
+              </p>
+              
               <input
                 type="tel"
                 value={dadosLead.CELULAR}
                 onChange={(e) => handleInputChange('CELULAR', e.target.value)}
                 placeholder="(00) 00000-0000"
                 maxLength="15"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400"
               />
             </div>
           </div>

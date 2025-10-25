@@ -5,7 +5,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { normalizePhone } = require('./api/utils/phone');
 
 const isProduction = process.env.NODE_ENV === 'production';
-const envFile = isProduction ? '.env.production' : '.env.local';
+const envFile = isProduction ? '.env.production' : '.env.staging';
 
 require('dotenv').config({ path: envFile });
 
@@ -26,7 +26,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // ========================================
 // 🎯 CONFIGURE O TELEFONE AQUI
 // ========================================
-const TELEFONE = '11998457676'; // ← MUDE AQUI (com ou sem +55, com ou sem formatação)
+const TELEFONE = '11998457676'; // ← MUDE SEU NÚMERO AQUI
 
 // ========================================
 // FUNÇÃO PRINCIPAL
@@ -36,7 +36,7 @@ async function gatilhoAutomacaoPorTelefone() {
   console.log('\n📞 ========================================');
   console.log('   GATILHO AUTOMAÇÃO POR TELEFONE');
   console.log('========================================');
-  console.log('🔧 Ambiente:', isProduction ? '🔴 PRODUÇÃO' : '🟡 TESTE');
+  console.log('🔧 Ambiente:', isProduction ? '🔴 PRODUÇÃO' : '🟡 STAGING');
   console.log('🔗 Supabase:', supabaseUrl);
   console.log('📱 Telefone buscado:', TELEFONE);
   console.log('========================================\n');
