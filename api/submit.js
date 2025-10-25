@@ -1,19 +1,15 @@
 // ========================================
-// API ENDPOINT: /api/quiz/submit
+// API ENDPOINT: /api/submit
+// Vercel Serverless Function
 // ========================================
-
-// Preparar dados para salvar
-const dadosParaSalvar = {
-  nome: lead.NOME,
-  email: lead.EMAIL,
-  celular: normalizePhone(lead.CELULAR), // ← NORMALIZA
-  respostas: respostas,
-  // ... resto
-};
 
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
+
+// ========================================
+// CONFIGURAÇÃO
+// ========================================
 
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
@@ -22,10 +18,10 @@ const supabase = createClient(
 
 // Carregar diagnósticos do JSON
 const diagnosticosPath = path.join(process.cwd(), 'api', 'diagnosticos.json');
-const DIAGNOSTICOS_COMPLETOS = JSON.parse(fs.readFileSync(diagnosticosPath, 'utf8'));
+const diagnosticosData = JSON.parse(fs.readFileSync(diagnosticosPath, 'utf8'));
 
 // ========================================
-// MAPEAMENTO E FUNÇÕES
+// MAPEAMENTO DE ELEMENTOS TCM
 // ========================================
 
 const MAPEAMENTO_ELEMENTOS = {
@@ -40,9 +36,66 @@ const MAPEAMENTO_ELEMENTOS = {
   }
 };
 
+// ========================================
+// FUNÇÕES AUXILIARES
+// ========================================
+
+/**
+ * Normaliza telefone brasileiro para formato +5511999999999
+ */
+function normalizePhone(phone) {
+  if (!phone) return null;
+  
+  let cleaned = phone.replace(/\D/g, '');
+  
+  // Se começar com 55, remove
+  if (cleaned.startsWith('55')) {
+    cleaned = cleaned.substring(2);
+  }
+  
+  // Se tem 11 dígitos (DDD + 9 dígitos), retorna direto
+  if (cleaned.length === 11) {
+    return cleaned;
+  }
+  
+  // Se tem 10 dígitos (DDD + 8 dígitos), retorna direto
+  if (cleaned.length === 10) {
+    return cleaned;
+  }
+  
+  // Se tem menos de 10, retorna como está
+  return cleaned;
+}
+
+/**
+ * Valida se é telefone brasileiro válido
+ */
+function isValidBrazilianPhone(phone) {
+  if (!phone) return false;
+  
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // Deve ter 10 ou 11 dígitos (DDD + número)
+  if (cleaned.length < 10 || cleaned.length > 11) {
+    return false;
+  }
+  
+  // DDD deve começar com 1-9
+  const ddd = cleaned.substring(0, 2);
+  if (parseInt(ddd) < 11 || parseInt(ddd) > 99) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Conta pontos de cada elemento TCM baseado nas respostas
+ */
 function contarElementos(respostas) {
   const contagem = { RIM: 0, FÍGADO: 0, BAÇO: 0, CORAÇÃO: 0, PULMÃO: 0 };
   
+  // P2: Sintomas físicos (peso 3)
   if (respostas.P2 && Array.isArray(respostas.P2)) {
     respostas.P2.forEach(opcao => {
       const elemento = MAPEAMENTO_ELEMENTOS.P2[opcao];
@@ -50,6 +103,7 @@ function contarElementos(respostas) {
     });
   }
   
+  // P4: Sintomas adicionais (peso 2)
   if (respostas.P4 && Array.isArray(respostas.P4)) {
     respostas.P4.forEach(opcao => {
       const elemento = MAPEAMENTO_ELEMENTOS.P4[opcao];
@@ -57,6 +111,7 @@ function contarElementos(respostas) {
     });
   }
   
+  // P5: Estado emocional (peso 1)
   if (respostas.P5) {
     const elemento = MAPEAMENTO_ELEMENTOS.P5[respostas.P5];
     if (elemento) contagem[elemento] += 1;
@@ -65,9 +120,12 @@ function contarElementos(respostas) {
   return contagem;
 }
 
+/**
+ * Determina elemento principal com maior pontuação
+ */
 function determinarElementoPrincipal(contagem) {
   let maxValor = 0;
-  let elementoEscolhido = 'BAÇO';
+  let elementoEscolhido = 'BAÇO'; // Fallback padrão
   
   for (const [elemento, valor] of Object.entries(contagem)) {
     if (valor > maxValor) {
@@ -79,97 +137,69 @@ function determinarElementoPrincipal(contagem) {
   return elementoEscolhido;
 }
 
+/**
+ * Calcula intensidade da dor (P1)
+ */
 function calcularIntensidade(respostas) {
   const pesos = { 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'E': 1 };
   return pesos[respostas.P1] || 3;
 }
 
+/**
+ * Calcula urgência (P8)
+ */
 function calcularUrgencia(respostas) {
   const pesos = { 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'E': 1 };
   return pesos[respostas.P8] || 3;
 }
 
+/**
+ * Determina quadrante baseado em intensidade e urgência
+ */
 function determinarQuadrante(intensidade, urgencia) {
-  if (intensidade >= 4 && urgencia >= 4) return 1;
-  if (intensidade >= 4 && urgencia <= 3) return 2;
-  if (intensidade <= 3 && urgencia >= 4) return 3;
-  return 4;
+  if (intensidade >= 4 && urgencia >= 4) return 1; // Alta dor, alta urgência
+  if (intensidade >= 4 && urgencia <= 3) return 2; // Alta dor, baixa urgência
+  if (intensidade <= 3 && urgencia >= 4) return 3; // Baixa dor, alta urgência
+  return 4; // Baixa dor, baixa urgência
 }
 
+/**
+ * Calcula score do lead (0-100 pontos)
+ */
 function calcularLeadScore(respostas) {
   let score = 0;
   
+  // P1: Intensidade da dor (20 pontos)
   const pesoP1 = { 'A': 20, 'B': 16, 'C': 12, 'D': 8, 'E': 4 };
   score += pesoP1[respostas.P1] || 0;
   
+  // P3: Duração do problema (15 pontos)
   const pesoP3 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
   score += pesoP3[respostas.P3] || 0;
   
+  // P6: Tratamentos tentados (15 pontos)
   const pesoP6 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
   score += pesoP6[respostas.P6] || 0;
   
+  // P8: Urgência (20 pontos)
   const pesoP8 = { 'A': 20, 'B': 16, 'C': 12, 'D': 8, 'E': 4 };
   score += pesoP8[respostas.P8] || 0;
   
+  // P9: Compromisso com evento (15 pontos)
   const pesoP9 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
   score += pesoP9[respostas.P9] || 0;
   
-  const pesoP11 = { 'A': 2, 'B': 3, 'C': 4, 'D': 5, 'E': 6, 'F': 7, 'G': 8, 'H': 9, 'I': 10, 'J': 10 };
+  // P11: Faixa de renda (10 pontos)
+  const pesoP11 = { 
+    'A': 2, 'B': 3, 'C': 4, 'D': 5, 'E': 6, 
+    'F': 7, 'G': 8, 'H': 9, 'I': 10, 'J': 10 
+  };
   score += pesoP11[respostas.P11] || 0;
   
+  // P12: Relacionamento com Mestre Ye (5 pontos)
   if (respostas.P12 === 'A') score += 5;
   
   return Math.min(score, 100);
-}
-
-function gerarScript(elemento, nome) {
-  const info = DIAGNOSTICOS_COMPLETOS[elemento];
-  if (!info) return null;
-  
-  return {
-    script_abertura: info.script_abertura.replace('{NOME}', nome),
-    diagnostico_completo: info.diagnostico.replace('{NOME}', nome),
-    emoji: info.emoji
-  };
-}
-
-function calcularDiagnostico(respostas, nomeLead) {
-  const contagem = contarElementos(respostas);
-  const elementoPrincipal = determinarElementoPrincipal(contagem);
-  const intensidade = calcularIntensidade(respostas);
-  const urgencia = calcularUrgencia(respostas);
-  const quadrante = determinarQuadrante(intensidade, urgencia);
-  const leadScore = calcularLeadScore(respostas);
-  const prioridade = leadScore >= 70 ? 'ALTA' : leadScore >= 40 ? 'MÉDIA' : 'BAIXA';
-  const isHotLeadVIP = leadScore >= 80 || quadrante === 1 || respostas.P8 === 'A';
-  
-  // ✅ BUSCAR INFO COM FALLBACK SEGURO
-  const info = DIAGNOSTICOS_COMPLETOS[elementoPrincipal] || DIAGNOSTICOS_COMPLETOS['BAÇO'];
-  
-  // ✅ VALIDAR SE INFO EXISTE
-  if (!info) {
-    console.error('❌ ERRO: Nenhum diagnóstico encontrado para', elementoPrincipal);
-    throw new Error('Diagnóstico não encontrado');
-  }
-  
-  // ✅ GERAR TEXTOS PERSONALIZADOS
-  const diagnosticoCompleto = info.diagnostico ? info.diagnostico.replace(/{NOME}/g, nomeLead) : 'Diagnóstico não disponível';
-  const scriptAbertura = info.script_abertura ? info.script_abertura.replace(/{NOME}/g, nomeLead) : '';
-  
-  return {
-    elemento_principal: elementoPrincipal,
-    codigo_perfil: `${elementoPrincipal.substring(0, 2)}-${intensidade}`,
-    nome_perfil: info.nome || 'Perfil não identificado',
-    arquetipo: info.arquetipo || '',
-    emoji: info.emoji || '🌟',
-    quadrante: quadrante,
-    diagnostico_resumo: diagnosticoCompleto.substring(0, 200) + '...',
-    diagnostico_completo: diagnosticoCompleto,
-    script_abertura: scriptAbertura,
-    lead_score: leadScore,
-    prioridade: prioridade,
-    is_hot_lead_vip: isHotLeadVIP
-  };
 }
 
 // ========================================
@@ -177,15 +207,17 @@ function calcularDiagnostico(respostas, nomeLead) {
 // ========================================
 
 module.exports = async (req, res) => {
-  // CORS
+  // Configurar CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+  // Responder OPTIONS (preflight)
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  // Aceitar apenas POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -193,108 +225,134 @@ module.exports = async (req, res) => {
   try {
     const { lead, respostas } = req.body;
 
-    // Validações
+    // Validações básicas
     if (!lead || !lead.NOME || !lead.EMAIL || !lead.CELULAR) {
       return res.status(400).json({ 
         success: false,
-        error: 'Dados incompletos'
+        error: 'Dados incompletos: nome, email e celular são obrigatórios'
       });
     }
 
     if (!respostas || Object.keys(respostas).length === 0) {
       return res.status(400).json({ 
         success: false,
-        error: 'Respostas não enviadas' 
+        error: 'Respostas do quiz não foram enviadas' 
       });
     }
 
-    console.log('📥 Quiz recebido de:', lead.NOME);
+    console.log('\n📥 NOVO QUIZ:', lead.NOME);
     
-    // Calcular diagnóstico COM scripts personalizados
-    const diagnostico = calcularDiagnostico(respostas, lead.NOME);
-    console.log('✅ Diagnóstico calculado:', diagnostico.elemento_principal);
-
-    // Verificar se lead já existe
-    const { data: leadExistente } = await supabase
-      .from('quiz_leads')
-      .select('id')
-      .eq('celular', lead.CELULAR)
-      .maybeSingle();
-
-    let resultado;
-
+    // Normalizar telefone ANTES de salvar
+    const celularNormalizado = normalizePhone(lead.CELULAR);
+    
+    // Validar telefone brasileiro
+    if (!isValidBrazilianPhone(celularNormalizado)) {
+      console.log('❌ Telefone inválido:', lead.CELULAR, '→', celularNormalizado);
+      return res.status(400).json({
+        success: false,
+        error: 'Telefone inválido. Use formato brasileiro válido.'
+      });
+    }
+    
+    console.log('📱 Telefone original:', lead.CELULAR);
+    console.log('📱 Telefone normalizado:', celularNormalizado);
+    
+    // Calcular diagnóstico
+    const contagem = contarElementos(respostas);
+    const elementoPrincipal = determinarElementoPrincipal(contagem);
+    const intensidade = calcularIntensidade(respostas);
+    const urgencia = calcularUrgencia(respostas);
+    const quadrante = determinarQuadrante(intensidade, urgencia);
+    const leadScore = calcularLeadScore(respostas);
+    const prioridade = leadScore >= 70 ? 'ALTA' : leadScore >= 40 ? 'MÉDIA' : 'BAIXA';
+    const isHotLeadVIP = leadScore >= 80 || quadrante === 1 || respostas.P8 === 'A';
+    
+    console.log('🎯 Elemento:', elementoPrincipal, '| Score:', leadScore, '| VIP:', isHotLeadVIP ? 'SIM 🔥' : 'NÃO');
+    
+    // Buscar configuração do elemento com fallback
+    const config = diagnosticosData[elementoPrincipal] || diagnosticosData['BAÇO'];
+    
+    // Extrair primeiro nome
+    const primeiroNome = lead.NOME.split(' ')[0];
+    
+    // Gerar textos personalizados
+    const diagnosticoCompleto = config.diagnostico.replace(/{NOME}/g, primeiroNome);
+    const scriptAbertura = config.script_abertura.replace(/{NOME}/g, primeiroNome);
+    
+    // Preparar dados para salvar
     const dadosParaSalvar = {
       nome: lead.NOME,
       email: lead.EMAIL,
       respostas: respostas,
-      elemento_principal: diagnostico.elemento_principal,
-      codigo_perfil: diagnostico.codigo_perfil,
-      nome_perfil: diagnostico.nome_perfil,
-      arquetipo: diagnostico.arquetipo,
-      emoji: diagnostico.emoji,
-      quadrante: diagnostico.quadrante,
-      diagnostico_resumo: diagnostico.diagnostico_resumo,
-      diagnostico_completo: diagnostico.diagnostico_completo,
-      script_abertura: diagnostico.script_abertura,
-      lead_score: diagnostico.lead_score,
-      prioridade: diagnostico.prioridade,
-      is_hot_lead_vip: diagnostico.is_hot_lead_vip
+      elemento_principal: elementoPrincipal,
+      codigo_perfil: `${elementoPrincipal.substring(0, 2)}-${intensidade}`,
+      nome_perfil: config.nome,
+      arquetipo: config.arquetipo,
+      emoji: config.emoji,
+      quadrante: quadrante,
+      diagnostico_resumo: diagnosticoCompleto.substring(0, 200) + '...',
+      diagnostico_completo: diagnosticoCompleto,
+      script_abertura: scriptAbertura,
+      lead_score: leadScore,
+      prioridade: prioridade,
+      is_hot_lead_vip: isHotLeadVIP
     };
-
-    if (leadExistente) {
-      // Atualizar
-      const { data, error } = await supabase
+    
+    // Verificar se lead já existe (usando telefone normalizado)
+    const { data: existe } = await supabase
+      .from('quiz_leads')
+      .select('id')
+      .eq('celular', celularNormalizado)
+      .maybeSingle();
+    
+    if (existe) {
+      // Atualizar lead existente
+      await supabase
         .from('quiz_leads')
-        .update({
-          ...dadosParaSalvar,
-          updated_at: new Date().toISOString()
+        .update({ 
+          ...dadosParaSalvar, 
+          updated_at: new Date().toISOString() 
         })
-        .eq('celular', lead.CELULAR)
-        .select();
-
-      if (error) throw error;
-      resultado = data;
-      console.log('📝 Lead atualizado:', resultado[0].id);
+        .eq('celular', celularNormalizado);
+        
+      console.log('✅ Lead ATUALIZADO\n');
+      
     } else {
-      // Inserir novo
-      const { data, error } = await supabase
+      // Inserir novo lead
+      await supabase
         .from('quiz_leads')
-        .insert([{
+        .insert({
           ...dadosParaSalvar,
-          celular: lead.CELULAR,
+          celular: celularNormalizado,
           whatsapp_status: 'AGUARDANDO_CONTATO'
-        }])
-        .select();
-
-      if (error) throw error;
-      resultado = data;
-      console.log('✅ Lead inserido:', resultado[0].id);
+        });
+        
+      console.log('✅ Lead INSERIDO\n');
     }
-
-    if (diagnostico.is_hot_lead_vip) {
-      console.log('🔥 HOT LEAD VIP detectado!');
-    }
-
-    return res.status(200).json({
+    
+    // Resposta de sucesso
+    return res.json({ 
       success: true,
-      message: 'Quiz finalizado com sucesso!',
-      lead_id: resultado[0].id,
-      diagnostico: {
-        elemento: diagnostico.elemento_principal,
-        perfil: diagnostico.nome_perfil,
-        codigo: diagnostico.codigo_perfil,
-        emoji: diagnostico.emoji,
-        lead_score: diagnostico.lead_score,
-        is_vip: diagnostico.is_hot_lead_vip
+      message: 'Quiz salvo com sucesso!',
+      diagnostico: { 
+        elemento: elementoPrincipal,
+        perfil: config.nome,
+        codigo: `${elementoPrincipal.substring(0, 2)}-${intensidade}`,
+        emoji: config.emoji,
+        leadScore: leadScore,
+        quadrante: quadrante,
+        is_vip: isHotLeadVIP
       }
     });
 
   } catch (error) {
-    console.error('❌ Erro:', error.message);
+    console.error('❌ ERRO:', error.message);
     console.error('Stack:', error.stack);
+    
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: 'Erro ao processar quiz',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
