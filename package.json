@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
-    "vercel-build": "react-scripts build",
+    "build": "react-scripts build && node -e \"require('fs').copyFileSync('public/dashboard.html', 'build/dashboard.html')\"",
+    "vercel-build": "react-scripts build && node -e \"require('fs').copyFileSync('public/dashboard.html', 'build/dashboard.html')\"",
     "dev:legacy": "npm run api & npm start",
     "api": "node server.js",
     "api:test": "cross-env NODE_ENV=development node server.js",
