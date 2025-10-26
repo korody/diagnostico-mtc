@@ -3,6 +3,7 @@ const cors = require('cors');
 const { normalizePhone, isValidBrazilianPhone } = require('./lib/phone');
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
+const gerarLinkCompartilhamento = require('./api/gerar-link-compartilhamento');
 
 // ========================================
 // CONFIGURAÇÃO DE AMBIENTE
@@ -22,6 +23,15 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL || 'https://unnichat.com.br/api';
 const UNNICHAT_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
+
+// Compatibilidade: handlers serverless usam REACT_APP_SUPABASE_*.
+// Se não estiverem definidos, herdar os valores de SUPABASE_*
+if (!process.env.REACT_APP_SUPABASE_URL && supabaseUrl) {
+  process.env.REACT_APP_SUPABASE_URL = supabaseUrl;
+}
+if (!process.env.REACT_APP_SUPABASE_KEY && supabaseKey) {
+  process.env.REACT_APP_SUPABASE_KEY = supabaseKey;
+}
 
 // Validar variáveis críticas
 if (!supabaseUrl || !supabaseKey) {
@@ -855,7 +865,13 @@ app.listen(PORT, () => {
   console.log('   ');
   console.log('   Rotas disponíveis:');
   console.log('   • POST /api/submit (Quiz)');
+  console.log('   • POST /api/gerar-link-compartilhamento (Link de compartilhamento)');
   console.log('   • POST /webhook/unnichat/ver-resultados (Webhook)');
   console.log('   • POST /api/send-bulk-referral (Envio em massa)');
   console.log('=========================================\n');
 });
+
+// ===== ROTA (SERVER-LOCAL): GERAR LINK COMPARTILHAMENTO =====
+// Reusa o handler serverless localmente para facilitar testes (mesma assinatura)
+app.options('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartilhamento(req, res));
+app.post('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartilhamento(req, res));

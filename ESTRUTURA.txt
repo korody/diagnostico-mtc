@@ -25,10 +25,10 @@
 ├── 📄 .env.test
 ├── 📄 .gitignore
 ├── 📄 .vercelignore
-├── 📄 enviar-campanhas-lotes.js
+├── 📄 gatilho-automação-diagnostico-lotes.js
 ├── 📄 enviar-template-com-gatilho.js
 ├── 📄 ESTRUTURA.txt
-├── 📄 gatilho-automacao-por-telefone.js
+├── 📄 gatilho-automação-diagnostico-individual.js
 ├── 📄 monitorar-envio.js
 ├── 📄 mostrar-estrutura.js
 ├── 📄 package.json
