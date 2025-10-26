@@ -1,12 +1,35 @@
-// api/lead/buscar.js
-const { createClient } = require('@supabase/supabase-js');
+// ========================================
+// ENDPOINT: GET /api/lead/buscar?phone=XXX
+// Busca lead por telefone
+// ========================================
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+let supabase, normalizePhone;
+
+try {
+  supabase = require('../../lib/supabase');
+  ({ normalizePhone } = require('../../lib/phone'));
+} catch (error) {
+  console.error('❌ Erro ao carregar módulos:', error.message);
+}
 
 module.exports = async (req, res) => {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // Verificar se módulos carregaram
+  if (!supabase) {
+    return res.status(500).json({
+      success: false,
+      error: 'Erro de configuração: Supabase não inicializado'
+    });
+  }
+
   const phone = req.query.phone || req.body?.phone;
   
   if (!phone) {
@@ -17,8 +40,7 @@ module.exports = async (req, res) => {
   }
   
   try {
-    // Normalizar telefone (remover +55 e caracteres especiais)
-    const phoneClean = phone.replace(/\D/g, '').replace(/^55/, '');
+    const phoneClean = normalizePhone(phone);
     
     console.log('🔍 Buscando lead com telefone:', phoneClean);
     

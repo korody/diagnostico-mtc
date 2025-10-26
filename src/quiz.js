@@ -324,6 +324,8 @@ const QuizMTC = () => {
       
       console.log('📦 Payload preparado:', JSON.stringify(payload, null, 2));
       
+      // Desenvolvimento local: Express na porta 3001
+      // Produção: Serverless Vercel (URL relativa)
       const apiUrl = window.location.hostname === 'localhost' 
         ? 'http://localhost:3001/api/submit'
         : '/api/submit';
@@ -553,7 +555,11 @@ if (step === 'quiz') {
           )}
 
           {/* Opções de Resposta */}
-          <div className="space-y-3">
+          <div className={
+            pergunta.id === 'P10' || pergunta.id === 'P11' 
+              ? 'grid grid-cols-2 gap-3' 
+              : 'space-y-3'
+          }>
             {pergunta.opcoes.map((opcao) => {
               const selecionada = pergunta.tipo === 'single'
                 ? respostaAtual === opcao.valor

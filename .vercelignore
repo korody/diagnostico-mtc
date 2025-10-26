@@ -1,5 +1,11 @@
+# Arquivos auxiliares (NÃO são serverless functions)
+api/utils/*.js
+api/utils/**/*.js
+
+# Node modules e ambiente
 node_modules
 server-local.js
+server.js
 .env.local
 .env
 .DS_Store

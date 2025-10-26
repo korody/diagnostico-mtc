@@ -2,7 +2,7 @@
 // Busca lead no Supabase por telefone e envia template via gatilho
 
 const { createClient } = require('@supabase/supabase-js');
-const { normalizePhone } = require('./api/utils/phone');
+const { normalizePhone } = require('./lib/phone');
 
 // const isProduction = process.env.NODE_ENV === 'production';
 // const envFile = isProduction ? '.env.production' : '.env.staging';

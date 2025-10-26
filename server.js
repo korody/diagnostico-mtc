@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { normalizePhone, isValidBrazilianPhone } = require('./api/utils/phone');
+const { normalizePhone, isValidBrazilianPhone } = require('./lib/phone');
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 
@@ -244,6 +244,22 @@ app.post('/api/whatsapp/send', async (req, res) => {
     const phoneForUnnichat = `55${phoneNormalized}`;
     
     console.log('📱 Enviando para:', phoneForUnnichat);
+    console.log('📝 Mensagem:', messageToSend.substring(0, 100) + '...');
+    
+    // Modo simulação para testes (sem enviar de verdade)
+    if (process.env.WHATSAPP_SIMULATION_MODE === 'true') {
+      console.log('🧪 MODO SIMULAÇÃO ATIVADO - Mensagem NÃO será enviada de verdade');
+      console.log('✅ Simulação concluída com sucesso!\n');
+      
+      return res.json({
+        success: true,
+        phone: phoneNormalized,
+        message: 'Mensagem simulada com sucesso (modo teste)',
+        simulation: true
+      });
+    }
+    
+    console.log('🔗 API URL:', `${UNNICHAT_API_URL}/meta/messages`);
     
     const msgResponse = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
       method: 'POST',
@@ -257,13 +273,18 @@ app.post('/api/whatsapp/send', async (req, res) => {
       })
     });
     
+    console.log('📊 Status HTTP:', msgResponse.status, msgResponse.statusText);
+    
     const msgResult = await msgResponse.json();
     
+    console.log('📦 Resposta Unnichat:', JSON.stringify(msgResult, null, 2));
+    
     if (msgResult.code && msgResult.code !== '200') {
+      console.error('❌ Erro Unnichat:', msgResult);
       throw new Error(msgResult.message || 'Erro ao enviar');
     }
     
-    console.log('✅ Mensagem enviada!\n');
+    console.log('✅ Mensagem enviada com sucesso!\n');
     
     res.json({
       success: true,
@@ -313,7 +334,7 @@ app.post('/api/submit', async (req, res) => {
     
     console.log('🎯 Elemento:', elementoPrincipal, '| Score:', leadScore, '| VIP:', isHotLeadVIP ? 'SIM 🔥' : 'NÃO');
     
-    const config = diagnosticosData[elementoPrincipal] || diagnosticosData['BAÇO'];
+    const config = diagnosticos[elementoPrincipal] || diagnosticos['BAÇO'];
     const primeiroNome = lead.NOME.split(' ')[0];
     
     const diagnosticoCompleto = config.diagnostico.replace(/{NOME}/g, primeiroNome);

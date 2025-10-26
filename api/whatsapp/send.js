@@ -1,12 +1,22 @@
-// api/whatsapp/send.js
-const { createClient } = require('@supabase/supabase-js');
+// ========================================
+// ENDPOINT: POST /api/whatsapp/send
+// Envio manual de WhatsApp
+// ========================================
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const supabase = require('../../lib/supabase');
+const { normalizePhone } = require('../../lib/phone');
+const { sendMessage } = require('../../lib/unnichat');
 
 module.exports = async (req, res) => {
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ 
       success: false, 
@@ -15,6 +25,23 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Verificar configuração ANTES de tentar enviar
+    if (!process.env.UNNICHAT_ACCESS_TOKEN) {
+      console.log('⚠️  UNNICHAT_ACCESS_TOKEN não configurado');
+      return res.status(500).json({
+        success: false,
+        error: 'WhatsApp não configurado (UNNICHAT_ACCESS_TOKEN ausente)'
+      });
+    }
+
+    if (!process.env.UNNICHAT_API_URL) {
+      console.log('⚠️  UNNICHAT_API_URL não configurado');
+      return res.status(500).json({
+        success: false,
+        error: 'WhatsApp não configurado (UNNICHAT_API_URL ausente)'
+      });
+    }
+
     const { phone, customMessage, leadId } = req.body;
     
     console.log('📤 Simulando envio WhatsApp (staging)');
@@ -50,24 +77,21 @@ module.exports = async (req, res) => {
       console.log('✅ Lead encontrado:', lead.nome);
     }
 
-    // Normalizar telefone
-    const phoneClean = phoneToUse.replace(/\D/g, '').replace(/^55/, '');
+    // Normalizar telefone e preparar para Unnichat
+    const phoneNormalized = normalizePhone(phoneToUse);
+    const phoneForUnnichat = `55${phoneNormalized}`;
     
-    // ✅ STAGING: Apenas simular (não enviar de verdade)
-    console.log('🧪 STAGING MODE: Simulando envio (não envia de verdade)');
-    console.log('📱 Para:', phoneClean);
+    console.log('📱 Enviando para:', phoneForUnnichat);
     
-    // Simular delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Enviar via Unnichat
+    await sendMessage(phoneForUnnichat, customMessage);
     
-    console.log('✅ Simulação concluída!\n');
+    console.log('✅ Mensagem enviada com sucesso!\n');
     
     return res.status(200).json({
       success: true,
-      message: '✅ Mensagem simulada com sucesso (staging)',
-      phone: phoneClean,
-      environment: 'staging',
-      note: 'Em staging, mensagens não são enviadas de verdade'
+      message: 'Mensagem enviada com sucesso',
+      phone: phoneNormalized
     });
     
   } catch (error) {
