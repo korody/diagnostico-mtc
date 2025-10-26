@@ -1,8 +1,7 @@
 name: Deploy to Vercel (Prod) and Smoke Test
 
 on:
-  push:
-    branches: [ main ]
+  # Evitar deploy duplicado, rodar manualmente quando quiser smoke + deploy
   workflow_dispatch:
 
 jobs:

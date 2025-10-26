@@ -4,6 +4,16 @@
 // ========================================
 
 module.exports = async (req, res) => {
+  // Proteção simples por secret em produção
+  const adminSecret = process.env.ADMIN_SECRET;
+  const provided = req.headers['x-admin-secret'];
+  if (adminSecret && process.env.VERCEL_ENV === 'production') {
+    if (!provided || provided !== adminSecret) {
+      // Não revelar existência do endpoint
+      return res.status(404).json({ ok: false, error: 'Not Found' });
+    }
+  }
+
   const out = { ok: true, checks: {} };
   try {
     const supabase = require('../lib/supabase');

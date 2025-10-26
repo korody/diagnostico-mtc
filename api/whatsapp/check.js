@@ -7,6 +7,15 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Content-Type', 'application/json');
 
+  // Proteção simples em produção via ADMIN_SECRET
+  const adminSecret = process.env.ADMIN_SECRET;
+  const provided = req.headers['x-admin-secret'];
+  if (adminSecret && process.env.VERCEL_ENV === 'production') {
+    if (!provided || provided !== adminSecret) {
+      return res.status(404).json({ ok: false, error: 'Not Found' });
+    }
+  }
+
   const config = {
     UNNICHAT_API_URL: {
       presente: !!process.env.UNNICHAT_API_URL,
