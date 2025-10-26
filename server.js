@@ -5,6 +5,10 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const gerarLinkCompartilhamento = require('./api/gerar-link-compartilhamento');
 
+// Importar handlers do dashboard
+const dashboardMetrics = require('./api/dashboard/metrics');
+const dashboardAlerts = require('./api/dashboard/alerts');
+
 // ========================================
 // CONFIGURAÇÃO DE AMBIENTE
 // ========================================
@@ -875,3 +879,9 @@ app.listen(PORT, () => {
 // Reusa o handler serverless localmente para facilitar testes (mesma assinatura)
 app.options('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartilhamento(req, res));
 app.post('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartilhamento(req, res));
+
+// ===== ROTAS DO DASHBOARD =====
+app.get('/api/dashboard/metrics', (req, res) => dashboardMetrics(req, res));
+app.post('/api/dashboard/metrics', (req, res) => dashboardMetrics(req, res));
+app.get('/api/dashboard/alerts', (req, res) => dashboardAlerts(req, res));
+app.post('/api/dashboard/alerts', (req, res) => dashboardAlerts(req, res));

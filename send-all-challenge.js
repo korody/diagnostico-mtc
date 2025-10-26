@@ -33,19 +33,19 @@ if (!supabaseUrl || !supabaseKey || !UNNICHAT_TOKEN) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // ========================================
-// BUSCAR LEADS QUE JÁ RECEBERAM DIAGNÓSTICO
+// BUSCAR LEADS QUE JÁ RECEBERAM DIAGNÓSTICO MAS NÃO O DESAFIO
 // ========================================
 async function buscarLeadsComDiagnostico() {
-  console.log('🔍 Buscando leads que JÁ receberam diagnóstico...\n');
+  console.log('🔍 Buscando leads que receberam diagnóstico MAS ainda não receberam desafio...\n');
   
   // Contar quantos já receberam diagnóstico
   const { count } = await supabase
     .from('quiz_leads')
     .select('*', { count: 'exact', head: true })
     .not('celular', 'is', null)
-    .eq('whatsapp_status', 'resultados_enviados') // APENAS OS MAIS ENGAJADOS!
+    .eq('whatsapp_status', 'resultados_enviados') // APENAS QUEM RECEBEU RESULTADOS E NÃO TEM DESAFIO
   
-  console.log(`📊 Total que recebeu diagnóstico: ${count}`);
+  console.log(`📊 Total com diagnóstico e sem desafio: ${count}`);
   
   // Buscar todos em páginas de 1000
   let allLeads = [];
@@ -59,8 +59,8 @@ async function buscarLeadsComDiagnostico() {
       .from('quiz_leads')
       .select('id, nome, celular, email, lead_score, elemento_principal, created_at, whatsapp_status, whatsapp_sent_at, whatsapp_attempts')
       .not('celular', 'is', null)
-      .eq('whatsapp_status', 'resultados_enviados') // APENAS OS MAIS ENGAJADOS!
-      .order('lead_score', { ascending: true }) // Menor score primeiro
+      .eq('whatsapp_status', 'resultados_enviados') // APENAS QUEM TEM RESULTADOS E NÃO TEM DESAFIO
+      .order('lead_score', { ascending: false }) // Maior score primeiro (mais engajados)
       .range(offset, offset + PAGE_SIZE - 1);
     
     if (error) {
@@ -84,7 +84,7 @@ async function enviarDesafioVitalidade() {
   console.log('║  🚀 DESAFIO DA VITALIDADE - ENVIO EM MASSA       ║');
   console.log('╚═══════════════════════════════════════════════════╝');
   console.log('🔧 Ambiente:', isProduction ? '🔴 PRODUÇÃO' : '🟡 DESENVOLVIMENTO');
-  console.log('🎯 Público: Quem recebeu diagnóstico (template/resultados)');
+  console.log('🎯 Público: Quem recebeu diagnóstico MAS não recebeu desafio');
   console.log('📦 Tamanho do lote:', BATCH_SIZE, 'leads');
   
   if (TEST_LIMIT) {
@@ -136,7 +136,7 @@ async function enviarDesafioVitalidade() {
   console.log('📨 Total de mensagens:', leadsToSend.length * 2, '(2 por lead)');
   console.log('📦 Total de lotes:', totalBatches);
   console.log('⏱️  Tempo estimado:', estimatedMinutes, 'minutos (~' + Math.round(estimatedMinutes / 60) + 'h)');
-  console.log('🎯 Público: Com diagnóstico enviado');
+  console.log('🎯 Público: Tem diagnóstico, sem desafio');
   
   if (TEST_LIMIT) {
     console.log('🔒 Modo: TESTE');
