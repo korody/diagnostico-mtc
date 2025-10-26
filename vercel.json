@@ -3,14 +3,22 @@
   "outputDirectory": "build",
   "framework": null,
   "devCommand": "react-scripts start",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/webhook/unnichat/ver-resultados",
-      "destination": "/api/webhook/unnichat/ver-resultados"
+      "src": "/dashboard.html",
+      "dest": "/dashboard.html"
     },
     {
-      "source": "/dashboard",
-      "destination": "/dashboard.html"
+      "src": "/dashboard",
+      "dest": "/dashboard.html"
+    },
+    {
+      "src": "/webhook/unnichat/ver-resultados",
+      "dest": "/api/webhook/unnichat/ver-resultados"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ],
   "headers": [
