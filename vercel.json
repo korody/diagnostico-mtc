@@ -1,17 +1,14 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "build",
   "framework": null,
   "devCommand": "react-scripts start",
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node@3" },
+    { "src": "build/**/*", "use": "@vercel/static" }
+  ],
   "rewrites": [
-    {
-      "source": "/dashboard",
-      "destination": "/api/dashboard"
-    },
-    {
-      "source": "/webhook/unnichat/ver-resultados",
-      "destination": "/api/webhook/unnichat/ver-resultados"
-    }
+    { "source": "/dashboard", "destination": "/api/dashboard" },
+    { "source": "/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/ver-resultados" }
   ],
   "headers": [
     {
@@ -24,9 +21,6 @@
     }
   ],
   "crons": [
-    {
-      "path": "/api/cron/daily-summary",
-      "schedule": "0 21 * * *"
-    }
+    { "path": "/api/cron/daily-summary", "schedule": "0 21 * * *" }
   ]
 }
