@@ -78,13 +78,13 @@ async function calcularDistribuicaoStatus() {
 
 /**
  * Calcula distribuição por elemento MTC
+ */
 async function calcularDistribuicaoElemento() {
   const { data, error } = await supabase
     .from('quiz_leads')
     .select('elemento_principal')
     .limit(10000);
 
-  if (error) throw error;
   if (error) throw error;
 
   const distribuicao = {};
