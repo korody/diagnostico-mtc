@@ -1,11 +1,4 @@
 {
-  "buildCommand": "npm run build",
-  "framework": null,
-  "devCommand": "react-scripts start",
-  "builds": [
-    { "src": "api/**/*.js", "use": "@vercel/node@3" },
-    { "src": "build/**/*", "use": "@vercel/static" }
-  ],
   "rewrites": [
     { "source": "/dashboard", "destination": "/api/dashboard-page" },
     { "source": "/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/ver-resultados" }
