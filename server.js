@@ -8,6 +8,7 @@ const gerarLinkCompartilhamento = require('./api/gerar-link-compartilhamento');
 // Importar handlers do dashboard
 const dashboardMetrics = require('./api/dashboard/metrics');
 const dashboardAlerts = require('./api/dashboard/alerts');
+const dashboardPage = require('./api/dashboard');
 
 // ========================================
 // CONFIGURAÇÃO DE AMBIENTE
@@ -881,6 +882,8 @@ app.options('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartil
 app.post('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartilhamento(req, res));
 
 // ===== ROTAS DO DASHBOARD =====
+app.get('/dashboard', (req, res) => dashboardPage(req, res));
+app.get('/api/dashboard', (req, res) => dashboardPage(req, res));
 app.get('/api/dashboard/metrics', (req, res) => dashboardMetrics(req, res));
 app.post('/api/dashboard/metrics', (req, res) => dashboardMetrics(req, res));
 app.get('/api/dashboard/alerts', (req, res) => dashboardAlerts(req, res));
