@@ -7,7 +7,7 @@
     { "src": "build/**/*", "use": "@vercel/static" }
   ],
   "rewrites": [
-    { "source": "/dashboard", "destination": "/api/dashboard" },
+    { "source": "/dashboard", "destination": "/api/dashboard-page" },
     { "source": "/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/ver-resultados" }
   ],
   "headers": [
