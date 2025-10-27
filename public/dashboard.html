@@ -447,7 +447,7 @@
                         
                         <div className="dashboard-card">
                             <p className="text-gray-600 text-sm font-medium">Leads VIP</p>
-                            <p className="metric-value">{metricas.lead_score.vips.toLocaleString('pt-BR')}</p>
+                            <p className="metric-value">{metricas.lead_score.vips}</p>
                             <p className="text-sm text-gray-500 mt-2">
                                 Score médio: {metricas.lead_score.media}
                             </p>
@@ -465,7 +465,7 @@
                             <p className="text-gray-600 text-sm font-medium">Conversão Quiz→Diagnóstico</p>
                             <p className="metric-value">{metricas.conversoes_principais.conversao_cadastro_diagnostico}%</p>
                             <p className="text-sm text-gray-500 mt-2">
-                                {metricas.conversoes_principais.finalizaram_diagnostico.toLocaleString('pt-BR')} completaram
+                                {metricas.conversoes_principais.finalizaram_diagnostico} completaram
                             </p>
                         </div>
                     </div>
