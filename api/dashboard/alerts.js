@@ -26,7 +26,8 @@ async function verificarLeadsVIP() {
     .select('id, nome, email, celular, lead_score, created_at')
     .eq('is_hot_lead_vip', true)
     .gte('created_at', ontem)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(100);
 
   if (error) throw error;
 
@@ -42,7 +43,8 @@ async function verificarTaxaFalha() {
   const { data: logs, error } = await supabase
     .from('whatsapp_logs')
     .select('status')
-    .gte('created_at', ultimos_30_dias);
+    .gte('created_at', ultimos_30_dias)
+    .limit(10000);
 
   if (error) throw error;
 
@@ -70,7 +72,8 @@ async function gerarResumoDiario() {
   const { data: leads_hoje, error: error1 } = await supabase
     .from('quiz_leads')
     .select('*')
-    .gte('created_at', hoje_iso);
+    .gte('created_at', hoje_iso)
+    .limit(1000);
 
   if (error1) throw error1;
 
@@ -78,7 +81,8 @@ async function gerarResumoDiario() {
   const { data: envios_hoje, error: error2 } = await supabase
     .from('whatsapp_logs')
     .select('status')
-    .gte('created_at', hoje_iso);
+    .gte('created_at', hoje_iso)
+    .limit(1000);
 
   if (error2) throw error2;
 

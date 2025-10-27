@@ -32,9 +32,18 @@ async function calcularTotaisPorPeriodo() {
   const semana = new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
   const mes = new Date(agora.getTime() - 30 * 24 * 60 * 60 * 1000);
 
+  // Buscar count total primeiro
+  const { count: totalCount, error: countError } = await supabase
+    .from('quiz_leads')
+    .select('*', { count: 'exact', head: true });
+
+  if (countError) throw countError;
+
+  // Buscar todos os registros com paginação se necessário
   const { data: todos, error } = await supabase
     .from('quiz_leads')
-    .select('created_at');
+    .select('created_at')
+    .limit(10000); // Aumentar limite para 10k
 
   if (error) throw error;
 
@@ -43,7 +52,7 @@ async function calcularTotaisPorPeriodo() {
     tres_dias: todos.filter(l => new Date(l.created_at) >= tres_dias).length,
     semana: todos.filter(l => new Date(l.created_at) >= semana).length,
     mes: todos.filter(l => new Date(l.created_at) >= mes).length,
-    total: todos.length
+    total: totalCount || todos.length
   };
 }
 
@@ -53,7 +62,8 @@ async function calcularTotaisPorPeriodo() {
 async function calcularDistribuicaoStatus() {
   const { data, error } = await supabase
     .from('quiz_leads')
-    .select('whatsapp_status');
+    .select('whatsapp_status')
+    .limit(10000);
 
   if (error) throw error;
 
@@ -68,12 +78,13 @@ async function calcularDistribuicaoStatus() {
 
 /**
  * Calcula distribuição por elemento MTC
- */
 async function calcularDistribuicaoElemento() {
   const { data, error } = await supabase
     .from('quiz_leads')
-    .select('elemento_principal');
+    .select('elemento_principal')
+    .limit(10000);
 
+  if (error) throw error;
   if (error) throw error;
 
   const distribuicao = {};
@@ -105,7 +116,8 @@ async function calcularDistribuicaoElemento() {
 async function calcularLeadScore() {
   const { data, error } = await supabase
     .from('quiz_leads')
-    .select('lead_score, is_hot_lead_vip');
+    .select('lead_score, is_hot_lead_vip')
+    .limit(10000);
 
   if (error) throw error;
 
@@ -140,7 +152,8 @@ async function calcularLeadScore() {
 async function calcularTaxaSucessoEnvios() {
   const { data: logs, error } = await supabase
     .from('whatsapp_logs')
-    .select('status, created_at');
+    .select('status, created_at')
+    .limit(10000);
 
   if (error) throw error;
 
@@ -166,7 +179,8 @@ async function calcularTaxaSucessoEnvios() {
 async function calcularDistribuicaoPrioridade() {
   const { data, error } = await supabase
     .from('quiz_leads')
-    .select('prioridade');
+    .select('prioridade')
+    .limit(10000);
 
   if (error) throw error;
 
@@ -223,7 +237,8 @@ async function calcularEvolucaoTemporal() {
 async function calcularFunil() {
   const { data: todos, error } = await supabase
     .from('quiz_leads')
-    .select('whatsapp_status, whatsapp_sent_at');
+    .select('whatsapp_status, whatsapp_sent_at')
+    .limit(10000);
 
   if (error) throw error;
 
@@ -254,7 +269,8 @@ async function calcularFunil() {
 async function calcularConversoesGerais() {
   const { data: todos, error } = await supabase
     .from('quiz_leads')
-    .select('whatsapp_status, created_at');
+    .select('whatsapp_status, created_at')
+    .limit(10000);
 
   if (error) throw error;
 
