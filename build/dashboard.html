@@ -84,8 +84,8 @@
 
             const handleSubmit = (e) => {
                 e.preventDefault();
-                // Senha única para toda equipe (definida no .env como DASHBOARD_PASSWORD)
-                const senhaCorreta = 'persona2025'; // TODO: Mover para .env
+                // Senha única para toda equipe (injetada pelo backend em window.__DASHBOARD_PASSWORD)
+                const senhaCorreta = (window && window.__DASHBOARD_PASSWORD) || 'persona2025';
                 
                 if (senha === senhaCorreta) {
                     localStorage.setItem('dashboard_auth', 'true');
@@ -156,9 +156,13 @@
             const carregarDados = async () => {
                 setLoading(true);
                 try {
+                    const headers = {};
+                    if (window && window.__DASHBOARD_API_SECRET) {
+                        headers['Authorization'] = `Bearer ${window.__DASHBOARD_API_SECRET}`;
+                    }
                     const [metricasRes, alertasRes] = await Promise.all([
-                        fetch('/api/dashboard/metrics'),
-                        fetch('/api/dashboard/alerts')
+                        fetch('/api/dashboard/metrics', { headers }),
+                        fetch('/api/dashboard/alerts', { headers })
                     ]);
                     
                     const metricasData = await metricasRes.json();

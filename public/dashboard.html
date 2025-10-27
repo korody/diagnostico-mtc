@@ -161,8 +161,8 @@
                         headers['Authorization'] = `Bearer ${window.__DASHBOARD_API_SECRET}`;
                     }
                     const [metricasRes, alertasRes] = await Promise.all([
-                        fetch('/api/dash/metrics', { headers }),
-                        fetch('/api/dash/alerts', { headers })
+                        fetch('/api/dashboard/metrics', { headers }),
+                        fetch('/api/dashboard/alerts', { headers })
                     ]);
                     
                     const metricasData = await metricasRes.json();
