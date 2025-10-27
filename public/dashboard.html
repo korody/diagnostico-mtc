@@ -157,12 +157,19 @@
                 setLoading(true);
                 try {
                     const headers = {};
-                    if (window && window.__DASHBOARD_API_SECRET) {
+                    // Injetar Authorization se DASHBOARD_API_SECRET estiver definido
+                    if (window && window.__DASHBOARD_API_SECRET && window.__DASHBOARD_API_SECRET.trim()) {
                         headers['Authorization'] = `Bearer ${window.__DASHBOARD_API_SECRET}`;
                     }
                     const [metricasRes, alertasRes] = await Promise.all([
-                        fetch('/api/dashboard/metrics', { headers }),
-                        fetch('/api/dashboard/alerts', { headers })
+                        fetch('/api/dashboard?action=metrics', { 
+                            method: 'GET',
+                            headers 
+                        }),
+                        fetch('/api/dashboard?action=alerts', { 
+                            method: 'GET',
+                            headers 
+                        })
                     ]);
                     
                     const metricasData = await metricasRes.json();
@@ -170,10 +177,14 @@
                     
                     if (metricasData.success) {
                         setMetricas(metricasData.metricas);
+                    } else {
+                        console.error('Erro ao carregar métricas:', metricasData);
                     }
                     
                     if (alertasData.success) {
                         setAlertas(alertasData.alertas);
+                    } else {
+                        console.error('Erro ao carregar alertas:', alertasData);
                     }
                 } catch (error) {
                     console.error('Erro ao carregar dados:', error);
@@ -204,12 +215,16 @@
 
                 // Gráfico de Status WhatsApp (Pizza)
                 try {
-                    if (chartRefs.status.current) {
-                        const ctx = chartRefs.status.current.getContext('2d');
+                    const statusCanvas = chartRefs.status.current || document.getElementById('statusChart');
+                    if (!statusCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (statusCanvas) {
+                        const ctx = statusCanvas.getContext('2d');
                         const statusData = metricas.distribuicao_status_whatsapp || {};
                         const labels = Object.keys(statusData);
                         const data = Object.values(statusData);
-                        console.log('Status WhatsApp:', labels, data);
                         chartInstances.current.status = new Chart(ctx, {
                             type: 'doughnut',
                             data: {
@@ -230,16 +245,20 @@
                             }
                         });
                     }
-                } catch (e) { console.error('Erro gráfico status:', e); }
+                } catch (e) { console.error('❌ Erro gráfico status:', e); }
 
                 // Gráfico de Elementos MTC (Barras)
                 try {
-                    if (chartRefs.elemento.current) {
-                        const ctx = chartRefs.elemento.current.getContext('2d');
+                    const elementoCanvas = chartRefs.elemento.current || document.getElementById('elementoChart');
+                    if (!elementoCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (elementoCanvas) {
+                        const ctx = elementoCanvas.getContext('2d');
                         const elementoData = metricas.distribuicao_elemento_mtc || {};
                         const labels = Object.keys(elementoData);
                         const data = Object.values(elementoData).map(e => e.count);
-                        console.log('Elementos MTC:', labels, data);
                         chartInstances.current.elemento = new Chart(ctx, {
                             type: 'bar',
                             data: {
@@ -262,16 +281,20 @@
                             }
                         });
                     }
-                } catch (e) { console.error('Erro gráfico elemento:', e); }
+                } catch (e) { console.error('❌ Erro gráfico elemento:', e); }
 
                 // Gráfico de Evolução Temporal (Linha)
                 try {
-                    if (chartRefs.evolucao.current) {
-                        const ctx = chartRefs.evolucao.current.getContext('2d');
+                    const evolucaoCanvas = chartRefs.evolucao.current || document.getElementById('evolucaoChart');
+                    if (!evolucaoCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (evolucaoCanvas) {
+                        const ctx = evolucaoCanvas.getContext('2d');
                         const evolucaoData = Array.isArray(metricas.evolucao_temporal) ? metricas.evolucao_temporal : [];
                         const labels = evolucaoData.map(e => e.data.split('-').slice(1).join('/'));
                         const data = evolucaoData.map(e => e.leads);
-                        console.log('Evolução temporal:', labels, data);
                         chartInstances.current.evolucao = new Chart(ctx, {
                             type: 'line',
                             data: {
@@ -297,12 +320,17 @@
                             }
                         });
                     }
-                } catch (e) { console.error('Erro gráfico evolução:', e); }
+                } catch (e) { console.error('❌ Erro gráfico evolução:', e); }
 
                 // Gráfico de Funil (Barras Horizontais)
                 try {
-                    if (chartRefs.funil.current) {
-                        const ctx = chartRefs.funil.current.getContext('2d');
+                    const funilCanvas = chartRefs.funil.current || document.getElementById('funilChart');
+                    if (!funilCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (funilCanvas) {
+                        const ctx = funilCanvas.getContext('2d');
                         const funilData = metricas.funil || {};
                         const data = [
                             funilData.total_quiz_completado || 0,
@@ -310,7 +338,6 @@
                             funilData.diagnostico_enviado || 0,
                             funilData.desafio_enviado || 0
                         ];
-                        console.log('Funil:', data);
                         chartInstances.current.funil = new Chart(ctx, {
                             type: 'bar',
                             data: {
@@ -334,7 +361,7 @@
                             }
                         });
                     }
-                } catch (e) { console.error('Erro gráfico funil:', e); }
+                } catch (e) { console.error('❌ Erro gráfico funil:', e); }
             };
 
             // Exportar dados
@@ -500,28 +527,28 @@
                         <div className="dashboard-card">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Status WhatsApp</h3>
                             <div style={{ height: '300px' }}>
-                                <canvas ref={chartRefs.status}></canvas>
+                                <canvas id="statusChart" ref={chartRefs.status}></canvas>
                             </div>
                         </div>
                         
                         <div className="dashboard-card">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Elementos MTC</h3>
                             <div style={{ height: '300px' }}>
-                                <canvas ref={chartRefs.elemento}></canvas>
+                                <canvas id="elementoChart" ref={chartRefs.elemento}></canvas>
                             </div>
                         </div>
                         
                         <div className="dashboard-card lg:col-span-2">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Evolução Temporal (30 dias)</h3>
                             <div style={{ height: '300px' }}>
-                                <canvas ref={chartRefs.evolucao}></canvas>
+                                <canvas id="evolucaoChart" ref={chartRefs.evolucao}></canvas>
                             </div>
                         </div>
                         
                         <div className="dashboard-card lg:col-span-2">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Funil de Conversão</h3>
                             <div style={{ height: '250px' }}>
-                                <canvas ref={chartRefs.funil}></canvas>
+                                <canvas id="funilChart" ref={chartRefs.funil}></canvas>
                             </div>
                         </div>
                     </div>

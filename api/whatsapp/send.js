@@ -79,7 +79,8 @@ module.exports = async (req, res) => {
 
     // Normalizar telefone e preparar para Unnichat
     const phoneNormalized = normalizePhone(phoneToUse);
-    const phoneForUnnichat = `55${phoneNormalized}`;
+  const { formatPhoneForUnnichat } = require('../../lib/phone');
+  const phoneForUnnichat = formatPhoneForUnnichat(phoneNormalized);
     
     console.log('📱 Enviando para:', phoneForUnnichat);
     

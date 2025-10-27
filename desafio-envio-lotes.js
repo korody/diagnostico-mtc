@@ -181,7 +181,9 @@ async function enviarDesafioVitalidade() {
       console.log(`   📊 Score: ${lead.lead_score || 0} | Status: ${lead.whatsapp_status}`);
       
       try {
-        const phoneForUnnichat = `55${lead.celular}`;
+  const { normalizePhone, formatPhoneForUnnichat } = require('./lib/phone');
+  const normalizedDbPhone = normalizePhone(lead.celular);
+  const phoneForUnnichat = formatPhoneForUnnichat(normalizedDbPhone);
         const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${lead.celular}&utm_content=msg-inicial-desafio`;
         
         // COPY DO SERVER.JS

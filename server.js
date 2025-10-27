@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const { normalizePhone, isValidBrazilianPhone } = require('./lib/phone');
-const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 
 // Importar handlers do dashboard
@@ -29,15 +28,6 @@ const supabaseKey = process.env.SUPABASE_KEY;
 const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL || 'https://unnichat.com.br/api';
 const UNNICHAT_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
 
-// Compatibilidade: handlers serverless usam REACT_APP_SUPABASE_*.
-// Se não estiverem definidos, herdar os valores de SUPABASE_*
-if (!process.env.REACT_APP_SUPABASE_URL && supabaseUrl) {
-  process.env.REACT_APP_SUPABASE_URL = supabaseUrl;
-}
-if (!process.env.REACT_APP_SUPABASE_KEY && supabaseKey) {
-  process.env.REACT_APP_SUPABASE_KEY = supabaseKey;
-}
-
 // Validar variáveis críticas
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ ERRO: Variáveis SUPABASE_URL e SUPABASE_KEY não encontradas.');
@@ -53,11 +43,8 @@ if (!UNNICHAT_TOKEN) {
   console.error('⚠️  AVISO: UNNICHAT_ACCESS_TOKEN não configurado');
 }
 
-// Criar cliente Supabase apenas se credenciais existirem
-let supabase = null;
-if (supabaseUrl && supabaseKey) {
-  supabase = createClient(supabaseUrl, supabaseKey);
-}
+// Obter cliente Supabase centralizado
+const supabase = require('./lib/supabase');
 const path = require('path');
 const diagnosticos = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'api', 'diagnosticos.json'), 'utf-8')
@@ -583,7 +570,23 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
     console.log('   Email:', lead.email);
     console.log('   Elemento:', lead.elemento_principal);
 
-    const phoneForUnnichat = `55${lead.celular.replace(/\D/g, '')}`;
+    // Normalizar telefone salvo e formatar para Unnichat (evita 55 duplicado e espaços)
+    const normalizedDbPhone = normalizePhone(lead.celular);
+    const phoneForUnnichat = require('./lib/phone').formatPhoneForUnnichat(normalizedDbPhone);
+
+    // Se o valor no banco estiver divergente (ex.: com 55 ou espaços), atualizar para o normalizado
+    if (normalizedDbPhone && normalizedDbPhone !== lead.celular) {
+      try {
+        await supabase
+          .from('quiz_leads')
+          .update({ celular: normalizedDbPhone, updated_at: new Date().toISOString() })
+          .eq('id', lead.id);
+        console.log('🛠️ Telefone do lead normalizado no banco:', lead.celular, '→', normalizedDbPhone);
+        lead.celular = normalizedDbPhone;
+      } catch (e) {
+        console.log('⚠️ Não foi possível atualizar telefone normalizado no banco:', e.message);
+      }
+    }
 
     // Atualizar/criar contato
     try {
@@ -632,20 +635,42 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
 
     console.log('📨 Enviando diagnóstico...');
     
-    // Enviar diagnóstico
-    const msgResponse = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        phone: phoneForUnnichat,
-        messageText: mensagem
-      })
-    });
+    // Enviar diagnóstico com 1 retry em caso de "Contact not found"
+    async function sendOnce() {
+      const resp = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phone: phoneForUnnichat, messageText: mensagem })
+      });
+      return await resp.json();
+    }
 
-    const msgResult = await msgResponse.json();
+    let msgResult = await sendOnce();
+    if (msgResult && msgResult.message && /Contact not found/i.test(msgResult.message)) {
+      console.log('🔁 Retry após "Contact not found" (forçando atualização de contato)');
+      try {
+        await fetch(`${UNNICHAT_API_URL}/contact`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: lead.nome,
+            phone: phoneForUnnichat,
+            email: lead.email || `${lead.celular}@placeholder.com`,
+            tags: ['quiz_resultados_enviados','auto_retry']
+          })
+        });
+        await new Promise(r => setTimeout(r, 800));
+      } catch (e) {
+        console.log('⚠️ Falha ao atualizar contato no retry:', e.message);
+      }
+      msgResult = await sendOnce();
+    }
 
     if (msgResult.code && msgResult.code !== '200') {
       console.error('❌ Erro ao enviar:', msgResult);
@@ -874,10 +899,11 @@ app.post('/api/gerar-link-compartilhamento', (req, res) => require('./api/gerar-
 // ===== ROTAS DO DASHBOARD =====
 app.get('/dashboard', (req, res) => dashboardPage(req, res));
 app.get('/api/dashboard', (req, res) => dashboardPage(req, res));
-app.get('/api/dashboard/metrics', (req, res) => require('./api/dashboard/metrics')(req, res));
-app.post('/api/dashboard/metrics', (req, res) => require('./api/dashboard/metrics')(req, res));
-app.get('/api/dashboard/alerts', (req, res) => require('./api/dashboard/alerts')(req, res));
-app.post('/api/dashboard/alerts', (req, res) => require('./api/dashboard/alerts')(req, res));
+const unifiedDashboard = require('./api/dashboard');
+app.get('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; unifiedDashboard(req, res); });
+app.post('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; unifiedDashboard(req, res); });
+app.get('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; unifiedDashboard(req, res); });
+app.post('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; unifiedDashboard(req, res); });
 
 // INICIAR SERVIDOR
 // ========================================

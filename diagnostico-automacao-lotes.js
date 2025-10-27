@@ -1,4 +1,4 @@
-// gatilho-automação-diagnostico-lotes.js - COM PAGINAÇÃO COMPLETA
+// diagnostico-automacao-lotes.js - COM PAGINAÇÃO COMPLETA
 const { createClient } = require('@supabase/supabase-js');
 const { formatPhoneForUnnichat } = require('./lib/phone');
 
@@ -18,6 +18,10 @@ const GATILHO_URL = process.env.UNNICHAT_GATILHO_URL;
 const LOTE_SIZE = parseInt(process.env.LOTE_SIZE) || 10;
 const DELAY_ENTRE_ENVIOS = parseInt(process.env.DELAY_ENTRE_ENVIOS) || 4000;
 const DELAY_ENTRE_LOTES = parseInt(process.env.DELAY_ENTRE_LOTES) || 30000;
+// Alvo: 'sem_template' (padrão) ou 'sem_diagnostico'
+const TARGET_MODE = (process.env.TARGET_MODE || 'sem_template').toLowerCase();
+// Dry-run: se '1', não envia nem atualiza banco
+const DRY_RUN = process.env.DRY_RUN === '1';
 
 // 🔒 LIMITE PARA TESTE
 // Use a variável de ambiente LIMITE_TESTE para controlar a quantidade enviada.
@@ -88,6 +92,8 @@ async function enviarEmLotes() {
   console.log('⏱️  Delay entre envios:', DELAY_ENTRE_ENVIOS/1000 + 's');
   console.log('⏸️  Delay entre lotes:', DELAY_ENTRE_LOTES/1000 + 's');
   console.log('🔗 Gatilho:', GATILHO_URL.substring(0, 50) + '...');
+  console.log('🎯 Target mode:', TARGET_MODE);
+  if (DRY_RUN) console.log('🧪 DRY_RUN ativo: não envia nem atualiza banco');
   
   if (LIMITE_TESTE) {
     console.log('🔒 MODO TESTE: Limite de', LIMITE_TESTE, 'leads');
@@ -98,12 +104,22 @@ async function enviarEmLotes() {
   // BUSCAR TODOS OS LEADS (COM PAGINAÇÃO)
   const allLeads = await buscarTodosLeads();
   
-  // Filtrar apenas os que não receberam ainda
-  const leadsElegiveis = allLeads.filter(lead => 
-    !lead.whatsapp_status || 
-    lead.whatsapp_status === 'AGUARDANDO_CONTATO' ||
-    lead.whatsapp_status === 'failed'
-  );
+  // Filtrar conforme TARGET_MODE
+  let leadsElegiveis;
+  if (TARGET_MODE === 'sem_diagnostico') {
+    // Não receberam diagnóstico (nem desafio)
+    leadsElegiveis = allLeads.filter(l => 
+      l.whatsapp_status !== 'resultados_enviados' &&
+      l.whatsapp_status !== 'desafio_enviado'
+    );
+  } else {
+    // Padrão: ainda não receberam template
+    leadsElegiveis = allLeads.filter(l => 
+      !l.whatsapp_status || 
+      l.whatsapp_status === 'AGUARDANDO_CONTATO' ||
+      l.whatsapp_status === 'failed'
+    );
+  }
   
   console.log(`📋 Leads elegíveis (não enviados): ${leadsElegiveis.length}\n`);
   
@@ -200,69 +216,69 @@ async function enviarEmLotes() {
       
       try {
         const phoneForUnnichat = formatPhoneForUnnichat(lead.celular);
-        
-        const response = await fetch(GATILHO_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            name: lead.nome,
-            email: lead.email || `${lead.celular}@placeholder.com`,
-            phone: phoneForUnnichat
-          })
-        });
-        
-        let result;
-        try {
-          result = await response.json();
-        } catch (_) {
-          result = { raw: await response.text() };
-        }
-        
-        if (response.ok || result.success || result.response !== false) {
-          console.log(`   ✅ Template enviado!\n`);
+
+        if (DRY_RUN) {
+          console.log('   [DRY_RUN] PULAR envio para', phoneForUnnichat);
           totalEnviados++;
-          
-          // Atualizar status no Supabase
-          await supabase
-            .from('quiz_leads')
-            .update({
-              whatsapp_status: 'template_enviado',
-              whatsapp_sent_at: new Date().toISOString(),
-              whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
-            })
-            .eq('id', lead.id);
-          
-          // Registrar log
-          await supabase.from('whatsapp_logs').insert({
-            lead_id: lead.id,
-            phone: lead.celular,
-            status: 'template_enviado',
-            metadata: { gatilho_response: result },
-            sent_at: new Date().toISOString()
-          });
-            
         } else {
-          throw new Error(result.message || 'Erro desconhecido');
+          const response = await fetch(GATILHO_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: lead.nome,
+              email: lead.email || `${lead.celular}@placeholder.com`,
+              phone: phoneForUnnichat
+            })
+          });
+
+          let result;
+          try { result = await response.json(); } catch (_) { result = { raw: await response.text() }; }
+
+          if (response.ok || result.success || result.response !== false) {
+            console.log(`   ✅ Template enviado!\n`);
+            totalEnviados++;
+
+            // Atualizar status no Supabase
+            await supabase
+              .from('quiz_leads')
+              .update({
+                whatsapp_status: 'template_enviado',
+                whatsapp_sent_at: new Date().toISOString(),
+                whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
+              })
+              .eq('id', lead.id);
+
+            // Registrar log
+            await supabase.from('whatsapp_logs').insert({
+              lead_id: lead.id,
+              phone: lead.celular,
+              status: 'template_enviado',
+              metadata: { gatilho_response: result },
+              sent_at: new Date().toISOString()
+            });
+          } else {
+            throw new Error(result.message || 'Erro desconhecido');
+          }
         }
-        
+
       } catch (error) {
         console.log(`   ❌ Erro: ${error.message}`);
         if (error?.response) {
           console.log('   ↳ Detalhes:', JSON.stringify(error.response));
         }
         totalErros++;
-        
-        // Salvar erro no banco
-        await supabase
-          .from('quiz_leads')
-          .update({
-            whatsapp_status: 'failed',
-            whatsapp_error: error.message,
-            whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
-          })
-          .eq('id', lead.id);
+
+        if (!DRY_RUN) {
+          // Salvar erro no banco
+          await supabase
+            .from('quiz_leads')
+            .update({
+              whatsapp_status: 'failed',
+              whatsapp_error: error.message,
+              whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
+            })
+            .eq('id', lead.id);
+        }
       }
       
       // Aguardar antes do próximo envio (exceto último do lote)

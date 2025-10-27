@@ -55,9 +55,9 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('📥 Requisição recebida em /api/submit');
-    console.log('🔑 SUPABASE_URL:', process.env.REACT_APP_SUPABASE_URL ? '✅' : '❌');
-    console.log('🔑 SUPABASE_KEY:', process.env.REACT_APP_SUPABASE_KEY ? '✅' : '❌');
+  console.log('📥 Requisição recebida em /api/submit');
+  console.log('🔑 SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
+  console.log('🔑 SUPABASE_KEY:', process.env.SUPABASE_KEY ? '✅' : '❌');
     
     const { lead, respostas } = req.body;
 

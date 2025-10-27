@@ -1,4 +1,4 @@
-// gatilho-automação-diagnostico-individual.js
+// diagnostico-automacao-individual.js
 // Busca lead no Supabase por telefone e envia template via gatilho
 
 const { createClient } = require('@supabase/supabase-js');
@@ -186,7 +186,7 @@ async function main() {
         metadata: { 
           gatilho_response: result,
           manual_send: true,
-          script: 'gatilho-automação-diagnostico-individual.js'
+          script: 'diagnostico-automacao-individual.js'
         },
         sent_at: new Date().toISOString()
       });

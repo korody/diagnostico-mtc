@@ -3,27 +3,13 @@
 // URL: /api/webhook-ver-resultados
 // ========================================
 
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_KEY
-);
+const { normalizePhone, formatPhoneForUnnichat } = require('../../../lib/phone');
+const supabase = require('../../../lib/supabase');
 
 const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL || 'https://unnichat.com.br/api';
 const UNNICHAT_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
 
-/**
- * Normaliza telefone para busca
- */
-function normalizePhone(phone) {
-  if (!phone) return null;
-  let cleaned = phone.replace(/\D/g, '');
-  if (cleaned.startsWith('55')) {
-    cleaned = cleaned.substring(2);
-  }
-  return cleaned;
-}
+// Usa util compartilhado em lib/phone para garantir consistência entre API e serverless
 
 module.exports = async (req, res) => {
   // CORS
@@ -151,8 +137,24 @@ module.exports = async (req, res) => {
     console.log('   Telefone:', lead.celular);
     console.log('   Elemento:', lead.elemento_principal);
 
-    // Preparar telefone para Unnichat
-    const phoneForUnnichat = `55${lead.celular.replace(/\D/g, '')}`;
+    // Preparar telefone para Unnichat (normaliza + adiciona DDI 55 somente uma vez)
+    const normalizedDbPhone = normalizePhone(lead.celular);
+    const phoneForUnnichat = formatPhoneForUnnichat(normalizedDbPhone);
+
+    // Se detectar divergência (ex.: número salvo com 55 ou com espaços), corrigir no banco
+    if (normalizedDbPhone && normalizedDbPhone !== lead.celular) {
+      try {
+        await supabase
+          .from('quiz_leads')
+          .update({ celular: normalizedDbPhone, updated_at: new Date().toISOString() })
+          .eq('id', lead.id);
+        console.log('🛠️ Telefone do lead normalizado no banco:', lead.celular, '→', normalizedDbPhone);
+        // refletir em memória para logs consistentes
+        lead.celular = normalizedDbPhone;
+      } catch (e) {
+        console.log('⚠️ Não foi possível atualizar telefone normalizado no banco:', e.message);
+      }
+    }
 
     // Atualizar contato
     try {
@@ -195,26 +197,48 @@ Olá ${primeiroNome}! 👋
 
 ${diagnosticoFormatado}
 
-💬 Tem dúvidas sobre seu diagnóstico?
-Responda esta mensagem que o Mestre Ye te ajuda! 🙏
+Fez sentido esse Diagnóstico para você? 🙏
     `.trim();
 
     console.log('📨 Enviando diagnóstico...');
     
-    // Enviar diagnóstico
-    const msgResponse = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        phone: phoneForUnnichat,
-        messageText: mensagem
-      })
-    });
+    // Enviar diagnóstico (com 1 retry em caso de 'Contact not found')
+    async function sendOnce() {
+      const resp = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ phone: phoneForUnnichat, messageText: mensagem })
+      });
+      const json = await resp.json();
+      return json;
+    }
 
-    const msgResult = await msgResponse.json();
+    let msgResult = await sendOnce();
+    if (msgResult && msgResult.message && /Contact not found/i.test(msgResult.message)) {
+      console.log('🔁 Retry após "Contact not found" (forçando atualização de contato)');
+      try {
+        await fetch(`${UNNICHAT_API_URL}/contact`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: lead.nome,
+            phone: phoneForUnnichat,
+            email: lead.email || `${lead.celular}@placeholder.com`,
+            tags: ['quiz_resultados_enviados','auto_retry']
+          })
+        });
+        await new Promise(r => setTimeout(r, 800));
+      } catch (e) {
+        console.log('⚠️ Falha ao atualizar contato no retry:', e.message);
+      }
+      msgResult = await sendOnce();
+    }
 
     if (msgResult.code && msgResult.code !== '200') {
       console.error('❌ Erro ao enviar:', msgResult);

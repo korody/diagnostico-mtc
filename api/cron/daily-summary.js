@@ -16,13 +16,8 @@
  * 2. Adicionar CRON_SECRET no .env e verificar no header
  */
 
-const { createClient } = require('@supabase/supabase-js');
 const { enviarResumoDiario, enviarSlack } = require('../utils/notifications');
-
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL || process.env.SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_KEY || process.env.SUPABASE_KEY
-);
+const supabase = require('../../lib/supabase');
 
 module.exports = async (req, res) => {
   // Verificar autenticação do cron
