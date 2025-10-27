@@ -10,7 +10,12 @@ module.exports = async (req, res) => {
   try {
     // Ler o arquivo dashboard HTML
     const dashboardPath = path.join(__dirname, '..', 'public', 'dashboard.html');
-    const dashboardHtml = fs.readFileSync(dashboardPath, 'utf-8');
+  let dashboardHtml = fs.readFileSync(dashboardPath, 'utf-8');
+  const password = process.env.DASHBOARD_PASSWORD || 'persona2025';
+  const apiSecret = process.env.DASHBOARD_API_SECRET || '';
+  // Injetar segredos no window para uso apenas no client
+  const inject = `\n<script>window.__DASHBOARD_PASSWORD=${JSON.stringify(password)};window.__DASHBOARD_API_SECRET=${JSON.stringify(apiSecret)};</script>\n`;
+  dashboardHtml = dashboardHtml.replace('</body>', `${inject}</body>`);
     
     // Retornar HTML
     res.setHeader('Content-Type', 'text/html; charset=utf-8');

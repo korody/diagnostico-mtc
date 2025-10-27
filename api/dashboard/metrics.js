@@ -299,6 +299,15 @@ module.exports = async (req, res) => {
     return res.status(200).end();
   }
 
+  // Auth opcional via bearer
+  const expected = process.env.DASHBOARD_API_SECRET;
+  if (expected) {
+    const auth = req.headers['authorization'] || '';
+    if (!auth.startsWith('Bearer ') || auth.slice(7) !== expected) {
+      return res.status(401).json({ success: false, error: 'Não autorizado' });
+    }
+  }
+
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ 
       success: false, 

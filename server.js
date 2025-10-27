@@ -3,11 +3,11 @@ const cors = require('cors');
 const { normalizePhone, isValidBrazilianPhone } = require('./lib/phone');
 const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
-const gerarLinkCompartilhamento = require('./api/gerar-link-compartilhamento');
 
 // Importar handlers do dashboard
-const dashboardMetrics = require('./api/dashboard/metrics');
-const dashboardAlerts = require('./api/dashboard/alerts');
+// Observação: para permitir testes locais sem SUPABASE,
+// evitamos importar módulos que criam clients na carga.
+// Carregamos dinamicamente dentro das rotas quando necessário.
 const dashboardPage = require('./api/dashboard');
 
 // ========================================
@@ -40,16 +40,24 @@ if (!process.env.REACT_APP_SUPABASE_KEY && supabaseKey) {
 
 // Validar variáveis críticas
 if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ ERRO: Variáveis SUPABASE_URL e SUPABASE_KEY são obrigatórias!');
+  console.error('❌ ERRO: Variáveis SUPABASE_URL e SUPABASE_KEY não encontradas.');
   console.error('   Verifique seu arquivo:', envFile);
-  process.exit(1);
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('⚠️  Continuando em modo limitado para testes locais de rotas estáticas (ex.: /dashboard).');
+  } else {
+    process.exit(1);
+  }
 }
 
 if (!UNNICHAT_TOKEN) {
   console.error('⚠️  AVISO: UNNICHAT_ACCESS_TOKEN não configurado');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Criar cliente Supabase apenas se credenciais existirem
+let supabase = null;
+if (supabaseUrl && supabaseKey) {
+  supabase = createClient(supabaseUrl, supabaseKey);
+}
 const path = require('path');
 const diagnosticos = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'api', 'diagnosticos.json'), 'utf-8')
@@ -858,6 +866,19 @@ Compartilhe vitalidade. Inspire transformação`;
 });
 
 // ========================================
+// ===== ROTA (SERVER-LOCAL): GERAR LINK COMPARTILHAMENTO =====
+// Reusa o handler serverless localmente para facilitar testes (mesma assinatura)
+app.options('/api/gerar-link-compartilhamento', (req, res) => require('./api/gerar-link-compartilhamento')(req, res));
+app.post('/api/gerar-link-compartilhamento', (req, res) => require('./api/gerar-link-compartilhamento')(req, res));
+
+// ===== ROTAS DO DASHBOARD =====
+app.get('/dashboard', (req, res) => dashboardPage(req, res));
+app.get('/api/dashboard', (req, res) => dashboardPage(req, res));
+app.get('/api/dashboard/metrics', (req, res) => require('./api/dashboard/metrics')(req, res));
+app.post('/api/dashboard/metrics', (req, res) => require('./api/dashboard/metrics')(req, res));
+app.get('/api/dashboard/alerts', (req, res) => require('./api/dashboard/alerts')(req, res));
+app.post('/api/dashboard/alerts', (req, res) => require('./api/dashboard/alerts')(req, res));
+
 // INICIAR SERVIDOR
 // ========================================
 
@@ -876,15 +897,3 @@ app.listen(PORT, () => {
   console.log('=========================================\n');
 });
 
-// ===== ROTA (SERVER-LOCAL): GERAR LINK COMPARTILHAMENTO =====
-// Reusa o handler serverless localmente para facilitar testes (mesma assinatura)
-app.options('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartilhamento(req, res));
-app.post('/api/gerar-link-compartilhamento', (req, res) => gerarLinkCompartilhamento(req, res));
-
-// ===== ROTAS DO DASHBOARD =====
-app.get('/dashboard', (req, res) => dashboardPage(req, res));
-app.get('/api/dashboard', (req, res) => dashboardPage(req, res));
-app.get('/api/dashboard/metrics', (req, res) => dashboardMetrics(req, res));
-app.post('/api/dashboard/metrics', (req, res) => dashboardMetrics(req, res));
-app.get('/api/dashboard/alerts', (req, res) => dashboardAlerts(req, res));
-app.post('/api/dashboard/alerts', (req, res) => dashboardAlerts(req, res));

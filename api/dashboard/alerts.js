@@ -120,6 +120,15 @@ module.exports = async (req, res) => {
     });
   }
 
+  // Auth opcional via bearer
+  const expected = process.env.DASHBOARD_API_SECRET;
+  if (expected) {
+    const auth = req.headers['authorization'] || '';
+    if (!auth.startsWith('Bearer ') || auth.slice(7) !== expected) {
+      return res.status(401).json({ success: false, error: 'Não autorizado' });
+    }
+  }
+
   try {
     console.log('🚨 Verificando alertas...');
 
