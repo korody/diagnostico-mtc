@@ -157,12 +157,19 @@
                 setLoading(true);
                 try {
                     const headers = {};
-                    if (window && window.__DASHBOARD_API_SECRET) {
+                    // Injetar Authorization se DASHBOARD_API_SECRET estiver definido
+                    if (window && window.__DASHBOARD_API_SECRET && window.__DASHBOARD_API_SECRET.trim()) {
                         headers['Authorization'] = `Bearer ${window.__DASHBOARD_API_SECRET}`;
                     }
                     const [metricasRes, alertasRes] = await Promise.all([
-                        fetch('/api/dashboard/metrics', { headers }),
-                        fetch('/api/dashboard/alerts', { headers })
+                        fetch('/api/dashboard?action=metrics', { 
+                            method: 'GET',
+                            headers 
+                        }),
+                        fetch('/api/dashboard?action=alerts', { 
+                            method: 'GET',
+                            headers 
+                        })
                     ]);
                     
                     const metricasData = await metricasRes.json();
@@ -170,10 +177,14 @@
                     
                     if (metricasData.success) {
                         setMetricas(metricasData.metricas);
+                    } else {
+                        console.error('Erro ao carregar métricas:', metricasData);
                     }
                     
                     if (alertasData.success) {
                         setAlertas(alertasData.alertas);
+                    } else {
+                        console.error('Erro ao carregar alertas:', alertasData);
                     }
                 } catch (error) {
                     console.error('Erro ao carregar dados:', error);
@@ -203,123 +214,154 @@
                 });
 
                 // Gráfico de Status WhatsApp (Pizza)
-                if (chartRefs.status.current) {
-                    const ctx = chartRefs.status.current.getContext('2d');
-                    const statusData = metricas.distribuicao_status_whatsapp;
-                    
-                    chartInstances.current.status = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: Object.keys(statusData),
-                            datasets: [{
-                                data: Object.values(statusData),
-                                backgroundColor: [
-                                    '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'
-                                ]
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'bottom' }
+                try {
+                    const statusCanvas = chartRefs.status.current || document.getElementById('statusChart');
+                    if (!statusCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (statusCanvas) {
+                        const ctx = statusCanvas.getContext('2d');
+                        const statusData = metricas.distribuicao_status_whatsapp || {};
+                        const labels = Object.keys(statusData);
+                        const data = Object.values(statusData);
+                        chartInstances.current.status = new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: labels.length ? labels : ['Sem dados'],
+                                datasets: [{
+                                    data: data.length ? data : [1],
+                                    backgroundColor: [
+                                        '#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'
+                                    ]
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { position: 'bottom' }
+                                }
                             }
-                        }
-                    });
-                }
+                        });
+                    }
+                } catch (e) { console.error('❌ Erro gráfico status:', e); }
 
                 // Gráfico de Elementos MTC (Barras)
-                if (chartRefs.elemento.current) {
-                    const ctx = chartRefs.elemento.current.getContext('2d');
-                    const elementoData = metricas.distribuicao_elemento_mtc;
-                    
-                    chartInstances.current.elemento = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: Object.keys(elementoData),
-                            datasets: [{
-                                label: 'Quantidade',
-                                data: Object.values(elementoData).map(e => e.count),
-                                backgroundColor: '#667eea'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false }
+                try {
+                    const elementoCanvas = chartRefs.elemento.current || document.getElementById('elementoChart');
+                    if (!elementoCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (elementoCanvas) {
+                        const ctx = elementoCanvas.getContext('2d');
+                        const elementoData = metricas.distribuicao_elemento_mtc || {};
+                        const labels = Object.keys(elementoData);
+                        const data = Object.values(elementoData).map(e => e.count);
+                        chartInstances.current.elemento = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: labels.length ? labels : ['Sem dados'],
+                                datasets: [{
+                                    label: 'Quantidade',
+                                    data: data.length ? data : [1],
+                                    backgroundColor: '#667eea'
+                                }]
                             },
-                            scales: {
-                                y: { beginAtZero: true }
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true }
+                                }
                             }
-                        }
-                    });
-                }
+                        });
+                    }
+                } catch (e) { console.error('❌ Erro gráfico elemento:', e); }
 
                 // Gráfico de Evolução Temporal (Linha)
-                if (chartRefs.evolucao.current) {
-                    const ctx = chartRefs.evolucao.current.getContext('2d');
-                    const evolucaoData = metricas.evolucao_temporal;
-                    
-                    chartInstances.current.evolucao = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: evolucaoData.map(e => e.data.split('-').slice(1).join('/')),
-                            datasets: [{
-                                label: 'Leads por Dia',
-                                data: evolucaoData.map(e => e.leads),
-                                borderColor: '#667eea',
-                                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                                fill: true,
-                                tension: 0.4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false }
+                try {
+                    const evolucaoCanvas = chartRefs.evolucao.current || document.getElementById('evolucaoChart');
+                    if (!evolucaoCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (evolucaoCanvas) {
+                        const ctx = evolucaoCanvas.getContext('2d');
+                        const evolucaoData = Array.isArray(metricas.evolucao_temporal) ? metricas.evolucao_temporal : [];
+                        const labels = evolucaoData.map(e => e.data.split('-').slice(1).join('/'));
+                        const data = evolucaoData.map(e => e.leads);
+                        chartInstances.current.evolucao = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels.length ? labels : ['Sem dados'],
+                                datasets: [{
+                                    label: 'Leads por Dia',
+                                    data: data.length ? data : [0],
+                                    borderColor: '#667eea',
+                                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                                    fill: true,
+                                    tension: 0.4
+                                }]
                             },
-                            scales: {
-                                y: { beginAtZero: true }
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                scales: {
+                                    y: { beginAtZero: true }
+                                }
                             }
-                        }
-                    });
-                }
+                        });
+                    }
+                } catch (e) { console.error('❌ Erro gráfico evolução:', e); }
 
                 // Gráfico de Funil (Barras Horizontais)
-                if (chartRefs.funil.current) {
-                    const ctx = chartRefs.funil.current.getContext('2d');
-                    const funilData = metricas.funil;
-                    
-                    chartInstances.current.funil = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['Quiz Completo', 'Com Diagnóstico', 'WhatsApp Enviado', 'Desafio Enviado'],
-                            datasets: [{
-                                label: 'Leads',
-                                data: [
-                                    funilData.total_quiz_completado,
-                                    funilData.com_diagnostico,
-                                    funilData.diagnostico_enviado,
-                                    funilData.desafio_enviado
-                                ],
-                                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
-                            }]
-                        },
-                        options: {
-                            indexAxis: 'y',
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false }
+                try {
+                    const funilCanvas = chartRefs.funil.current || document.getElementById('funilChart');
+                    if (!funilCanvas) {
+                        setTimeout(renderizarGraficos, 50);
+                        return;
+                    }
+                    if (funilCanvas) {
+                        const ctx = funilCanvas.getContext('2d');
+                        const funilData = metricas.funil || {};
+                        const data = [
+                            funilData.total_quiz_completado || 0,
+                            funilData.com_diagnostico || 0,
+                            funilData.diagnostico_enviado || 0,
+                            funilData.desafio_enviado || 0
+                        ];
+                        chartInstances.current.funil = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: ['Quiz Completo', 'Com Diagnóstico', 'WhatsApp Enviado', 'Desafio Enviado'],
+                                datasets: [{
+                                    label: 'Leads',
+                                    data: data,
+                                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6']
+                                }]
                             },
-                            scales: {
-                                x: { beginAtZero: true }
+                            options: {
+                                indexAxis: 'y',
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false }
+                                },
+                                scales: {
+                                    x: { beginAtZero: true }
+                                }
                             }
-                        }
-                    });
-                }
+                        });
+                    }
+                } catch (e) { console.error('❌ Erro gráfico funil:', e); }
             };
 
             // Exportar dados
@@ -424,7 +466,7 @@
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                         <div className="dashboard-card">
                             <p className="text-gray-600 text-sm font-medium">Total de Leads</p>
-                            <p className="metric-value">{metricas.totais_leads.total.toLocaleString()}</p>
+                            <p className="metric-value">{metricas.totais_leads.total.toLocaleString('pt-BR')}</p>
                             <p className="text-sm text-gray-500 mt-2">
                                 Hoje: {metricas.totais_leads.hoje} | Mês: {metricas.totais_leads.mes}
                             </p>
@@ -485,28 +527,28 @@
                         <div className="dashboard-card">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Status WhatsApp</h3>
                             <div style={{ height: '300px' }}>
-                                <canvas ref={chartRefs.status}></canvas>
+                                <canvas id="statusChart" ref={chartRefs.status}></canvas>
                             </div>
                         </div>
                         
                         <div className="dashboard-card">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Elementos MTC</h3>
                             <div style={{ height: '300px' }}>
-                                <canvas ref={chartRefs.elemento}></canvas>
+                                <canvas id="elementoChart" ref={chartRefs.elemento}></canvas>
                             </div>
                         </div>
                         
                         <div className="dashboard-card lg:col-span-2">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Evolução Temporal (30 dias)</h3>
                             <div style={{ height: '300px' }}>
-                                <canvas ref={chartRefs.evolucao}></canvas>
+                                <canvas id="evolucaoChart" ref={chartRefs.evolucao}></canvas>
                             </div>
                         </div>
                         
                         <div className="dashboard-card lg:col-span-2">
                             <h3 className="text-lg font-bold text-gray-800 mb-4">Funil de Conversão</h3>
                             <div style={{ height: '250px' }}>
-                                <canvas ref={chartRefs.funil}></canvas>
+                                <canvas id="funilChart" ref={chartRefs.funil}></canvas>
                             </div>
                         </div>
                     </div>

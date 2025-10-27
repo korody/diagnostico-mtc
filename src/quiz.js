@@ -252,7 +252,7 @@ const QuizMTC = () => {
       return;
     }
     if (!validarCelular(dadosLead.CELULAR)) {
-      setErro('Por favor, digite um celular válido no formato (00) 00000-0000');
+      setErro('Por favor, digite um número de WhatsApp válido (mínimo 8 dígitos)');
       return;
     }
     setStep('quiz');
@@ -463,8 +463,8 @@ if (step === 'identificacao') {
                 type="tel"
                 value={dadosLead.CELULAR}
                 onChange={(e) => handleInputChange('CELULAR', e.target.value)}
-                placeholder="(00) 00000-0000"
-                maxLength="15"
+                placeholder="+55 11 99999-9999"
+                maxLength="20"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400"
               />
             </div>
