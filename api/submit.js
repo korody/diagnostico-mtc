@@ -85,7 +85,7 @@ module.exports = async (req, res) => {
     // (remove apenas caracteres não numéricos, sem validar formato específico)
     if (!isValidBrazilianPhone(celularNormalizado)) {
       console.log('⚠️ Telefone não-brasileiro detectado:', lead.CELULAR);
-      // Para telefones internacionais, manter apenas dígitos
+      // Para telefones internacionais, manter apenas dígitos (já com DDI)
       celularNormalizado = lead.CELULAR.replace(/\D/g, '');
       
       // Validação mínima: pelo menos 8 dígitos
@@ -96,10 +96,17 @@ module.exports = async (req, res) => {
           error: 'Telefone inválido: mínimo 8 dígitos'
         });
       }
+      
+      // Importante: salvar telefone internacional COM o DDI completo
+      console.log('🌍 Telefone internacional será salvo com DDI:', celularNormalizado);
+    } else {
+      // Para telefones brasileiros, adicionar DDI 55
+      celularNormalizado = `55${celularNormalizado}`;
+      console.log('🇧🇷 Telefone brasileiro será salvo com DDI 55:', celularNormalizado);
     }
     
     console.log('📱 Telefone original:', lead.CELULAR);
-    console.log('📱 Telefone normalizado:', celularNormalizado);
+    console.log('📱 Telefone normalizado (com DDI):', celularNormalizado);
     
     // Calcular diagnóstico
     const contagem = contarElementos(respostas);
