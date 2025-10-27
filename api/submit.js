@@ -79,15 +79,23 @@ module.exports = async (req, res) => {
     console.log('\n📥 NOVO QUIZ:', lead.NOME);
     
     // Normalizar telefone ANTES de salvar
-    const celularNormalizado = normalizePhone(lead.CELULAR);
+    let celularNormalizado = normalizePhone(lead.CELULAR);
     
-    // Validar telefone brasileiro
+    // Se não for telefone brasileiro válido, aceitar como internacional
+    // (remove apenas caracteres não numéricos, sem validar formato específico)
     if (!isValidBrazilianPhone(celularNormalizado)) {
-      console.log('❌ Telefone inválido:', lead.CELULAR, '→', celularNormalizado);
-      return res.status(400).json({
-        success: false,
-        error: 'Telefone inválido. Use formato brasileiro válido.'
-      });
+      console.log('⚠️ Telefone não-brasileiro detectado:', lead.CELULAR);
+      // Para telefones internacionais, manter apenas dígitos
+      celularNormalizado = lead.CELULAR.replace(/\D/g, '');
+      
+      // Validação mínima: pelo menos 8 dígitos
+      if (celularNormalizado.length < 8) {
+        console.log('❌ Telefone inválido (muito curto):', celularNormalizado);
+        return res.status(400).json({
+          success: false,
+          error: 'Telefone inválido: mínimo 8 dígitos'
+        });
+      }
     }
     
     console.log('📱 Telefone original:', lead.CELULAR);
