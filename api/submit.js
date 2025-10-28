@@ -3,15 +3,17 @@
 // Vercel Serverless Function
 // ========================================
 
-let supabase, normalizePhone, isValidBrazilianPhone, getDiagnosticos;
+let supabase, normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal, getDiagnosticos;
+let addLeadTags;
 let contarElementos, determinarElementoPrincipal, calcularIntensidade;
 let calcularUrgencia, determinarQuadrante, calcularLeadScore;
 let diagnosticosData;
 
 try {
   supabase = require('../lib/supabase');
-  ({ normalizePhone, isValidBrazilianPhone } = require('../lib/phone'));
+  ({ normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal } = require('../lib/phone'));
   ({ getDiagnosticos } = require('../lib/diagnosticos'));
+  ({ addLeadTags } = require('../lib/tags'));
   ({
     contarElementos,
     determinarElementoPrincipal,
@@ -81,16 +83,23 @@ module.exports = async (req, res) => {
     // Normalizar telefone ANTES de salvar
     // IMPORTANTE: Salvar SEMPRE sem DDI 55 para facilitar buscas
     const celularNormalizado = normalizePhone(lead.CELULAR);
-    
+
+    // Heurística de validação: quando o input vier com DDI explícito (rawDigits >= 12
+    // e não começa com 55), validar pelo rawDigits (E.164), caso contrário validar
+    // pelo celularNormalizado (forma BR sem DDI).
+    const rawDigits = (lead.CELULAR || '').toString().replace(/\D/g, '');
+    const validationTarget = (rawDigits.length >= 12 && !rawDigits.startsWith('55')) ? rawDigits : celularNormalizado;
+
     console.log('📱 Telefone original:', lead.CELULAR);
     console.log('📱 Telefone normalizado (SEM DDI):', celularNormalizado);
-    
-    // Validação: telefone brasileiro deve ter 10 ou 11 dígitos
-    if (!isValidBrazilianPhone(celularNormalizado)) {
-      console.log('❌ Telefone inválido:', celularNormalizado);
+    console.log('🔎 Telefone debug:', { rawDigits, validationTarget, validationTargetLen: validationTarget.length });
+
+    // Validação: aceitar BR (10/11) ou internacional E.164 (12-15)
+    if (!isValidPhoneUniversal(validationTarget)) {
+      console.log('❌ Telefone inválido (após heurística):', validationTarget);
       return res.status(400).json({
         success: false,
-        error: 'Telefone inválido. Use formato brasileiro: (11) 99999-9999'
+        error: 'Telefone inválido. Use formato BR (11 99999-9999) ou internacional com DDI (ex.: 351...)'
       });
     }
     
@@ -153,18 +162,45 @@ module.exports = async (req, res) => {
         .eq('celular', celularNormalizado);
         
       console.log('✅ Lead ATUALIZADO\n');
+      // Registrar evento de linha do tempo (diagnóstico solicitado)
+      try {
+        await supabase.from('whatsapp_logs').insert({
+          lead_id: existe.id,
+          phone: celularNormalizado,
+          status: 'diagnostico_solicitado',
+          metadata: { source: 'quiz_submit', updated: true },
+          sent_at: new Date().toISOString()
+        });
+        // Adicionar tag de diagnóstico finalizado
+        await addLeadTags(supabase, existe.id, ['diagnostico_finalizado']);
+      } catch (e) { console.log('⚠️ Log submit (update) falhou:', e.message); }
       
     } else {
       // Inserir novo lead
-      await supabase
+      const { data: inserted, error: insertErr } = await supabase
         .from('quiz_leads')
         .insert({
           ...dadosParaSalvar,
           celular: celularNormalizado,
           whatsapp_status: 'AGUARDANDO_CONTATO'
-        });
+        })
+        .select('id')
+        .maybeSingle();
+      if (insertErr) throw insertErr;
         
       console.log('✅ Lead INSERIDO\n');
+      // Registrar evento de linha do tempo (diagnóstico solicitado)
+      try {
+        await supabase.from('whatsapp_logs').insert({
+          lead_id: inserted?.id,
+          phone: celularNormalizado,
+          status: 'diagnostico_solicitado',
+          metadata: { source: 'quiz_submit', created: true },
+          sent_at: new Date().toISOString()
+        });
+        // Adicionar tag de diagnóstico finalizado
+        await addLeadTags(supabase, inserted?.id, ['diagnostico_finalizado']);
+      } catch (e) { console.log('⚠️ Log submit (insert) falhou:', e.message); }
     }
     
     // Resposta de sucesso

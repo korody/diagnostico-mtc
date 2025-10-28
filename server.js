@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { normalizePhone, isValidBrazilianPhone, formatPhoneForUnnichat } = require('./lib/phone');
+const { normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal, formatPhoneForUnnichat } = require('./lib/phone');
+const { addLeadTags } = require('./lib/tags');
 const fs = require('fs');
 
 // Importante: Não importe handlers que criam clients ANTES de carregar .env
@@ -464,16 +465,23 @@ app.post('/api/submit', async (req, res) => {
     
     // Normalizar telefone ANTES de salvar
     const celularNormalizado = normalizePhone(lead.CELULAR);
-    
-    // Validar telefone brasileiro
-    if (!isValidBrazilianPhone(celularNormalizado)) {
-      console.log('❌ Telefone inválido:', lead.CELULAR, '→', celularNormalizado);
+
+    // Heurística de validação: quando o input vier com DDI explícito (rawDigits >= 12
+    // e não começa com 55), validar pelo rawDigits (E.164), caso contrário validar
+    // pelo celularNormalizado (forma BR sem DDI).
+    const rawDigits = (lead.CELULAR || '').toString().replace(/\D/g, '');
+    const validationTarget = (rawDigits.length >= 12 && !rawDigits.startsWith('55')) ? rawDigits : celularNormalizado;
+
+    // Validar telefone (BR 10/11 ou internacional 12-15)
+    console.log('🔎 Telefone debug:', { original: lead.CELULAR, rawDigits, celularNormalizado, validationTarget });
+    if (!isValidPhoneUniversal(validationTarget)) {
+      console.log('❌ Telefone inválido:', lead.CELULAR, '→', validationTarget);
       return res.status(400).json({
         success: false,
-        error: 'Telefone inválido. Use formato brasileiro válido.'
+        error: 'Telefone inválido. Use formato BR válido ou internacional com DDI.'
       });
     }
-    
+
     console.log('📱 Telefone original:', lead.CELULAR);
     console.log('📱 Telefone normalizado:', celularNormalizado);
     
@@ -528,15 +536,40 @@ app.post('/api/submit', async (req, res) => {
         .update({ ...dadosParaSalvar, updated_at: new Date().toISOString() })
         .eq('celular', celularNormalizado);
       console.log('✅ Lead ATUALIZADO\n');
+      // Log de linha do tempo (diagnóstico solicitado)
+      try {
+        await supabase.from('whatsapp_logs').insert({
+          lead_id: existe.id,
+          phone: celularNormalizado,
+          status: 'diagnostico_solicitado',
+          metadata: { source: 'quiz_submit_local', updated: true },
+          sent_at: new Date().toISOString()
+        });
+        await addLeadTags(supabase, existe.id, ['diagnostico_finalizado']);
+      } catch (e) { console.log('⚠️ Log submit local (update) falhou:', e.message); }
     } else {
-      await supabase
+      const { data: inserted, error: insertErr } = await supabase
         .from('quiz_leads')
         .insert({
           ...dadosParaSalvar,
           celular: celularNormalizado,
           whatsapp_status: 'AGUARDANDO_CONTATO'
-        });
+        })
+        .select('id')
+        .maybeSingle();
+      if (insertErr) throw insertErr;
       console.log('✅ Lead INSERIDO\n');
+      // Log de linha do tempo (diagnóstico solicitado)
+      try {
+        await supabase.from('whatsapp_logs').insert({
+          lead_id: inserted?.id,
+          phone: celularNormalizado,
+          status: 'diagnostico_solicitado',
+          metadata: { source: 'quiz_submit_local', created: true },
+          sent_at: new Date().toISOString()
+        });
+        await addLeadTags(supabase, inserted?.id, ['diagnostico_finalizado']);
+      } catch (e) { console.log('⚠️ Log submit local (insert) falhou:', e.message); }
     }
     
     return res.json({ 
@@ -842,20 +875,22 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
 
   if (DEBUG) console.log('✅ Diagnóstico enviado com sucesso!\n');
 
-    // Atualizar status
+    // Atualizar status e tags
     await supabase
       .from('quiz_leads')
       .update({
-        whatsapp_status: 'resultados_enviados',
+        whatsapp_status: 'diagnostico_enviado',
         whatsapp_sent_at: new Date().toISOString()
       })
       .eq('id', lead.id);
+
+    try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) { /* noop */ }
 
     // Registrar log
     await supabase.from('whatsapp_logs').insert({
       lead_id: lead.id,
       phone: lead.celular,
-      status: 'resultados_enviados',
+      status: 'diagnostico_enviado',
       metadata: { 
         action: 'ver_resultados',
         unnichat_response: msgResult,
