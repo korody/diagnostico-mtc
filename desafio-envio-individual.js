@@ -3,6 +3,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { normalizePhone, formatPhoneForUnnichat } = require('./lib/phone');
+const { addLeadTags } = require('./lib/tags');
 
 // Forçar produção
 const isProduction = true;
@@ -103,7 +104,7 @@ async function main() {
     console.log('========================================\n');
     
     // Verificar se já recebeu diagnóstico
-    if (lead.whatsapp_status !== 'resultados_enviados') {
+    if (lead.whatsapp_status !== 'diagnostico_enviado' && lead.whatsapp_status !== 'resultados_enviados') {
       console.log('⚠️  ATENÇÃO: Este lead ainda NÃO recebeu o diagnóstico!');
       console.log('   Status atual:', lead.whatsapp_status || 'sem_status');
       console.log('   Recomendação: Enviar diagnóstico primeiro\n');
@@ -200,6 +201,7 @@ Compartilhe vitalidade. Inspire transformação`;
         whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
       })
       .eq('id', lead.id);
+    try { await addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
     
     if (updateError) {
       console.log('⚠️  Aviso: Não foi possível atualizar status:', updateError.message);

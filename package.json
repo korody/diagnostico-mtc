@@ -26,6 +26,8 @@
     "desafio:prod": "cross-env NODE_ENV=production node desafio-envio-lotes.js",
     "desafio:individual:test": "cross-env NODE_ENV=development node desafio-envio-individual.js",
     "desafio:individual:prod": "cross-env NODE_ENV=production node desafio-envio-individual.js",
+  "tags:backfill:test": "cross-env NODE_ENV=development node scripts/backfill-status-tags.js",
+  "tags:backfill:prod": "cross-env NODE_ENV=production node scripts/backfill-status-tags.js",
     "dupes:report": "cross-env NODE_ENV=production node relatorios/relatorio-duplicados-telefones.js",
     "dupes:fix:test": "cross-env NODE_ENV=development DRY_RUN=1 node relatorios/resolver-duplicados-telefones.js",
     "dupes:fix:prod": "cross-env NODE_ENV=production DRY_RUN=1 node relatorios/resolver-duplicados-telefones.js",

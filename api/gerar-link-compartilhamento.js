@@ -147,6 +147,45 @@ module.exports = async (req, res) => {
       })
       .eq('id', lead.id);
 
+    // Novo: marcar status do desafio como enviado quando a automação chama este endpoint
+    // Motivo: o fluxo de Automação do Unnichat envia a 1ª mensagem, chama esta API para gerar o link
+    // e em seguida envia a 2ª mensagem com o link. Consideramos o desafio "enviado" neste ponto.
+    try {
+      const nowIso = new Date().toISOString();
+      const shouldBumpAttempts = lead.whatsapp_status !== 'desafio_enviado';
+
+      await supabase
+        .from('quiz_leads')
+        .update({
+          whatsapp_status: 'desafio_enviado',
+          whatsapp_sent_at: nowIso,
+          whatsapp_attempts: (lead.whatsapp_attempts || 0) + (shouldBumpAttempts ? 1 : 0)
+        })
+        .eq('id', lead.id);
+
+      // Registrar log da automação (sem PII sensível além do necessário)
+      await supabase.from('whatsapp_logs').insert([
+        {
+          lead_id: lead.id,
+          phone: lead.celular,
+          status: 'desafio_enviado',
+          metadata: {
+            source: 'unnichat_automation',
+            endpoint: 'gerar-link-compartilhamento',
+            referral_link: referralLink
+          },
+          sent_at: nowIso
+        }
+      ]);
+
+      // Adicionar tag
+      try { await require('../lib/tags').addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
+
+      console.log('📬 Status atualizado para desafio_enviado e log registrado.');
+    } catch (e) {
+      console.log('⚠️ Falha ao atualizar status/log do desafio:', e.message);
+    }
+
     // Retornar resposta
     return res.status(200).json({
       success: true,

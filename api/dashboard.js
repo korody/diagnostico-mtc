@@ -104,6 +104,27 @@ async function calcularDistribuicaoPrioridade(client){
   return dist;
 }
 
+// Novas métricas de marcos (timeline) baseadas em whatsapp_logs
+// Conta leads distintos que passaram por cada marco
+async function calcularMarcosReais(client){
+  const { data: logs, error } = await client
+    .from('whatsapp_logs')
+    .select('lead_id, status')
+    .in('status', ['diagnostico_solicitado','resultados_enviados','diagnostico_enviado','desafio_enviado'])
+    .limit(100000);
+  if (error) throw error;
+  const distinct = (statuses) => {
+    const set = new Set();
+    (logs||[]).forEach(l => { if (statuses.includes(l.status)) set.add(l.lead_id); });
+    return set.size;
+  };
+  return {
+    diagnostico_solicitado: distinct(['diagnostico_solicitado']),
+    diagnostico_enviado: distinct(['diagnostico_enviado','resultados_enviados']), // agrega legado
+    desafio_enviado: distinct(['desafio_enviado'])
+  };
+}
+
 async function calcularEvolucaoTemporal(client){
   const { data, error } = await client
     .from('quiz_leads')
@@ -122,7 +143,7 @@ async function calcularFunil(client){
   if (error) throw error;
   const total_leads = todos.length;
   const com_diagnostico = todos.filter(l=>l.whatsapp_status).length;
-  const diagnostico_enviado = todos.filter(l=> l.whatsapp_status==='resultados_enviados' || l.whatsapp_status==='desafio_enviado').length;
+  const diagnostico_enviado = todos.filter(l=> l.whatsapp_status==='diagnostico_enviado' || l.whatsapp_status==='desafio_enviado' || l.whatsapp_status==='resultados_enviados').length; // inclui legado
   const desafio_enviado = todos.filter(l=> l.whatsapp_status==='desafio_enviado').length;
   return {
     total_quiz_completado: total_leads,
@@ -217,6 +238,15 @@ module.exports = async (req, res) => {
         calcularFunil(supabase)
       ]);
 
+      // Marcos reais a partir dos logs (diagnostico_solicitado, resultados_enviados, desafio_enviado)
+      const marcos = await calcularMarcosReais(supabase);
+      const totalBase = Math.max(totais.total || 0, 1); // evitar divisão por zero
+      const marcos_percent = {
+        diagnostico_solicitado: parseFloat(((marcos.diagnostico_solicitado/totalBase)*100).toFixed(1)),
+        diagnostico_enviado: parseFloat(((marcos.diagnostico_enviado/totalBase)*100).toFixed(1)),
+        desafio_enviado: parseFloat(((marcos.desafio_enviado/totalBase)*100).toFixed(1))
+      };
+
       const metricas = {
         timestamp: new Date().toISOString(),
         totais_leads: totais,
@@ -227,13 +257,14 @@ module.exports = async (req, res) => {
         distribuicao_prioridade: prioridadeDistrib,
         evolucao_temporal: evolucao,
         funil: funil,
+        milestones: { counts: marcos, percent: marcos_percent },
         conversoes_principais: {
           total_inscritos_pagina: 0,
           total_cadastrados_quiz: totais.total,
-          finalizaram_diagnostico: totais.total,
-          iniciaram_contato_whatsapp: funil.diagnostico_enviado,
-          conversao_cadastro_diagnostico: totais.total>0 ? ((totais.total/totais.total)*100).toFixed(1) : 100,
-          conversao_diagnostico_whatsapp: funil.total_quiz_completado>0 ? ((funil.diagnostico_enviado/funil.total_quiz_completado)*100).toFixed(1) : 0,
+          finalizaram_diagnostico: marcos.diagnostico_solicitado || totais.total,
+          iniciaram_contato_whatsapp: marcos.diagnostico_enviado,
+          conversao_cadastro_diagnostico: totais.total>0 ? (((marcos.diagnostico_solicitado||totais.total)/totais.total)*100).toFixed(1) : 100,
+          conversao_diagnostico_whatsapp: (marcos.diagnostico_solicitado||totais.total)>0 ? ((marcos.diagnostico_enviado/(marcos.diagnostico_solicitado||totais.total))*100).toFixed(1) : 0,
           conversao_grupos: 0,
           conversao_final: 0
         }

@@ -5,6 +5,7 @@
 
 const supabase = require('../../lib/supabase');
 const { normalizePhone, formatPhoneForUnnichat } = require('../../lib/phone');
+const { addLeadTags } = require('../../lib/tags');
 const { sendMessage, updateContact } = require('../../lib/unnichat');
 
 module.exports = async (req, res) => {
@@ -78,10 +79,11 @@ module.exports = async (req, res) => {
       try {
         // Atualiza status se estiver enviando diagnóstico
         if (leadId && sendDiagnostico) {
-          await supabase
-            .from('quiz_leads')
-            .update({ whatsapp_status: 'resultados_enviados', whatsapp_sent_at: new Date().toISOString() })
+      await supabase
+                  .from('quiz_leads')
+                  .update({ whatsapp_status: 'diagnostico_enviado', whatsapp_sent_at: new Date().toISOString() })
             .eq('id', leadId);
+      try { await addLeadTags(supabase, leadId, ['diagnostico_enviado']); } catch (e) {}
 
           await supabase.from('whatsapp_logs').insert({
             lead_id: leadId,
@@ -125,10 +127,11 @@ module.exports = async (req, res) => {
     // Atualizações pós-envio (diagnóstico)
     try {
       if (leadId && sendDiagnostico) {
-        await supabase
-          .from('quiz_leads')
-          .update({ whatsapp_status: 'resultados_enviados', whatsapp_sent_at: new Date().toISOString() })
+  await supabase
+                .from('quiz_leads')
+                .update({ whatsapp_status: 'diagnostico_enviado', whatsapp_sent_at: new Date().toISOString() })
           .eq('id', leadId);
+  try { await addLeadTags(supabase, leadId, ['diagnostico_enviado']); } catch (e) {}
         await supabase.from('whatsapp_logs').insert({
           lead_id: leadId,
           phone: phoneNormalized,

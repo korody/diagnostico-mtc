@@ -1,4 +1,4 @@
-// diagnostico-automacao-lotes.js - COM PAGINAÇÃO COMPLETA
+// diagnostico-automacao-lotes.js - ENVIO DIRETO DE DIAGNÓSTICO
 const { createClient } = require('@supabase/supabase-js');
 const { formatPhoneForUnnichat } = require('./lib/phone');
 
@@ -12,26 +12,23 @@ require('dotenv').config({ path: envFile });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
-const GATILHO_URL = process.env.UNNICHAT_GATILHO_URL;
+const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL || 'https://unnichat.com.br/api';
+const UNNICHAT_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
 
 // Configurações de lote
 const LOTE_SIZE = parseInt(process.env.LOTE_SIZE) || 10;
 const DELAY_ENTRE_ENVIOS = parseInt(process.env.DELAY_ENTRE_ENVIOS) || 4000;
 const DELAY_ENTRE_LOTES = parseInt(process.env.DELAY_ENTRE_LOTES) || 30000;
-// Alvo: 'sem_template' (padrão) ou 'sem_diagnostico'
-const TARGET_MODE = (process.env.TARGET_MODE || 'sem_template').toLowerCase();
 // Dry-run: se '1', não envia nem atualiza banco
 const DRY_RUN = process.env.DRY_RUN === '1';
 
 // 🔒 LIMITE PARA TESTE
-// Use a variável de ambiente LIMITE_TESTE para controlar a quantidade enviada.
-// Defina LIMITE_TESTE=0 para enviar para TODOS os elegíveis.
 const LIMITE_TESTE = process.env.LIMITE_TESTE ? parseInt(process.env.LIMITE_TESTE) : 500;
 
 // Validar variáveis críticas
-if (!supabaseUrl || !supabaseKey || !GATILHO_URL) {
+if (!supabaseUrl || !supabaseKey || !UNNICHAT_API_URL || !UNNICHAT_TOKEN) {
   console.error('❌ ERRO: Variáveis de ambiente não configuradas!');
-  console.error('   Verifique: SUPABASE_URL, SUPABASE_KEY, UNNICHAT_GATILHO_URL');
+  console.error('   Verifique: SUPABASE_URL, SUPABASE_KEY, UNNICHAT_API_URL, UNNICHAT_ACCESS_TOKEN');
   console.error('   Arquivo:', envFile);
   process.exit(1);
 }
@@ -85,14 +82,14 @@ async function buscarTodosLeads() {
 // ========================================
 async function enviarEmLotes() {
   console.log('\n🚀 ========================================');
-  console.log('   GATILHO AUTOMAÇÃO - DIAGNÓSTICO (LOTES)');
+  console.log('   ENVIO DIAGNÓSTICO COMPLETO (LOTES)');
   console.log('========================================');
   console.log('🔧 Ambiente:', isProduction ? '🔴 PRODUÇÃO' : '🟡 TESTE');
   console.log('📦 Tamanho do lote:', LOTE_SIZE, 'leads');
   console.log('⏱️  Delay entre envios:', DELAY_ENTRE_ENVIOS/1000 + 's');
   console.log('⏸️  Delay entre lotes:', DELAY_ENTRE_LOTES/1000 + 's');
-  console.log('🔗 Gatilho:', GATILHO_URL.substring(0, 50) + '...');
-  console.log('🎯 Target mode:', TARGET_MODE);
+  console.log('🔗 API Unnichat:', UNNICHAT_API_URL);
+  console.log('🎯 Alvo: leads com status AGUARDANDO_CONTATO');
   if (DRY_RUN) console.log('🧪 DRY_RUN ativo: não envia nem atualiza banco');
   
   if (LIMITE_TESTE) {
@@ -104,28 +101,17 @@ async function enviarEmLotes() {
   // BUSCAR TODOS OS LEADS (COM PAGINAÇÃO)
   const allLeads = await buscarTodosLeads();
   
-  // Filtrar conforme TARGET_MODE
-  let leadsElegiveis;
-  if (TARGET_MODE === 'sem_diagnostico') {
-    // Não receberam diagnóstico (nem desafio)
-    leadsElegiveis = allLeads.filter(l => 
-      l.whatsapp_status !== 'resultados_enviados' &&
-      l.whatsapp_status !== 'desafio_enviado'
-    );
-  } else {
-    // Padrão: ainda não receberam template
-    leadsElegiveis = allLeads.filter(l => 
-      !l.whatsapp_status || 
-      l.whatsapp_status === 'AGUARDANDO_CONTATO' ||
-      l.whatsapp_status === 'failed'
-    );
-  }
+  // Filtrar apenas leads com AGUARDANDO_CONTATO
+  const leadsElegiveis = allLeads.filter(l => 
+    l.whatsapp_status === 'AGUARDANDO_CONTATO' || 
+    !l.whatsapp_status
+  );
   
-  console.log(`📋 Leads elegíveis (não enviados): ${leadsElegiveis.length}\n`);
+  console.log(`📋 Leads elegíveis (AGUARDANDO_CONTATO): ${leadsElegiveis.length}\n`);
   
   if (!leadsElegiveis || leadsElegiveis.length === 0) {
     console.log('✅ Nenhum lead elegível encontrado!');
-    console.log('💡 Todos os leads já receberam o template.\n');
+    console.log('💡 Todos os leads já receberam o diagnóstico.\n');
     return;
   }
   
@@ -141,7 +127,7 @@ async function enviarEmLotes() {
     console.log(`   Enviando para ${LIMITE_TESTE} de ${leadsElegiveis.length} leads elegíveis\n`);
   }
   
-  console.log('📋 Primeiros 10 leads que receberão template:');
+  console.log('📋 Primeiros 10 leads que receberão diagnóstico:');
   leadsParaEnviar.slice(0, 10).forEach((lead, i) => {
     console.log(`   ${i+1}. ${lead.nome} - ${lead.celular} - Score: ${lead.lead_score} - ${lead.elemento_principal || 'N/A'}`);
   });
@@ -216,56 +202,98 @@ async function enviarEmLotes() {
       
       try {
         const phoneForUnnichat = formatPhoneForUnnichat(lead.celular);
+        
+        // Preparar diagnóstico completo
+        const primeiroNome = lead.nome.split(' ')[0];
+        const diagnosticoCompleto = lead.diagnostico_completo || lead.script_abertura || 'Seu diagnóstico está sendo processado.';
+        
+        const diagnosticoFormatado = diagnosticoCompleto
+          .replace(/🔥 DIAGNÓSTICO:/g, '*🔥 DIAGNÓSTICO:*')
+          .replace(/O que seu corpo está dizendo:/g, '*O que seu corpo está dizendo:*')
+          .replace(/Por que isso está acontecendo:/g, '*Por que isso está acontecendo:*')
+          .replace(/A boa notícia:/g, '*A boa notícia:*')
+          .replace(/O que você pode fazer:/g, '*O que você pode fazer:*')
+          .replace(/🎯 PRÓXIMO PASSO ESSENCIAL:/g, '*🎯 PRÓXIMO PASSO ESSENCIAL:*');
+
+        const mensagem = `
+Olá ${primeiroNome}! 👋
+
+${diagnosticoFormatado}
+
+Fez sentido esse Diagnóstico para você? 🙏
+        `.trim();
 
         if (DRY_RUN) {
           console.log('   [DRY_RUN] PULAR envio para', phoneForUnnichat);
           totalEnviados++;
         } else {
-          const response = await fetch(GATILHO_URL, {
+          // 1. Atualizar/criar contato
+          try {
+            await fetch(`${UNNICHAT_API_URL}/contact`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                name: lead.nome,
+                phone: phoneForUnnichat,
+                email: lead.email || `${lead.celular}@placeholder.com`,
+                tags: ['diagnostico_enviado','automacao_lotes']
+              })
+            });
+            await new Promise(r => setTimeout(r, 800));
+          } catch (e) {
+            console.log('   ⚠️  Aviso contato:', e.message);
+          }
+
+          // 2. Enviar diagnóstico via WhatsApp
+          const response = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
+              'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-              name: lead.nome,
-              email: lead.email || `${lead.celular}@placeholder.com`,
-              phone: phoneForUnnichat
+              phone: phoneForUnnichat,
+              messageText: mensagem
             })
           });
 
-          let result;
-          try { result = await response.json(); } catch (_) { result = { raw: await response.text() }; }
+          const result = await response.json();
 
-          if (response.ok || result.success || result.response !== false) {
-            console.log(`   ✅ Template enviado!\n`);
-            totalEnviados++;
-
-            // Atualizar status no Supabase
-            await supabase
-              .from('quiz_leads')
-              .update({
-                whatsapp_status: 'template_enviado',
-                whatsapp_sent_at: new Date().toISOString(),
-                whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
-              })
-              .eq('id', lead.id);
-
-            // Registrar log
-            await supabase.from('whatsapp_logs').insert({
-              lead_id: lead.id,
-              phone: lead.celular,
-              status: 'template_enviado',
-              metadata: { gatilho_response: result },
-              sent_at: new Date().toISOString()
-            });
-          } else {
-            throw new Error(result.message || 'Erro desconhecido');
+          if (result.code && result.code !== '200') {
+            throw new Error(result.message || 'Erro ao enviar mensagem');
           }
+
+          console.log(`   ✅ Diagnóstico enviado!\n`);
+          totalEnviados++;
+
+          // 3. Atualizar status no Supabase
+          await supabase
+            .from('quiz_leads')
+            .update({
+              whatsapp_status: 'resultados_enviados',
+              whatsapp_sent_at: new Date().toISOString(),
+              whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
+            })
+            .eq('id', lead.id);
+
+          // 4. Registrar log
+          await supabase.from('whatsapp_logs').insert({
+            lead_id: lead.id,
+            phone: lead.celular,
+            status: 'resultados_enviados',
+            metadata: { 
+              action: 'automacao_lotes',
+              unnichat_response: result
+            },
+            sent_at: new Date().toISOString()
+          });
         }
 
       } catch (error) {
         console.log(`   ❌ Erro: ${error.message}`);
-        if (error?.response) {
-          console.log('   ↳ Detalhes:', JSON.stringify(error.response));
-        }
         totalErros++;
 
         if (!DRY_RUN) {
@@ -327,20 +355,19 @@ async function enviarEmLotes() {
   console.log('========================================\n');
   
   console.log('📱 PRÓXIMOS PASSOS:');
-  console.log('1. Os leads receberão o template no WhatsApp');
-  console.log('2. Quando clicarem em "VER RESULTADOS", o webhook é acionado');
-  console.log('3. O diagnóstico completo é enviado automaticamente');
-  console.log('4. Monitore os resultados: npm run verify:prod\n');
+  console.log('1. Os leads já receberam o diagnóstico completo no WhatsApp');
+  console.log('2. Status atualizado para "resultados_enviados"');
+  console.log('3. Monitore os resultados no dashboard\n');
   
   if (totalErros > 0) {
     console.log('⚠️  ATENÇÃO:');
     console.log(`   ${totalErros} leads falharam no envio`);
-    console.log('   Reenviar: npm run send:prod (só reenvia os que falharam)\n');
+    console.log('   Reenviar: rode o script novamente (só reenvia os que falharam)\n');
   }
   
   if (LIMITE_TESTE) {
     console.log('💡 PARA ENVIAR PARA TODOS:');
-    console.log('   Rode com a variável de ambiente LIMITE_TESTE=0\n');
+    console.log('   Rode com LIMITE_TESTE=0\n');
   }
 }
 

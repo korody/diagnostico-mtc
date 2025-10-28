@@ -31,6 +31,7 @@ if (!supabaseUrl || !supabaseKey || !UNNICHAT_TOKEN) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+const { addLeadTags } = require('./lib/tags');
 
 // ========================================
 // BUSCAR LEADS QUE JÁ RECEBERAM DIAGNÓSTICO MAS NÃO O DESAFIO
@@ -255,7 +256,7 @@ Compartilhe vitalidade. Inspire transformação`;
         console.log(`   ✅ 2/2 enviada`);
         totalSent++;
         
-        // Atualizar status
+        // Atualizar status e tags
         await supabase
           .from('quiz_leads')
           .update({
@@ -264,6 +265,7 @@ Compartilhe vitalidade. Inspire transformação`;
             whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
           })
           .eq('id', lead.id);
+        try { await addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
         
         // Registrar logs
         await supabase.from('whatsapp_logs').insert([

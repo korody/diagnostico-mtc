@@ -5,6 +5,7 @@
 
 const { normalizePhone, formatPhoneForUnnichat } = require('../../../lib/phone');
 const supabase = require('../../../lib/supabase');
+const { addLeadTags } = require('../../../lib/tags');
 
 const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL || 'https://unnichat.com.br/api';
 const UNNICHAT_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
@@ -249,8 +250,9 @@ Fez sentido esse Diagnóstico para você? 🙏
       try {
         await supabase
           .from('quiz_leads')
-          .update({ whatsapp_status: 'resultados_enviados', whatsapp_sent_at: new Date().toISOString() })
+          .update({ whatsapp_status: 'diagnostico_enviado', whatsapp_sent_at: new Date().toISOString() })
           .eq('id', lead.id);
+        try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) {}
         await supabase.from('whatsapp_logs').insert({
           lead_id: lead.id,
           phone: lead.celular,
@@ -307,20 +309,21 @@ Fez sentido esse Diagnóstico para você? 🙏
 
   if (DEBUG) console.log('✅ Diagnóstico enviado com sucesso!\n');
 
-    // Atualizar status
+    // Atualizar status e tags
     await supabase
       .from('quiz_leads')
       .update({
-        whatsapp_status: 'resultados_enviados',
+        whatsapp_status: 'diagnostico_enviado',
         whatsapp_sent_at: new Date().toISOString()
       })
       .eq('id', lead.id);
+    try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) {}
 
     // Registrar log
     await supabase.from('whatsapp_logs').insert({
       lead_id: lead.id,
       phone: lead.celular,
-      status: 'resultados_enviados',
+      status: 'diagnostico_enviado',
       metadata: { 
         action: 'ver_resultados',
         unnichat_response: msgResult,
