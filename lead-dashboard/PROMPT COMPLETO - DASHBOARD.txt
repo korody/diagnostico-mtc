@@ -1,0 +1,411 @@
+# 📊 PROMPT COMPLETO - DASHBOARD ADMINISTRATIVO QUIZ MTC
+
+```markdown
+# 🎯 CONTEXTO DO PROJETO
+
+Sou desenvolvedor do projeto **Quiz MTC (Medicina Tradicional Chinesa)** para o Mestre Ye. O quiz captura e qualifica leads para o evento "Black November da Saúde Vitalícia" e está em produção em https://quiz.qigongbrasil.com.
+
+Preciso desenvolver um **Dashboard Administrativo Profissional** para visualização e gestão estratégica de todos os dados coletados.
+
+---
+
+## 🏗️ ARQUITETURA ATUAL
+
+### Stack Tecnológica:
+- **Frontend Quiz:** React (Create React App) + Tailwind CSS
+- **Backend:** Vercel Serverless Functions
+- **Banco de Dados:** Supabase (PostgreSQL)
+- **Deploy:** Vercel
+- **Domínio Quiz:** https://quiz.qigongbrasil.com
+
+### Estrutura do Banco de Dados (Supabase):
+
+Tabela: `quiz_leads`
+
+```sql
+CREATE TABLE quiz_leads (
+  -- Identificação
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  nome TEXT NOT NULL,
+  email TEXT NOT NULL,
+  celular TEXT UNIQUE NOT NULL,
+  
+  -- Dados do Quiz
+  respostas JSONB NOT NULL,
+  elemento_principal TEXT,
+  codigo_perfil TEXT,
+  nome_perfil TEXT,
+  arquetipo TEXT,
+  emoji TEXT,
+  
+  -- Diagnóstico MTC
+  quadrante INT4,
+  diagnostico_resumo TEXT,
+  diagnostico_completo TEXT,
+  script_abertura TEXT,
+  
+  -- Lead Scoring
+  lead_score INT4,
+  prioridade TEXT, -- 'ALTA', 'MÉDIA', 'BAIXA'
+  is_hot_lead_vip BOOLEAN,
+  
+  -- Status de Follow-up
+  whatsapp_status TEXT DEFAULT 'AGUARDANDO_CONTATO',
+  
+  -- Timestamps
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+### Estrutura das Respostas (JSONB):
+
+```javascript
+respostas: {
+  "P1": "A",  // Intensidade das dores (A=20, B=16, C=12, D=8, E=4)
+  "P2": ["A", "C"],  // Localização (múltipla escolha, max 2)
+  "P3": "B",  // Tempo de sintomas (A=15, B=12, C=9, D=6, E=3)
+  "P4": ["A", "C", "D"],  // Sintomas físicos (múltipla, max 3)
+  "P5": "A",  // Estado emocional
+  "P6": "A",  // Tratamentos anteriores (A=15, B=12, C=9, D=6, E=3)
+  "P7": "B",  // Maior preocupação
+  "P8": "A",  // Urgência (A=20, B=16, C=12, D=8, E=4) - CRÍTICA
+  "P9": "A",  // Intenção de participar (A=15, B=12, C=9, D=6, E=3)
+  "P10": "F", // Faixa etária
+  "P11": "G", // Renda mensal (A=2, B=3, C=4... J=10)
+  "P12": "A", // Já é aluno
+  "P13": "E"  // Tempo que conhece
+}
+```
+
+### Sistema de Diagnóstico MTC (5 Elementos):
+
+**Mapeamento de Respostas → Elementos:**
+- **RIM (Água)** 🌊: P2-A, P2-B, P4-A, P4-B, P5-D
+- **FÍGADO (Madeira)** 🌳: P2-C, P4-E, P5-A
+- **BAÇO (Terra)** 🌍: P2-D, P4-D, P5-B
+- **CORAÇÃO (Fogo)** 🔥: P2-E, P4-C, P5-E
+- **PULMÃO (Metal)** 💨: P2-F, P5-C
+
+**Pesos:** P2 = 3x, P4 = 2x, P5 = 1x
+
+### Lead Scoring (0-100):
+
+```javascript
+Fórmula:
+- P1 (Intensidade): A=20, B=16, C=12, D=8, E=4
+- P3 (Tempo): A=15, B=12, C=9, D=6, E=3
+- P6 (Tratamentos): A=15, B=12, C=9, D=6, E=3
+- P8 (Urgência): A=20, B=16, C=12, D=8, E=4
+- P9 (Intenção): A=15, B=12, C=9, D=6, E=3
+- P11 (Renda): A=2, B=3, C=4... J=10
+- P12 (Novo aluno): +5 pontos
+
+Prioridade:
+- ALTA: score ≥ 70
+- MÉDIA: 40-69
+- BAIXA: < 40
+
+Hot Lead VIP:
+- Score ≥ 80 OU Quadrante 1 OU P8='A'
+```
+
+### Quadrantes (Matriz Urgência x Intensidade):
+
+```
+Quadrante 1: Alta Urgência + Alta Intensidade (HOT VIP)
+Quadrante 2: Alta Urgência + Baixa Intensidade
+Quadrante 3: Baixa Urgência + Alta Intensidade
+Quadrante 4: Baixa Urgência + Baixa Intensidade
+```
+
+---
+
+## 🎯 REQUISITOS DO DASHBOARD
+
+### 1. VISÃO GERAL (Home)
+
+**Métricas Principais (Cards):**
+- Total de Leads
+- Hot Leads VIP (%)
+- Taxa de Conversão do Quiz (%)
+- Lead Score Médio
+- Leads Hoje / Esta Semana / Este Mês
+- Taxa de Resposta WhatsApp
+
+**Gráficos:**
+- Funil de Conversão (início → conclusão → contato → venda)
+- Leads por Dia/Semana (linha do tempo)
+- Distribuição por Prioridade (pizza)
+- Distribuição por Elemento MTC (barras horizontais com emojis)
+- Distribuição por Quadrante (matriz 2x2)
+
+### 2. LEADS (Lista Completa)
+
+**Tabela Interativa com:**
+- Filtros avançados:
+  - Elemento (RIM, FÍGADO, BAÇO, CORAÇÃO, PULMÃO)
+  - Prioridade (ALTA, MÉDIA, BAIXA)
+  - Score (range slider 0-100)
+  - Quadrante (1-4)
+  - Data (range de datas)
+  - Status WhatsApp
+  - Faixa Etária
+  - Renda
+  - Já é aluno (sim/não)
+  
+- Colunas:
+  - Nome (com avatar colorido por elemento)
+  - Email
+  - Celular (com botão WhatsApp)
+  - Elemento + Emoji
+  - Score (badge colorido)
+  - Prioridade (badge)
+  - Quadrante
+  - Status WhatsApp
+  - Data de Cadastro
+  - Ações (ver detalhes, editar, exportar)
+
+- Busca global (nome, email, celular)
+- Ordenação por qualquer coluna
+- Paginação
+- Exportação CSV/Excel (filtros aplicados)
+- Ações em lote (marcar como contatado, etc)
+
+### 3. DETALHES DO LEAD (Modal ou Página)
+
+**Informações Completas:**
+- Dados pessoais (nome, email, celular)
+- Elemento MTC com descrição
+- Todas as 13 respostas do quiz (visual bonito)
+- Diagnóstico completo personalizado
+- Script de abertura WhatsApp (com botão copiar)
+- Histórico de interações
+- Notas/comentários da equipe
+- Timeline de atividades
+
+**Ações Disponíveis:**
+- Copiar script WhatsApp
+- Abrir WhatsApp direto
+- Adicionar nota
+- Marcar como contatado
+- Atribuir para vendedor
+- Mudar status
+- Exportar PDF
+
+### 4. ANÁLISE POR ELEMENTO MTC
+
+**Para cada elemento (RIM, FÍGADO, BAÇO, CORAÇÃO, PULMÃO):**
+- Total de leads
+- Score médio
+- Taxa de hot leads
+- Perfil demográfico (idade, renda)
+- Respostas mais comuns
+- Taxa de conversão
+- Gráfico de evolução temporal
+
+### 5. ANÁLISE DE RESPOSTAS
+
+**Por Pergunta:**
+- Distribuição de respostas (gráfico)
+- Correlação com lead score
+- Taxa de abandono por pergunta
+- Tempo médio de resposta
+
+**Insights Automáticos:**
+- Perguntas com maior abandono
+- Padrões de respostas de hot leads
+- Correlações entre respostas
+
+### 6. FUNIL DE VENDAS
+
+**Estágios:**
+- Aguardando Contato
+- Contatado (WhatsApp enviado)
+- Em Conversa
+- Qualificado
+- Inscrito no Evento
+- Convertido (pagou)
+- Não Respondeu
+- Desqualificado
+
+**Métricas:**
+- Taxa de conversão por estágio
+- Tempo médio por estágio
+- Leads perdidos (onde e por quê)
+- Gráfico de funil visual
+
+### 7. DESEMPENHO DA EQUIPE
+
+**Se houver atribuição de vendedores:**
+- Leads atribuídos por vendedor
+- Taxa de conversão por vendedor
+- Tempo médio de resposta
+- Ranking de vendedores
+- Meta vs Realizado
+
+### 8. RELATÓRIOS E EXPORTAÇÃO
+
+**Relatórios Predefinidos:**
+- Hot Leads da Semana
+- Leads Não Contatados
+- Leads por Elemento
+- Performance do Quiz
+- ROI por Canal (se UTMs implementados)
+
+**Exportações:**
+- CSV/Excel com todos os dados
+- PDF individual por lead
+- Relatório executivo (PowerPoint/PDF)
+
+### 9. CONFIGURAÇÕES
+
+- Gerenciar usuários do dashboard
+- Permissões (admin, vendedor, analista)
+- Webhooks/integrações
+- Backup de dados
+
+---
+
+## 🎨 REQUISITOS DE DESIGN
+
+### Identidade Visual:
+- **Cores Primárias:** Cyan (#06b6d4) e Blue (#3b82f6)
+- **Cores Secundárias:** Slate para neutros
+- **Emojis dos Elementos:** 🌊 🌳 🌍 🔥 💨
+
+### UX/UI:
+- Design moderno e profissional (estilo shadcn/ui)
+- Responsivo (desktop priority, mas funcional em tablet)
+- Dark mode opcional
+- Sidebar com navegação
+- Carregamento rápido (skeleton loaders)
+- Feedback visual em todas as ações
+- Gráficos interativos (hover, drill-down)
+
+---
+
+## 🛠️ STACK TECNOLÓGICA SUGERIDA
+
+### Frontend:
+- **Framework:** Next.js 14+ (App Router)
+- **UI Components:** shadcn/ui + Tailwind CSS
+- **Gráficos:** Recharts ou Chart.js
+- **Tabelas:** TanStack Table (React Table v8)
+- **Formulários:** React Hook Form + Zod
+- **Datas:** date-fns
+- **Icons:** Lucide React
+
+### Backend/Database:
+- **Database:** Supabase (já configurado)
+- **Auth:** NextAuth.js ou Clerk
+- **API Routes:** Next.js API Routes
+- **Real-time:** Supabase Realtime (opcional)
+
+### Deploy:
+- **Hosting:** Vercel
+- **Domínio Sugerido:** dashboard.qigongbrasil.com
+
+---
+
+## 📊 EXEMPLOS DE QUERIES ÚTEIS
+
+```sql
+-- Hot Leads VIP não contatados
+SELECT * FROM quiz_leads 
+WHERE is_hot_lead_vip = true 
+AND whatsapp_status = 'AGUARDANDO_CONTATO'
+ORDER BY lead_score DESC;
+
+-- Leads por elemento
+SELECT elemento_principal, COUNT(*) as total, AVG(lead_score) as score_medio
+FROM quiz_leads
+GROUP BY elemento_principal
+ORDER BY total DESC;
+
+-- Leads criados hoje
+SELECT COUNT(*) FROM quiz_leads 
+WHERE created_at::date = CURRENT_DATE;
+
+-- Taxa de conversão por quadrante
+SELECT quadrante, COUNT(*) as total,
+  SUM(CASE WHEN whatsapp_status = 'CONVERTIDO' THEN 1 ELSE 0 END)::float / COUNT(*) as taxa_conversao
+FROM quiz_leads
+GROUP BY quadrante;
+
+-- Top 10 leads por score
+SELECT nome, email, celular, elemento_principal, lead_score, prioridade
+FROM quiz_leads
+ORDER BY lead_score DESC
+LIMIT 10;
+```
+
+---
+
+## 🚀 FUNCIONALIDADES AVANÇADAS (NICE TO HAVE)
+
+1. **Predição de Conversão:** Machine Learning para prever quais leads têm maior chance de conversão
+2. **Notificações:** Alertas quando hot lead entra, ou lead fica X dias sem contato
+3. **Integração WhatsApp:** API para envio automático de mensagens
+4. **CRM Integration:** Sincronização com RD Station, HubSpot, Pipedrive
+5. **A/B Testing:** Dashboard para acompanhar testes no quiz
+6. **Heatmaps:** Visualizar onde leads clicam/abandonam no quiz
+7. **Automações:** Triggers baseados em comportamento (ex: enviar email após 3 dias)
+
+---
+
+## 📝 OBSERVAÇÕES IMPORTANTES
+
+- A tabela `quiz_leads` já existe e está populada
+- Credenciais do Supabase estão em `.env.local` do projeto atual
+- Equipe técnica: 1-2 desenvolvedores
+- Prazo ideal: 2-3 sprints (4-6 semanas)
+- Usuários do dashboard: 5-10 pessoas (equipe de vendas + gestão)
+
+---
+
+## ✅ ENTREGÁVEIS ESPERADOS
+
+1. **Dashboard funcional** com todas as views principais
+2. **Documentação** de uso para a equipe
+3. **README técnico** para manutenção
+4. **Testes básicos** (pelo menos E2E nos fluxos principais)
+5. **Deploy em produção** (Vercel)
+
+---
+
+## 🎯 PRIORIZAÇÃO (MVP)
+
+### Sprint 1 (Essencial):
+- [ ] Visão geral com métricas principais
+- [ ] Lista de leads com filtros básicos
+- [ ] Detalhes do lead (modal)
+- [ ] Exportação CSV
+- [ ] Auth básico
+
+### Sprint 2 (Importante):
+- [ ] Gráficos e visualizações
+- [ ] Análise por elemento
+- [ ] Funil de vendas
+- [ ] Busca e filtros avançados
+
+### Sprint 3 (Desejável):
+- [ ] Relatórios customizados
+- [ ] Notificações
+- [ ] Gestão de equipe
+- [ ] Integrações
+
+---
+
+**Use este contexto completo para desenvolver um dashboard administrativo profissional e estratégico para gestão dos leads do Quiz MTC.** 🚀
+```
+
+---
+
+## 💾 **Como Usar Este Prompt:**
+
+1. **Copie todo o conteúdo acima**
+2. **Cole em uma nova conversa** com Claude, ChatGPT ou qualquer LLM
+3. **Adicione ao final:** "Desenvolva o dashboard seguindo estas especificações. Comece pela arquitetura e estrutura de pastas do projeto Next.js."
+
+---

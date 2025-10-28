@@ -1,19 +1,18 @@
 const express = require('express');
 const cors = require('cors');
-const { normalizePhone, isValidBrazilianPhone } = require('./lib/phone');
+const path = require('path');
+const { normalizePhone, isValidBrazilianPhone, formatPhoneForUnnichat } = require('./lib/phone');
 const fs = require('fs');
 
-// Importar handlers do dashboard
-// Observação: para permitir testes locais sem SUPABASE,
-// evitamos importar módulos que criam clients na carga.
-// Carregamos dinamicamente dentro das rotas quando necessário.
-const dashboardPage = require('./api/dashboard');
+// Importante: Não importe handlers que criam clients ANTES de carregar .env
+// O dashboard será requerido após configurar o ambiente para evitar supabase nulo
 
 // ========================================
 // CONFIGURAÇÃO DE AMBIENTE
 // ========================================
 
 const isProduction = process.env.NODE_ENV === 'production';
+const DEBUG = process.env.WHATSAPP_DEBUG === 'true' || !isProduction;
 const envFile = isProduction ? '.env.production' : '.env.local';
 
 require('dotenv').config({ path: envFile });
@@ -21,6 +20,10 @@ require('dotenv').config({ path: envFile });
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Servir arquivos estáticos da pasta public
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'build')));
 
 // Carregar credenciais do ambiente
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -45,21 +48,22 @@ if (!UNNICHAT_TOKEN) {
 
 // Obter cliente Supabase centralizado
 const supabase = require('./lib/supabase');
-const path = require('path');
 const diagnosticos = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'api', 'diagnosticos.json'), 'utf-8')
 );
 
-console.log('\n🚀 ========================================');
-console.log('   API Quiz MTC');
-console.log('========================================');
-console.log('🔧 Ambiente:', isProduction ? '🔴 PRODUÇÃO' : '🟡 TESTE');
-console.log('🔗 Supabase:', supabaseUrl);
-console.log('🔑 Supabase KEY:', supabaseKey ? '✅ DEFINIDA' : '❌ NÃO DEFINIDA');
-console.log('🔐 Unnichat TOKEN:', UNNICHAT_TOKEN ? '✅ DEFINIDA' : '❌ NÃO DEFINIDA');
-console.log('📋 Tabela: quiz_leads');
-console.log('📁 Arquivo .env:', envFile);
-console.log('========================================\n');
+if (DEBUG) {
+  console.log('\n🚀 ========================================');
+  console.log('   API Quiz MTC');
+  console.log('========================================');
+  console.log('🔧 Ambiente:', isProduction ? '🔴 PRODUÇÃO' : '🟡 TESTE');
+  console.log('🔗 Supabase:', supabaseUrl);
+  console.log('🔑 Supabase KEY:', supabaseKey ? '✅ DEFINIDA' : '❌ NÃO DEFINIDA');
+  console.log('🔐 Unnichat TOKEN:', UNNICHAT_TOKEN ? '✅ DEFINIDA' : '❌ NÃO DEFINIDA');
+  console.log('📋 Tabela: quiz_leads');
+  console.log('📁 Arquivo .env:', envFile);
+  console.log('========================================\n');
+}
 
 // ========================================
 // FUNÇÕES MTC
@@ -174,27 +178,123 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-// ===== ROTA: BUSCAR LEAD POR TELEFONE =====
+// ===== ROTAS: PÁGINAS HTML (sem extensão) =====
+app.get('/enviar-diagnosticos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'enviar-diagnosticos.html'));
+});
+
+app.get('/test-whatsapp', (req, res) => {
+  if (isProduction) return res.status(404).send('Not found');
+  res.sendFile(path.join(__dirname, 'public', 'test-whatsapp.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+// ===== ROTA: BUSCAR LEAD POR TELEFONE OU EMAIL =====
 app.get('/api/lead/buscar', async (req, res) => {
   try {
-    const { phone } = req.query;
+    const { phone, email } = req.query;
     
-    if (!phone) {
+    if (!phone && !email) {
       return res.status(400).json({
         success: false,
-        error: 'Telefone é obrigatório'
+        error: 'Telefone ou email é obrigatório'
       });
     }
     
-    const phoneNormalized = normalizePhone(phone);
+    let lead = null;
     
-    const { data: lead, error } = await supabase
-      .from('quiz_leads')
-      .select('*')
-      .eq('celular', phoneNormalized)
-      .single();
+    // Busca por telefone (método 3 níveis)
+    if (phone) {
+      const rawDigits = (phone || '').toString().replace(/\D/g, '');
+      const phoneNormalized = normalizePhone(phone);
+      
+      // Tentativa 1: Busca exata
+      const { data: exactLead } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .eq('celular', phoneNormalized)
+        .maybeSingle();
+      
+      if (exactLead) {
+        lead = exactLead;
+      }
+      
+      // Tentativa 1.1: Se veio com DDI completo (12+), tentar igualdade com o valor integral (legado)
+      if (!lead && rawDigits.length >= 12) {
+        const { data: leadFull } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .eq('celular', rawDigits)
+          .maybeSingle();
+        if (leadFull) lead = leadFull;
+      }
+
+      // Tentativa 2: Últimos 10 dígitos (cobre casos onde o banco tem 11 dígitos com 9 a mais)
+      if (!lead && phoneNormalized.length >= 10) {
+        const last10 = phoneNormalized.slice(-10);
+        const { data: partial10 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .ilike('celular', `%${last10}%`)
+          .limit(1)
+          .maybeSingle();
+        if (partial10) lead = partial10;
+      }
+
+      // Tentativa 3: Últimos 9 dígitos
+      if (!lead && phoneNormalized.length >= 9) {
+        const last9 = phoneNormalized.slice(-9);
+        const { data: partial9 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .ilike('celular', `%${last9}%`)
+          .limit(1)
+          .maybeSingle();
+        
+        if (partial9) lead = partial9;
+      }
+      
+      // Tentativa 4: Últimos 8 dígitos
+      if (!lead && phoneNormalized.length >= 8) {
+        const last8 = phoneNormalized.slice(-8);
+        const { data: partial8 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .ilike('celular', `%${last8}%`)
+          .limit(1)
+          .maybeSingle();
+        
+        if (partial8) lead = partial8;
+      }
+    }
     
-    if (error || !lead) {
+    // Busca por email
+    if (!lead && email) {
+      const emailNorm = email.toString().trim().toLowerCase();
+      // Tentativa 1: igualdade (para registros limpos)
+      const { data: emailExact } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .eq('email', emailNorm)
+        .maybeSingle();
+      if (emailExact) {
+        lead = emailExact;
+      } else {
+        // Tentativa 2: ilike contendo (tolerante a espaços/quebras de linha salvos indevidamente)
+        const { data: emailLike } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .ilike('email', `%${emailNorm}%`)
+          .limit(1)
+          .maybeSingle();
+        if (emailLike) lead = emailLike;
+      }
+    }
+    
+    if (!lead) {
       return res.json({
         success: false,
         message: 'Lead não encontrado'
@@ -215,99 +315,143 @@ app.get('/api/lead/buscar', async (req, res) => {
 });
 
 // ===== ROTA: ENVIO WHATSAPP MANUAL =====
+async function sendWhatsAppInternal({ phone, customMessage, leadId, sendDiagnostico }) {
+  let phoneToUse = phone;
+  let messageToSend = customMessage;
+  let contactName = 'Contato Quiz';
+  let contactEmail;
+
+  if (leadId) {
+    const { data: lead, error } = await supabase
+      .from('quiz_leads')
+      .select('*')
+      .eq('id', leadId)
+      .single();
+    if (error || !lead) throw new Error('Lead não encontrado');
+    phoneToUse = lead.celular;
+    messageToSend = customMessage || (sendDiagnostico ? lead.diagnostico_completo : lead.script_abertura);
+    contactName = lead.nome || contactName;
+    contactEmail = lead.email;
+  }
+
+  if (!phoneToUse || !messageToSend) throw new Error('Telefone e mensagem são obrigatórios');
+
+  const phoneNormalized = normalizePhone(phoneToUse);
+  const phoneForUnnichat = formatPhoneForUnnichat(phoneNormalized);
+
+  console.log('📱 Enviando para:', phoneForUnnichat);
+  console.log('📝 Mensagem:', messageToSend.substring(0, 100) + '...');
+
+  if (process.env.WHATSAPP_SIMULATION_MODE === 'true') {
+    console.log('🧪 SIMULAÇÃO ATIVA - não enviando');
+    return { success: true, phone: phoneNormalized, message: 'Mensagem simulada (modo teste)', simulation: true };
+  }
+
+  console.log('🔗 API URL:', `${UNNICHAT_API_URL}/meta/messages`);
+
+  // Tentar atualizar/criar contato previamente quando houver leadId
+  if (leadId) {
+    try {
+      await fetch(`${UNNICHAT_API_URL}/contact`, {
+        method: 'POST', headers: { 'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: contactName, phone: phoneForUnnichat, email: contactEmail || `${phoneNormalized}@placeholder.com`, tags: ['manual_send','pre_send'] })
+      });
+      await new Promise(r=>setTimeout(r, 1200));
+    } catch (e) { console.log('⚠️ Contato (pré-envio):', e.message); }
+  }
+
+  async function sendOnce() {
+    const resp = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
+      method: 'POST', headers: { 'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phoneForUnnichat, messageText: messageToSend })
+    });
+    return { status: resp.status, statusText: resp.statusText, json: await resp.json() };
+  }
+
+  let first = await sendOnce();
+  console.log('📊 Status HTTP:', first.status, first.statusText);
+  console.log('📦 Resposta Unnichat:', JSON.stringify(first.json, null, 2));
+
+  if ((first.json && first.json.message && /Contact not found/i.test(first.json.message)) || (first.status === 400 && /contact/i.test(JSON.stringify(first.json||{})))) {
+    console.log('🔁 Criando/atualizando contato...');
+    try {
+      await fetch(`${UNNICHAT_API_URL}/contact`, {
+        method: 'POST', headers: { 'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: contactName, phone: phoneForUnnichat, email: contactEmail || `${phoneNormalized}@placeholder.com`, tags: ['manual_send','api_whatsapp_send'] })
+      });
+      await new Promise(r=>setTimeout(r, 800));
+    } catch (e) { console.log('⚠️ Contato:', e.message); }
+
+    first = await sendOnce();
+    console.log('📊 Retry Status HTTP:', first.status, first.statusText);
+    console.log('📦 Retry Resposta Unnichat:', JSON.stringify(first.json, null, 2));
+  }
+
+  if (first.json && first.json.code && first.json.code !== '200') {
+    throw new Error(first.json.message || 'Erro ao enviar');
+  }
+
+  console.log('✅ Mensagem enviada com sucesso!\n');
+  return { success: true, phone: phoneNormalized, message: 'Mensagem enviada com sucesso' };
+}
+
 app.post('/api/whatsapp/send', async (req, res) => {
   try {
-    const { phone, customMessage, leadId } = req.body;
-    
     console.log('\n📤 ENVIO MANUAL WHATSAPP');
-    
-    let phoneToUse = phone;
-    let messageToSend = customMessage;
-    
-    // Se forneceu leadId, buscar dados do lead
-    if (leadId) {
-      const { data: lead, error } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .eq('id', leadId)
-        .single();
-      
-      if (error || !lead) {
-        return res.status(404).json({
-          success: false,
-          error: 'Lead não encontrado'
-        });
-      }
-      
-      phoneToUse = lead.celular;
-      messageToSend = customMessage || lead.script_abertura;
-    }
-    
-    if (!phoneToUse || !messageToSend) {
-      return res.status(400).json({
-        success: false,
-        error: 'Telefone e mensagem são obrigatórios'
-      });
-    }
-    
-    const phoneNormalized = normalizePhone(phoneToUse);
-    const phoneForUnnichat = `55${phoneNormalized}`;
-    
-    console.log('📱 Enviando para:', phoneForUnnichat);
-    console.log('📝 Mensagem:', messageToSend.substring(0, 100) + '...');
-    
-    // Modo simulação para testes (sem enviar de verdade)
-    if (process.env.WHATSAPP_SIMULATION_MODE === 'true') {
-      console.log('🧪 MODO SIMULAÇÃO ATIVADO - Mensagem NÃO será enviada de verdade');
-      console.log('✅ Simulação concluída com sucesso!\n');
-      
-      return res.json({
-        success: true,
-        phone: phoneNormalized,
-        message: 'Mensagem simulada com sucesso (modo teste)',
-        simulation: true
-      });
-    }
-    
-    console.log('🔗 API URL:', `${UNNICHAT_API_URL}/meta/messages`);
-    
-    const msgResponse = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        phone: phoneForUnnichat,
-        messageText: messageToSend
-      })
-    });
-    
-    console.log('📊 Status HTTP:', msgResponse.status, msgResponse.statusText);
-    
-    const msgResult = await msgResponse.json();
-    
-    console.log('📦 Resposta Unnichat:', JSON.stringify(msgResult, null, 2));
-    
-    if (msgResult.code && msgResult.code !== '200') {
-      console.error('❌ Erro Unnichat:', msgResult);
-      throw new Error(msgResult.message || 'Erro ao enviar');
-    }
-    
-    console.log('✅ Mensagem enviada com sucesso!\n');
-    
-    res.json({
-      success: true,
-      phone: phoneNormalized,
-      message: 'Mensagem enviada com sucesso'
-    });
-    
+    const result = await sendWhatsAppInternal(req.body || {});
+    res.json(result);
   } catch (error) {
     console.error('❌ Erro:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ===== ROTA: ENVIO DIAGNÓSTICO (GET) - DEBUG/ADMIN =====
+app.get('/api/whatsapp/send/diagnostico/:leadId', async (req, res) => {
+  try {
+    const secret = req.query.secret;
+    const expected = process.env.ADMIN_SECRET || process.env.CRON_SECRET;
+    if (!expected || secret !== expected) return res.status(401).json({ success: false, error: 'Não autorizado' });
+    const leadId = req.params.leadId;
+    const result = await sendWhatsAppInternal({ leadId, sendDiagnostico: true });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// ===== ROTA: BUSCA FLEXÍVEL (nome/email/telefone parcial) =====
+app.get('/api/leads/search', async (req, res) => {
+  try {
+    const q = (req.query.q || '').toString().trim();
+    if (!q) return res.status(400).json({ success: false, error: 'Parâmetro q é obrigatório' });
+
+    let query = supabase.from('quiz_leads').select('*').limit(10);
+
+    // Se há arroba, prioriza email
+    if (q.includes('@')) {
+      query = query.ilike('email', `%${q}%`);
+    } else {
+      // Monta busca OR em nome/email/celular
+      const digits = q.replace(/\D/g, '');
+      // Supabase não suporta OR com funções no client oficial v2 de forma simples via builder,
+      // então encadeamos filtros de forma ampla usando .or
+      const filters = [
+        `nome.ilike.%${q}%`,
+        `email.ilike.%${q}%`
+      ];
+      if (digits.length >= 6) {
+        filters.push(`celular.ilike.%${digits}%`);
+      }
+      query = query.or(filters.join(','));
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json({ success: true, results: data || [] });
+
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -333,7 +477,10 @@ app.post('/api/submit', async (req, res) => {
     console.log('📱 Telefone original:', lead.CELULAR);
     console.log('📱 Telefone normalizado:', celularNormalizado);
     
-    const contagem = contarElementos(respostas);
+  // Normalizar email
+  const emailNormalizado = (lead.EMAIL || '').toString().trim().toLowerCase();
+
+  const contagem = contarElementos(respostas);
     const elementoPrincipal = determinarElementoPrincipal(contagem);
     const intensidade = calcularIntensidade(respostas);
     const urgencia = calcularUrgencia(respostas);
@@ -351,8 +498,8 @@ app.post('/api/submit', async (req, res) => {
     const scriptAbertura = config.script_abertura.replace(/{NOME}/g, primeiroNome);
     
     const dadosParaSalvar = {
-      nome: lead.NOME,
-      email: lead.EMAIL,
+      nome: (lead.NOME || '').toString().trim(),
+      email: emailNormalizado,
       respostas: respostas,
       elemento_principal: elementoPrincipal,
       codigo_perfil: `${elementoPrincipal.substring(0, 2)}-${intensidade}`,
@@ -415,8 +562,16 @@ app.post('/api/submit', async (req, res) => {
 // ===== WEBHOOK: VER RESULTADOS (MELHORADO) =====
 app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
   try {
-    console.log('\n📥 WEBHOOK RECEBIDO');
-    console.log('📋 Payload completo:', JSON.stringify(req.body, null, 2));
+    if (DEBUG) {
+      console.log('\n📥 WEBHOOK RECEBIDO');
+      // Evitar logar PII sensível em produção
+      const safePreview = { ...req.body };
+      if (safePreview.phone) safePreview.phone = '[REDACTED]';
+      if (safePreview.from) safePreview.from = '[REDACTED]';
+      if (safePreview.contact?.phone) safePreview.contact.phone = '[REDACTED]';
+      if (safePreview.contact?.email) safePreview.contact.email = '[REDACTED]';
+      console.log('📋 Payload (resumo):', JSON.stringify(safePreview, null, 2));
+    }
     
     const webhookData = req.body;
     
@@ -431,9 +586,11 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
     const emailFromWebhook = webhookData.email || webhookData.contact?.email;
     const nameFromWebhook = webhookData.name || webhookData.contact?.name;
     
-    console.log('📱 Telefone recebido:', phoneFromWebhook);
-    console.log('📧 Email recebido:', emailFromWebhook);
-    console.log('👤 Nome recebido:', nameFromWebhook);
+    if (DEBUG) {
+      console.log('📱 Telefone recebido:', phoneFromWebhook ? '[OK]' : 'N/D');
+      console.log('📧 Email recebido:', emailFromWebhook ? '[OK]' : 'N/D');
+      console.log('👤 Nome recebido:', nameFromWebhook || 'N/D');
+    }
     
     let lead = null;
     
@@ -441,11 +598,11 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
     // MÉTODO 1: BUSCAR POR TELEFONE (MÚLTIPLAS TENTATIVAS)
     // ========================================
     if (phoneFromWebhook) {
-      const phoneClean = phoneFromWebhook.replace(/\D/g, '').replace(/^55/, '');
-      console.log('🔍 Telefone normalizado:', phoneClean);
+  const phoneClean = phoneFromWebhook.replace(/\D/g, '').replace(/^55/, '');
+  if (DEBUG) console.log('🔍 Telefone normalizado:', phoneClean);
       
       // TENTATIVA 1: Buscar exato
-      console.log('🔍 Tentativa 1: Busca exata por telefone...');
+  if (DEBUG) console.log('🔍 Tentativa 1: Busca exata por telefone...');
       const { data: leadExato } = await supabase
         .from('quiz_leads')
         .select('*')
@@ -457,10 +614,28 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
         console.log('✅ Lead encontrado (busca exata):', lead.nome);
       }
       
-      // TENTATIVA 2: Buscar pelos últimos 9 dígitos (ignora DDD variações)
+      // TENTATIVA 2: Buscar pelos últimos 10 dígitos (cobre casos com dígito 9 a mais)
+      if (!lead && phoneClean.length >= 10) {
+        const ultimos10 = phoneClean.slice(-10);
+        if (DEBUG) console.log('🔍 Tentativa 2: Busca pelos últimos 10 dígitos:', ultimos10);
+        const { data: leads10 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .ilike('celular', `%${ultimos10}%`)
+          .limit(5);
+        if (leads10 && leads10.length > 0) {
+          lead = leads10[0];
+          if (DEBUG) {
+            console.log('✅ Lead encontrado (últimos 10 dígitos):', lead.nome);
+            console.log('   Telefone no banco:', lead.celular);
+          }
+        }
+      }
+
+      // TENTATIVA 3: Buscar pelos últimos 9 dígitos (ignora DDD variações)
       if (!lead && phoneClean.length >= 9) {
         const ultimos9 = phoneClean.slice(-9);
-        console.log('🔍 Tentativa 2: Busca pelos últimos 9 dígitos:', ultimos9);
+  if (DEBUG) console.log('🔍 Tentativa 3: Busca pelos últimos 9 dígitos:', ultimos9);
         
         const { data: leadsParecidos } = await supabase
           .from('quiz_leads')
@@ -470,26 +645,30 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
         
         if (leadsParecidos && leadsParecidos.length > 0) {
           lead = leadsParecidos[0];
-          console.log('✅ Lead encontrado (últimos 9 dígitos):', lead.nome);
-          console.log('   Telefone no banco:', lead.celular);
+          if (DEBUG) {
+            console.log('✅ Lead encontrado (últimos 9 dígitos):', lead.nome);
+            console.log('   Telefone no banco:', lead.celular);
+          }
         }
       }
       
-      // TENTATIVA 3: Buscar com LIKE parcial (últimos 8 dígitos)
+      // TENTATIVA 4: Buscar com LIKE parcial (últimos 8 dígitos)
       if (!lead && phoneClean.length >= 8) {
         const ultimos8 = phoneClean.slice(-8);
-        console.log('🔍 Tentativa 3: Busca pelos últimos 8 dígitos:', ultimos8);
+        if (DEBUG) console.log('🔍 Tentativa 4: Busca pelos últimos 8 dígitos:', ultimos8);
         
         const { data: leadsParecidos } = await supabase
           .from('quiz_leads')
           .select('*')
-          .ilike('celular', `%${ultimos8}`)
+          .ilike('celular', `%${ultimos8}%`)
           .limit(5);
         
         if (leadsParecidos && leadsParecidos.length > 0) {
           lead = leadsParecidos[0];
-          console.log('✅ Lead encontrado (últimos 8 dígitos):', lead.nome);
-          console.log('   Telefone no banco:', lead.celular);
+          if (DEBUG) {
+            console.log('✅ Lead encontrado (últimos 8 dígitos):', lead.nome);
+            console.log('   Telefone no banco:', lead.celular);
+          }
         }
       }
     }
@@ -498,7 +677,7 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
     // MÉTODO 2: FALLBACK POR EMAIL
     // ========================================
     if (!lead && emailFromWebhook) {
-      console.log('🔍 Fallback: Buscando por email:', emailFromWebhook);
+  if (DEBUG) console.log('🔍 Fallback: Buscando por email');
       
       const { data: leadByEmail } = await supabase
         .from('quiz_leads')
@@ -513,10 +692,10 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
     }
     
     // ========================================
-    // MÉTODO 3: FALLBACK POR NOME (último recurso)
+    // MÉTODO 3: FALLBACK POR NOME (último recurso - apenas como informação)
     // ========================================
     if (!lead && nameFromWebhook) {
-      console.log('🔍 Fallback: Buscando por nome:', nameFromWebhook);
+  if (DEBUG) console.log('🔍 Fallback: Buscando por nome');
       
       const { data: leadsByName } = await supabase
         .from('quiz_leads')
@@ -530,33 +709,15 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
         console.log('   (Múltiplos resultados possíveis)');
       }
     }
-    
-    // ========================================
-    // MÉTODO 4: FALLBACK FINAL - Último com template_enviado
-    // ========================================
-    if (!lead) {
-      console.log('🔍 Fallback final: Último lead com template_enviado');
-      
-      const { data: leads } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .eq('whatsapp_status', 'template_enviado')
-        .order('whatsapp_sent_at', { ascending: false })
-        .limit(1);
-      
-      if (leads && leads.length > 0) {
-        lead = leads[0];
-        console.log('⚠️ Lead identificado por fallback final:', lead.nome);
-        console.log('   Telefone:', lead.celular);
-      }
-    }
 
     // ❌ Se ainda não encontrou
     if (!lead) {
-      console.error('❌ ERRO: Nenhum lead identificado!');
-      console.error('   Telefone buscado:', phoneFromWebhook);
-      console.error('   Email buscado:', emailFromWebhook);
-      console.error('   Nome buscado:', nameFromWebhook);
+      if (DEBUG) {
+        console.error('❌ ERRO: Nenhum lead identificado!');
+        console.error('   Telefone buscado:', phoneFromWebhook);
+        console.error('   Email buscado:', emailFromWebhook);
+        console.error('   Nome buscado:', nameFromWebhook);
+      }
       
       return res.status(404).json({ 
         success: false, 
@@ -564,11 +725,13 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
       });
     }
 
-    console.log('\n✅ LEAD FINAL IDENTIFICADO:');
-    console.log('   Nome:', lead.nome);
-    console.log('   Telefone:', lead.celular);
-    console.log('   Email:', lead.email);
-    console.log('   Elemento:', lead.elemento_principal);
+    if (DEBUG) {
+      console.log('\n✅ LEAD FINAL IDENTIFICADO:');
+      console.log('   Nome:', lead.nome);
+      console.log('   Telefone:', lead.celular);
+      console.log('   Email:', lead.email);
+      console.log('   Elemento:', lead.elemento_principal);
+    }
 
     // Normalizar telefone salvo e formatar para Unnichat (evita 55 duplicado e espaços)
     const normalizedDbPhone = normalizePhone(lead.celular);
@@ -581,7 +744,7 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
           .from('quiz_leads')
           .update({ celular: normalizedDbPhone, updated_at: new Date().toISOString() })
           .eq('id', lead.id);
-        console.log('🛠️ Telefone do lead normalizado no banco:', lead.celular, '→', normalizedDbPhone);
+  if (DEBUG) console.log('🛠️ Telefone do lead normalizado no banco:', lead.celular, '→', normalizedDbPhone);
         lead.celular = normalizedDbPhone;
       } catch (e) {
         console.log('⚠️ Não foi possível atualizar telefone normalizado no banco:', e.message);
@@ -604,7 +767,7 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
         })
       });
       
-      console.log('✅ Contato atualizado');
+  if (DEBUG) console.log('✅ Contato atualizado');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
     } catch (error) {
@@ -633,7 +796,7 @@ ${diagnosticoFormatado}
 Responda esta mensagem que o Mestre Ye te ajuda! 🙏
     `.trim();
 
-    console.log('📨 Enviando diagnóstico...');
+  if (DEBUG) console.log('📨 Enviando diagnóstico...');
     
     // Enviar diagnóstico com 1 retry em caso de "Contact not found"
     async function sendOnce() {
@@ -650,7 +813,7 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
 
     let msgResult = await sendOnce();
     if (msgResult && msgResult.message && /Contact not found/i.test(msgResult.message)) {
-      console.log('🔁 Retry após "Contact not found" (forçando atualização de contato)');
+      if (DEBUG) console.log('🔁 Retry após "Contact not found" (forçando atualização de contato)');
       try {
         await fetch(`${UNNICHAT_API_URL}/contact`, {
           method: 'POST',
@@ -677,7 +840,7 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
       throw new Error(msgResult.message || 'Erro ao enviar mensagem');
     }
 
-    console.log('✅ Diagnóstico enviado com sucesso!\n');
+  if (DEBUG) console.log('✅ Diagnóstico enviado com sucesso!\n');
 
     // Atualizar status
     await supabase
@@ -897,13 +1060,14 @@ app.options('/api/gerar-link-compartilhamento', (req, res) => require('./api/ger
 app.post('/api/gerar-link-compartilhamento', (req, res) => require('./api/gerar-link-compartilhamento')(req, res));
 
 // ===== ROTAS DO DASHBOARD =====
-app.get('/dashboard', (req, res) => dashboardPage(req, res));
-app.get('/api/dashboard', (req, res) => dashboardPage(req, res));
-const unifiedDashboard = require('./api/dashboard');
-app.get('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; unifiedDashboard(req, res); });
-app.post('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; unifiedDashboard(req, res); });
-app.get('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; unifiedDashboard(req, res); });
-app.post('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; unifiedDashboard(req, res); });
+// Requerer o handler APÓS carregar .env para garantir SUPABASE_* disponíveis
+const dashboardHandler = require('./api/dashboard');
+app.get('/dashboard', (req, res) => dashboardHandler(req, res));
+app.get('/api/dashboard', (req, res) => dashboardHandler(req, res));
+app.get('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; dashboardHandler(req, res); });
+app.post('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; dashboardHandler(req, res); });
+app.get('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
+app.post('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
 
 // INICIAR SERVIDOR
 // ========================================

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enviar Diagnósticos - Quiz MTC</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #333;
+      font-size: 28px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .env-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .env-badge.staging {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .env-badge.prod {
+      background: #dc2626;
+      color: white;
+    }
+
+    .info-box {
+      background: #dbeafe;
+      border-left: 4px solid #3b82f6;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      font-size: 14px;
+      color: #1e40af;
+      line-height: 1.5;
+    }
+
+    .search-section {
+      margin-bottom: 30px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .input-with-icon {
+      position: relative;
+    }
+
+    .input-with-icon input {
+      width: 100%;
+      padding: 14px 14px 14px 45px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 15px;
+      transition: all 0.3s;
+      font-family: inherit;
+    }
+
+    .input-with-icon .icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #06b6d4;
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(6, 182, 212, 0.4);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .lead-card {
+      background: #f9fafb;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: none;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .lead-card.show {
+      display: block;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .lead-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .lead-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .lead-name {
+      flex: 1;
+    }
+
+    .lead-name h3 {
+      font-size: 18px;
+      color: #1f2937;
+      margin-bottom: 3px;
+    }
+
+    .lead-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-vip {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .lead-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .detail-item {
+      font-size: 13px;
+    }
+
+    .detail-label {
+      color: #6b7280;
+      font-weight: 500;
+      display: block;
+      margin-bottom: 3px;
+    }
+
+    .detail-value {
+      color: #1f2937;
+      font-weight: 600;
+    }
+
+    .score-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .score-high { background: #fee2e2; color: #991b1b; }
+    .score-medium { background: #fef3c7; color: #92400e; }
+    .score-low { background: #d1fae5; color: #065f46; }
+
+    .preview-section {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .preview-label {
+      font-size: 12px;
+      color: #6b7280;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .preview-text {
+      font-size: 13px;
+      color: #374151;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      grid-column: 1 / -1;
+    }
+
+    .btn-send:hover:not(:disabled) {
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #e5e7eb;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 14px;
+      display: none;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .result.success {
+      background: #d1fae5;
+      color: #065f46;
+      border-left: 4px solid #10b981;
+    }
+
+    .result.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border-left: 4px solid #ef4444;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .history-section {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 2px solid #e5e7eb;
+    }
+
+    .history-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 15px;
+    }
+
+    .history-item {
+      background: #f9fafb;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 13px;
+      color: #6b7280;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item .name {
+      font-weight: 600;
+      color: #1f2937;
+    }
+
+    .history-item .time {
+      font-size: 11px;
+      color: #9ca3af;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #9ca3af;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>
+        📋 Enviar Diagnósticos
+      </h1>
+      <p>Sistema de envio para equipe - Quiz MTC</p>
+      <span id="envBadge" class="env-badge staging">🧪 Staging</span>
+    </div>
+
+    <div class="info-box">
+      📋 <strong>Busca lead pelo telefone ou e-mail</strong> e envia o diagnóstico completo automaticamente
+    </div>
+
+    <!-- Seção de Busca -->
+    <div class="search-section">
+      <form id="searchForm">
+        <div class="form-group">
+          <label for="searchInput">Buscar por Telefone ou E-mail:</label>
+          <div class="input-with-icon">
+            <span class="icon">🔍</span>
+            <input 
+              type="text" 
+              id="searchInput" 
+              name="searchInput"
+              placeholder="11998457676 ou email@exemplo.com" 
+              required
+            >
+          </div>
+        </div>
+
+        <button type="submit" class="btn" id="searchBtn">
+          <span>🔍</span>
+          <span>Buscar Lead</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Card do Lead -->
+    <div id="leadCard" class="lead-card">
+      <div class="lead-header">
+        <div class="lead-avatar" id="leadAvatar">🌊</div>
+        <div class="lead-name">
+          <h3 id="leadName">-</h3>
+          <span class="lead-badge badge-vip" id="vipBadge" style="display: none;">⭐ VIP</span>
+        </div>
+      </div>
+
+      <div class="lead-details">
+        <div class="detail-item">
+          <span class="detail-label">📱 Telefone</span>
+          <span class="detail-value" id="leadPhone">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">📧 E-mail</span>
+          <span class="detail-value" id="leadEmail">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">🧘 Elemento</span>
+          <span class="detail-value" id="leadElement">-</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">🎯 Lead Score</span>
+          <span class="score-badge" id="leadScore">-</span>
+        </div>
+      </div>
+
+      <div class="preview-section">
+        <div class="preview-label">📝 Preview do Diagnóstico:</div>
+        <div class="preview-text" id="previewText">-</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-send" id="sendBtn">
+          <span>📤</span>
+          <span>Enviar Diagnóstico via WhatsApp</span>
+        </button>
+        <button class="btn btn-secondary" onclick="copiarDiagnostico()">
+          📋 Copiar Texto
+        </button>
+        <button class="btn btn-secondary" onclick="limparBusca()">
+          🔄 Nova Busca
+        </button>
+      </div>
+    </div>
+
+    <div id="result" class="result"></div>
+
+    <!-- Histórico de Envios -->
+    <div class="history-section">
+      <div class="history-title">📊 Últimos Envios (Sessão Atual)</div>
+      <div id="historyList">
+        <div class="empty-state">
+          <div class="empty-state-icon">📭</div>
+          <p>Nenhum envio realizado ainda</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1';
+    const API_URL = isLocalhost ? '' : window.location.origin;
+
+    let currentLead = null;
+    const history = [];
+
+    const ELEMENTO_EMOJIS = {
+      'RIM': '🌊',
+      'FIGADO': '🌳',
+      'FÍGADO': '🌳',
+      'BACO': '🌍',
+      'BAÇO': '🌍',
+      'CORACAO': '🔥',
+      'CORAÇÃO': '🔥',
+      'PULMAO': '💨',
+      'PULMÃO': '💨'
+    };
+
+    const ELEMENTO_COLORS = {
+      'RIM': 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
+      'FIGADO': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      'FÍGADO': 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      'BACO': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      'BAÇO': 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      'CORACAO': 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+      'CORAÇÃO': 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+      'PULMAO': 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)',
+      'PULMÃO': 'linear-gradient(135deg, #94a3b8 0%, #64748b 100%)'
+    };
+
+    // Detectar ambiente
+    async function detectarAmbiente() {
+      try {
+        const response = await fetch(`${API_URL}/api/status`);
+        const data = await response.json();
+        
+        const envBadge = document.getElementById('envBadge');
+        const isProduction = data.environment === 'production';
+        
+        if (isProduction) {
+          envBadge.textContent = '🔴 PRODUÇÃO';
+          envBadge.className = 'env-badge prod';
+        } else {
+          envBadge.textContent = '🧪 Staging';
+          envBadge.className = 'env-badge staging';
+        }
+      } catch (error) {
+        console.error('Erro ao detectar ambiente:', error);
+      }
+    }
+
+    detectarAmbiente();
+
+    function showResult(message, isSuccess) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = message;
+      resultDiv.className = 'result ' + (isSuccess ? 'success' : 'error') + ' show';
+      
+      setTimeout(() => {
+        resultDiv.classList.remove('show');
+      }, 5000);
+    }
+
+    function isEmail(text) {
+      return text.includes('@');
+    }
+
+    function formatPhone(phone) {
+      const cleaned = phone.replace(/\D/g, '');
+      if (cleaned.length === 11) {
+        return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+      } else if (cleaned.length === 10) {
+        return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`;
+      }
+      return phone;
+    }
+
+    function getScoreBadgeClass(score) {
+      if (score >= 70) return 'score-high';
+      if (score >= 40) return 'score-medium';
+      return 'score-low';
+    }
+
+    function displayLead(lead) {
+      currentLead = lead;
+      
+      // Avatar e cor
+      const elemento = lead.elemento_principal || 'RIM';
+      const emoji = ELEMENTO_EMOJIS[elemento.toUpperCase()] || '🧘';
+      const color = ELEMENTO_COLORS[elemento.toUpperCase()] || '#06b6d4';
+      
+      document.getElementById('leadAvatar').textContent = emoji;
+      document.getElementById('leadAvatar').style.background = color;
+      
+      // Dados
+      document.getElementById('leadName').textContent = lead.nome;
+      document.getElementById('leadPhone').textContent = formatPhone(lead.celular);
+      document.getElementById('leadEmail').textContent = lead.email || 'Não informado';
+      document.getElementById('leadElement').textContent = `${emoji} ${elemento}`;
+      
+      // Score
+      const scoreEl = document.getElementById('leadScore');
+      scoreEl.textContent = lead.lead_score || 0;
+      scoreEl.className = 'score-badge ' + getScoreBadgeClass(lead.lead_score || 0);
+      
+      // VIP Badge
+      if (lead.is_hot_lead_vip) {
+        document.getElementById('vipBadge').style.display = 'inline-block';
+      } else {
+        document.getElementById('vipBadge').style.display = 'none';
+      }
+      
+      // Preview do diagnóstico
+      const diagnostico = lead.diagnostico_completo || lead.script_abertura || 'Diagnóstico não disponível';
+      const primeiroNome = lead.nome.split(' ')[0];
+      const diagnosticoFormatado = diagnostico.replace(/{NOME}/g, primeiroNome);
+      
+      document.getElementById('previewText').textContent = diagnosticoFormatado.substring(0, 300) + '...';
+      
+      // Mostrar card
+      document.getElementById('leadCard').classList.add('show');
+    }
+
+    function limparBusca() {
+      currentLead = null;
+      document.getElementById('leadCard').classList.remove('show');
+      document.getElementById('searchInput').value = '';
+      document.getElementById('searchInput').focus();
+    }
+
+    function copiarDiagnostico() {
+      if (!currentLead) return;
+      
+      const diagnostico = currentLead.diagnostico_completo || currentLead.script_abertura;
+      const primeiroNome = currentLead.nome.split(' ')[0];
+      const diagnosticoFormatado = diagnostico.replace(/{NOME}/g, primeiroNome);
+      
+      navigator.clipboard.writeText(diagnosticoFormatado).then(() => {
+        showResult('✅ Diagnóstico copiado para a área de transferência!', true);
+      }).catch(err => {
+        showResult('❌ Erro ao copiar texto', false);
+      });
+    }
+
+    function addToHistory(lead) {
+      history.unshift({
+        nome: lead.nome,
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      });
+      
+      if (history.length > 5) history.pop();
+      
+      updateHistoryUI();
+    }
+
+    function updateHistoryUI() {
+      const historyList = document.getElementById('historyList');
+      
+      if (history.length === 0) {
+        historyList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>Nenhum envio realizado ainda</p>
+          </div>
+        `;
+        return;
+      }
+      
+      historyList.innerHTML = history.map(item => `
+        <div class="history-item">
+          <span>✅ <span class="name">${item.nome}</span></span>
+          <span class="time">${item.time}</span>
+        </div>
+      `).join('');
+    }
+
+    // Form de busca
+    document.getElementById('searchForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const searchInput = document.getElementById('searchInput').value.trim();
+      const searchBtn = document.getElementById('searchBtn');
+      
+      if (!searchInput) {
+        showResult('❌ Digite um telefone ou e-mail para buscar', false);
+        return;
+      }
+      
+      searchBtn.disabled = true;
+      searchBtn.innerHTML = '<span class="loading"></span> <span>Buscando...</span>';
+      
+      try {
+        const isEmailSearch = isEmail(searchInput);
+        const param = isEmailSearch ? `email=${encodeURIComponent(searchInput)}` : `phone=${searchInput}`;
+        
+        let response = await fetch(`${API_URL}/api/lead/buscar?${param}`);
+        let data = await response.json();
+        
+        if (!data.success || !data.lead) {
+          // Fallback: busca flexível por nome/email/telefone parcial
+          const resp2 = await fetch(`${API_URL}/api/leads/search?q=${encodeURIComponent(searchInput)}`);
+          const data2 = await resp2.json();
+          if (data2.success && data2.results && data2.results.length > 0) {
+            displayLead(data2.results[0]);
+            showResult('✅ Lead encontrado (busca flexível)', true);
+          } else {
+            showResult(`❌ Lead não encontrado com esse ${isEmailSearch ? 'e-mail' : 'telefone'}.`, false);
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = '<span>🔍</span> <span>Buscar Lead</span>';
+            return;
+          }
+        } else {
+          displayLead(data.lead);
+          showResult('✅ Lead encontrado com sucesso!', true);
+        }
+        
+      } catch (error) {
+        showResult('❌ Erro ao buscar lead: ' + error.message, false);
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = '<span>🔍</span> <span>Buscar Lead</span>';
+      }
+    });
+
+    // Botão de enviar
+    document.getElementById('sendBtn').addEventListener('click', async () => {
+      if (!currentLead) return;
+      
+      const sendBtn = document.getElementById('sendBtn');
+      sendBtn.disabled = true;
+      sendBtn.innerHTML = '<span class="loading"></span> <span>Enviando...</span>';
+      
+      try {
+        const response = await fetch(`${API_URL}/api/whatsapp/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: currentLead.id, sendDiagnostico: true })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showResult(`✅ Diagnóstico enviado com sucesso para ${currentLead.nome}!`, true);
+          addToHistory(currentLead);
+          
+          setTimeout(() => {
+            limparBusca();
+          }, 2000);
+        } else {
+          showResult('❌ Erro ao enviar: ' + (data.error || 'Erro desconhecido'), false);
+        }
+        
+      } catch (error) {
+        showResult('❌ Erro: ' + error.message, false);
+      } finally {
+        sendBtn.disabled = false;
+        sendBtn.innerHTML = '<span>📤</span> <span>Enviar Diagnóstico via WhatsApp</span>';
+      }
+    });
+
+    // Focus no input ao carregar
+    document.getElementById('searchInput').focus();
+  </script>
+</body>
+</html>

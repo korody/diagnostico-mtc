@@ -79,34 +79,20 @@ module.exports = async (req, res) => {
     console.log('\n📥 NOVO QUIZ:', lead.NOME);
     
     // Normalizar telefone ANTES de salvar
-    let celularNormalizado = normalizePhone(lead.CELULAR);
-    
-    // Se não for telefone brasileiro válido, aceitar como internacional
-    // (remove apenas caracteres não numéricos, sem validar formato específico)
-    if (!isValidBrazilianPhone(celularNormalizado)) {
-      console.log('⚠️ Telefone não-brasileiro detectado:', lead.CELULAR);
-      // Para telefones internacionais, manter apenas dígitos (já com DDI)
-      celularNormalizado = lead.CELULAR.replace(/\D/g, '');
-      
-      // Validação mínima: pelo menos 8 dígitos
-      if (celularNormalizado.length < 8) {
-        console.log('❌ Telefone inválido (muito curto):', celularNormalizado);
-        return res.status(400).json({
-          success: false,
-          error: 'Telefone inválido: mínimo 8 dígitos'
-        });
-      }
-      
-      // Importante: salvar telefone internacional COM o DDI completo
-      console.log('🌍 Telefone internacional será salvo com DDI:', celularNormalizado);
-    } else {
-      // Para telefones brasileiros, adicionar DDI 55
-      celularNormalizado = `55${celularNormalizado}`;
-      console.log('🇧🇷 Telefone brasileiro será salvo com DDI 55:', celularNormalizado);
-    }
+    // IMPORTANTE: Salvar SEMPRE sem DDI 55 para facilitar buscas
+    const celularNormalizado = normalizePhone(lead.CELULAR);
     
     console.log('📱 Telefone original:', lead.CELULAR);
-    console.log('📱 Telefone normalizado (com DDI):', celularNormalizado);
+    console.log('📱 Telefone normalizado (SEM DDI):', celularNormalizado);
+    
+    // Validação: telefone brasileiro deve ter 10 ou 11 dígitos
+    if (!isValidBrazilianPhone(celularNormalizado)) {
+      console.log('❌ Telefone inválido:', celularNormalizado);
+      return res.status(400).json({
+        success: false,
+        error: 'Telefone inválido. Use formato brasileiro: (11) 99999-9999'
+      });
+    }
     
     // Calcular diagnóstico
     const contagem = contarElementos(respostas);
