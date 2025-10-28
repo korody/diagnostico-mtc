@@ -11,7 +11,7 @@ let diagnosticosData;
 
 try {
   supabase = require('../lib/supabase');
-  ({ normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal } = require('../lib/phone'));
+  ({ normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal, isValidInternationalPhone } = require('../lib/phone'));
   ({ getDiagnosticos } = require('../lib/diagnosticos'));
   ({ addLeadTags } = require('../lib/tags'));
   ({
@@ -93,9 +93,30 @@ module.exports = async (req, res) => {
     console.log('📱 Telefone original:', lead.CELULAR);
     console.log('📱 Telefone normalizado (SEM DDI):', celularNormalizado);
     console.log('🔎 Telefone debug:', { rawDigits, validationTarget, validationTargetLen: validationTarget.length });
+    console.log('🔧 Phone utils types:', {
+      isValidPhoneUniversal: typeof isValidPhoneUniversal,
+      isValidBrazilianPhone: typeof isValidBrazilianPhone,
+      isValidInternationalPhone: typeof isValidInternationalPhone
+    });
 
     // Validação: aceitar BR (10/11) ou internacional E.164 (12-15)
-    if (!isValidPhoneUniversal(validationTarget)) {
+    let phoneValid = false;
+    try {
+      if (typeof isValidPhoneUniversal === 'function') {
+        phoneValid = !!isValidPhoneUniversal(validationTarget);
+      } else if (typeof isValidBrazilianPhone === 'function' && typeof isValidInternationalPhone === 'function') {
+        phoneValid = !!(isValidBrazilianPhone(validationTarget) || isValidInternationalPhone(validationTarget));
+      } else {
+        // Fallback permissivo: aceitar apenas strings numéricas entre 8 e 15 dígitos
+        const raw = (validationTarget || '').toString().replace(/\D/g, '');
+        phoneValid = raw.length >= 8 && raw.length <= 15;
+      }
+    } catch (e) {
+      console.error('⚠️ Erro ao validar telefone (fallback):', e.message);
+      phoneValid = false;
+    }
+
+    if (!phoneValid) {
       console.log('❌ Telefone inválido (após heurística):', validationTarget);
       return res.status(400).json({
         success: false,
