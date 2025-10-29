@@ -16,17 +16,21 @@ const supabaseKey = process.env.SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 module.exports = async (req, res) => {
+  const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
+  logger.info && logger.info(reqId, '🔔 Diagnostico-Unnichat recebido', { body: req.body });
+
   if (req.method !== 'POST') {
+    logger.error && logger.error(reqId, 'Método não permitido', { method: req.method });
     return res.status(405).json({ success: false, error: 'Método não permitido' });
   }
 
   const { phone, name, email } = req.body;
   if (!phone) {
+    logger.error && logger.error(reqId, '❌ ERRO: Telefone é obrigatório', { body: req.body });
     return res.status(400).json({ success: false, error: 'Telefone é obrigatório' });
   }
 
   try {
-    const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
     const phoneNormalized = normalizePhone(phone);
     // Buscar lead no Supabase
     const { data: lead, error } = await supabase
@@ -36,6 +40,7 @@ module.exports = async (req, res) => {
       .single();
 
     if (error || !lead) {
+      logger.error && logger.error(reqId, '❌ ERRO: Nenhum lead identificado!', { phone, phoneNormalized, body: req.body });
       return res.status(404).json({ success: false, error: 'Lead não encontrado' });
     }
 
@@ -69,8 +74,8 @@ module.exports = async (req, res) => {
         },
         sent_at: new Date().toISOString()
       });
-  // Log VERCEL friendly igual ver-resultados
-  logger.info && logger.info(reqId, `📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido → { "leadId": "${lead.id}", "nome": "${lead.nome}" }`, { leadId: lead.id, nome: lead.nome });
+      // Log VERCEL friendly igual ver-resultados
+      logger.info && logger.info(reqId, `📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido → { "leadId": "${lead.id}", "nome": "${lead.nome}" }`, { leadId: lead.id, nome: lead.nome });
     } catch (e) {
       logger.error && logger.error(reqId, 'Erro ao atualizar status/tags/logs', e.message);
     }
@@ -78,6 +83,7 @@ module.exports = async (req, res) => {
     // Retornar apenas o campo 'diagnostico' para Unnichat
     return res.status(200).json({ diagnostico });
   } catch (err) {
+    logger.error && logger.error(reqId, '❌ ERRO: Falha inesperada', { error: err.message, stack: err.stack });
     return res.status(500).json({ success: false, error: err.message });
   }
 };
