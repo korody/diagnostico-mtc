@@ -221,11 +221,28 @@ const QuizMTC = () => {
   };
 
   const validarCelular = (celular) => {
-    const re = /^\(\d{2}\)\s?\d{4,5}-?\d{4}$/;
-    return re.test(celular);
+    if (!celular) return false;
+    const texto = celular.trim();
+
+    // Aceita E.164 (ex: +351917068586, +5511999999999)
+    if (texto.startsWith('+')) {
+      const cleaned = texto.replace(/\s+/g, '');
+      return /^\+\d{8,15}$/.test(cleaned);
+    }
+
+    // Caso local (sem +): aceitar entre 8 e 11 dígitos (ex: 99999999, 11999999999)
+    const raw = texto.replace(/\D/g, '');
+    return raw.length >= 8 && raw.length <= 11;
   };
 
   const formatarCelular = (valor) => {
+    if (!valor) return '';
+
+    // Preserve international E.164-like input (keep + and digits)
+    if (valor.trim().startsWith('+')) {
+      return valor.replace(/[^\d+]/g, '').replace(/\s+/g, '');
+    }
+
     const numeros = valor.replace(/\D/g, '');
     if (numeros.length <= 10) {
       return numeros.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
@@ -236,7 +253,14 @@ const QuizMTC = () => {
   // Handlers
   const handleInputChange = (campo, valor) => {
     if (campo === 'CELULAR') {
-      valor = formatarCelular(valor);
+      // If user types an international number starting with +, preserve the + and digits
+      // and don't apply the Brazilian DDD formatting which would mangle +DDI inputs.
+      if (valor && valor.trim().startsWith('+')) {
+        // Allow +, digits and spaces only; normalize multiple spaces to single
+        valor = valor.replace(/[^\d+\s]/g, '').replace(/\s+/g, ' ').trim();
+      } else {
+        valor = formatarCelular(valor);
+      }
     }
     setDadosLead(prev => ({ ...prev, [campo]: valor }));
     setErro('');
@@ -252,7 +276,7 @@ const QuizMTC = () => {
       return;
     }
     if (!validarCelular(dadosLead.CELULAR)) {
-      setErro('Por favor, digite um número de WhatsApp válido (mínimo 8 dígitos)');
+      setErro('Por favor, digite um número de WhatsApp válido. Use +DD... para internacional ou 8–11 dígitos (ex: +351917068586 ou (11) 99999-9999)');
       return;
     }
     setStep('quiz');
@@ -458,13 +482,16 @@ if (step === 'identificacao') {
                 <span className="mr-1">📱</span>
                 Revise com atenção! Seu diagnóstico será enviado via WhatsApp.
               </p>
-              
+              <p className="text-xs text-slate-500 mb-2">
+                Se você estiver fora do Brasil, inclua o DDI no formato +DD (ex: +351917068586). Para números locais, aceitamos 8 a 11 dígitos (ex: (11) 99999-9999 ou 99999999).
+              </p>
+
               <input
                 type="tel"
                 value={dadosLead.CELULAR}
                 onChange={(e) => handleInputChange('CELULAR', e.target.value)}
-                placeholder="+55 11 99999-9999"
-                maxLength="20"
+                placeholder="Ex: 55 11 99999-9999 ou 99999999"
+                maxLength="25"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400"
               />
             </div>
