@@ -324,7 +324,7 @@ Fez sentido esse Diagnóstico para você? 🙏
         sent_at: new Date().toISOString()
       });
       if (logErr) logger.error && logger.error(reqId, 'Falha ao inserir whatsapp_logs', logErr.message);
-      else logger.info && logger.info(reqId, 'whatsapp_logs inserido', { leadId: lead.id });
+  else logger.info && logger.info(reqId, '📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido', { leadId: lead.id });
     } catch (e) {
       logger.error && logger.error(reqId, 'Erro atualizando lead ou registrando log', e.message);
     }

@@ -183,7 +183,7 @@ module.exports = async (req, res) => {
       // Adicionar tag
       try { await require('../lib/tags').addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
 
-      logger.info && logger.info(reqId, '📬 Status atualizado para desafio_enviado e log registrado.');
+  logger.info && logger.info(reqId, '🎈DESAFIO ENVIADO | Status atualizado para desafio_enviado e log registrado.');
     } catch (e) {
       logger.error && logger.error(reqId, '⚠️ Falha ao atualizar status/log do desafio', e.message);
     }

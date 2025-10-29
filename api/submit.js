@@ -204,7 +204,7 @@ module.exports = async (req, res) => {
         .maybeSingle();
       if (insertErr) throw insertErr;
         
-  logger && logger.info && logger.info(reqId, '✅ Lead INSERIDO', { id: inserted?.id });
+  logger && logger.info && logger.info(reqId, '✅ DIAGNÓSTICO RECEBIDO | Lead INSERIDO', { id: inserted?.id });
       // Registrar evento de linha do tempo (diagnóstico solicitado)
       try {
         await supabase.from('whatsapp_logs').insert({
