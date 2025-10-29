@@ -174,9 +174,7 @@ module.exports = async (req, res) => {
           metadata: {
             source: 'unnichat_automation',
             endpoint: 'gerar-link-compartilhamento',
-            referral_link: referralLink,
-            logged_at_iso: nowIso,
-            logged_at_epoch: Date.now()
+            referral_link: referralLink
           },
           sent_at: nowIso
         }

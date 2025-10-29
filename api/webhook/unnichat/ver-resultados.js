@@ -246,7 +246,7 @@ Fez sentido esse Diagnóstico para você? 🙏
           lead_id: lead.id,
           phone: lead.celular,
           status: 'simulated',
-          metadata: { action: 'ver_resultados', simulated: true, logged_at_iso: new Date().toISOString(), logged_at_epoch: Date.now() },
+          metadata: { action: 'ver_resultados', simulated: true },
           sent_at: new Date().toISOString()
         });
       } catch (e) { console.log('⚠️ Falha ao registrar simulação:', e.message); }
@@ -319,9 +319,7 @@ Fez sentido esse Diagnóstico para você? 🙏
           action: 'ver_resultados',
           unnichat_response: msgResult,
           triggered_by_webhook: true,
-          webhook_payload: webhookData,
-          logged_at_iso: new Date().toISOString(),
-          logged_at_epoch: Date.now()
+          webhook_payload: webhookData
         },
         sent_at: new Date().toISOString()
       });

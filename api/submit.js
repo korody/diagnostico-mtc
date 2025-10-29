@@ -184,7 +184,7 @@ module.exports = async (req, res) => {
           lead_id: existe.id,
           phone: celularNormalizado,
           status: 'diagnostico_solicitado',
-          metadata: { source: 'quiz_submit', updated: true, logged_at_iso: new Date().toISOString(), logged_at_epoch: Date.now() },
+          metadata: { source: 'quiz_submit', updated: true },
           sent_at: new Date().toISOString()
         });
         // Adicionar tag de diagnóstico finalizado
@@ -211,7 +211,7 @@ module.exports = async (req, res) => {
           lead_id: inserted?.id,
           phone: celularNormalizado,
           status: 'diagnostico_solicitado',
-          metadata: { source: 'quiz_submit', created: true, logged_at_iso: new Date().toISOString(), logged_at_epoch: Date.now() },
+          metadata: { source: 'quiz_submit', created: true },
           sent_at: new Date().toISOString()
         });
         // Adicionar tag de diagnóstico finalizado
