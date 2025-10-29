@@ -477,13 +477,20 @@ if (step === 'identificacao') {
                 Celular (WhatsApp) *
               </label>
               
-              {/* Aviso removido a pedido do produto */}
+              {/* 📱 Aviso importante */}
+              <p className="text-sm text-blue-600 mb-2 flex items-center">
+                <span className="mr-1">📱</span>
+                Revise com atenção! Seu diagnóstico será enviado via WhatsApp.
+              </p>
+              <p className="text-xs text-slate-500 mb-2">
+                Se você estiver fora do Brasil, inclua o DDI no formato +DD (ex: +351917068586). Para números locais, aceitamos 8 a 11 dígitos (ex: (11) 99999-9999 ou 99999999).
+              </p>
 
               <input
                 type="tel"
                 value={dadosLead.CELULAR}
                 onChange={(e) => handleInputChange('CELULAR', e.target.value)}
-                placeholder="Ex: 55 11 99999-9999 ou 99999999"
+                placeholder="Ex: 55 11 99999-9999"
                 maxLength="25"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400"
               />
