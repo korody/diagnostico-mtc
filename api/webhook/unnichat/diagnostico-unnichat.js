@@ -31,15 +31,84 @@ module.exports = async (req, res) => {
   }
 
   try {
+
+    // Busca robusta igual ver-resultados
+    let lead = null;
+    let error = null;
     const phoneNormalized = normalizePhone(phone);
-    // Buscar lead no Supabase
-    const { data: lead, error } = await supabase
+    const candidates = [];
+    const digitsOnly = (phone || '').toString().replace(/\D/g, '');
+    candidates.push(phoneNormalized);
+    if (digitsOnly.startsWith('55')) {
+      candidates.push(digitsOnly);
+      if (!digitsOnly.startsWith('5511') && digitsOnly.length === 11) {
+        candidates.push(digitsOnly.substring(2));
+      }
+    } else {
+      candidates.push(`55${phoneNormalized}`);
+    }
+    if (phoneNormalized.length >= 10) candidates.push(phoneNormalized.slice(-10));
+    if (phoneNormalized.length >= 9) candidates.push(phoneNormalized.slice(-9));
+    if (phoneNormalized.length >= 8) candidates.push(phoneNormalized.slice(-8));
+    const afterDd = phoneNormalized.replace(/^11/, '');
+    if (/^99\d{6,9}/.test(afterDd)) {
+      candidates.push(phoneNormalized.replace(/^99/, '9'));
+    }
+    const dedup = [...new Set(candidates.filter(Boolean))];
+    logger.info && logger.info(reqId, '🔎 Candidates de telefone para debug', { raw: phone, normalized: phoneNormalized, candidates: dedup });
+
+    // Tentativa 1: Busca exata
+    const { data: leadExato } = await supabase
       .from('quiz_leads')
       .select('*')
       .eq('celular', phoneNormalized)
-      .single();
+      .maybeSingle();
+    if (leadExato) lead = leadExato;
 
-    if (error || !lead) {
+    // Tentativa 2: Últimos 10 dígitos
+    if (!lead && phoneNormalized.length >= 10) {
+      const ultimos10 = phoneNormalized.slice(-10);
+      const { data: leads10 } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .ilike('celular', `%${ultimos10}%`)
+        .limit(5);
+      if (leads10 && leads10.length > 0) lead = leads10[0];
+    }
+
+    // Tentativa 3: Últimos 9 dígitos
+    if (!lead && phoneNormalized.length >= 9) {
+      const ultimos9 = phoneNormalized.slice(-9);
+      const { data: leads9 } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .ilike('celular', `%${ultimos9}%`)
+        .limit(5);
+      if (leads9 && leads9.length > 0) lead = leads9[0];
+    }
+
+    // Tentativa 4: Últimos 8 dígitos
+    if (!lead && phoneNormalized.length >= 8) {
+      const ultimos8 = phoneNormalized.slice(-8);
+      const { data: leads8 } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .ilike('celular', `%${ultimos8}%`)
+        .limit(5);
+      if (leads8 && leads8.length > 0) lead = leads8[0];
+    }
+
+    // Fallback por email
+    if (!lead && email) {
+      const { data: leadByEmail } = await supabase
+        .from('quiz_leads')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+      if (leadByEmail) lead = leadByEmail;
+    }
+
+    if (!lead) {
       logger.error && logger.error(reqId, '❌ ERRO: Nenhum lead identificado!', { phone, phoneNormalized, body: req.body });
       return res.status(404).json({ success: false, error: 'Lead não encontrado' });
     }
