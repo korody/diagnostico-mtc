@@ -27,7 +27,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // ========================================
 // 🎯 CONFIGURE O TELEFONE AQUI
 // ========================================
-const TELEFONE = '11998457676'; // ← MUDE SEU NÚMERO AQUI
+const TELEFONE = '554481022222'; // ← Envio para Jader Prado
 
 // ========================================
 // FUNÇÃO PRINCIPAL

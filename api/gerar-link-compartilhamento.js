@@ -3,6 +3,7 @@
 
 const { normalizePhone } = require('../lib/phone');
 const supabase = require('../lib/supabase');
+const logger = require('../lib/logger');
 
 module.exports = async (req, res) => {
   // CORS
@@ -22,8 +23,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('\n📞 API: Gerar Link de Compartilhamento');
-    console.log('📋 Payload:', JSON.stringify(req.body, null, 2));
+    const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
+    logger.info && logger.info(reqId, '📞 API: Gerar Link de Compartilhamento', { payload: req.body });
     
     // Aceita múltiplas formas de telefone (compatível com Unnichat/webhook)
     const phoneRaw = req.body.phone || req.body.from || req.body.contact?.phone || req.body.number || req.body.phoneNumber;
@@ -31,6 +32,7 @@ module.exports = async (req, res) => {
     const name = req.body.name || req.body.contact?.name;
     
     if (!phoneRaw && !email) {
+      logger.error && logger.error(reqId, 'Phone ou email ausentes no payload');
       return res.status(400).json({
         success: false,
         error: 'Phone ou email são obrigatórios'
@@ -41,11 +43,11 @@ module.exports = async (req, res) => {
     let phoneNormalized = null;
     if (phoneRaw) {
       phoneNormalized = normalizePhone(phoneRaw);
-      console.log('📱 Telefone normalizado:', phoneNormalized);
+      logger.info && logger.info(reqId, '📱 Telefone normalizado', { phoneNormalized });
     }
 
     // Buscar lead no banco com a MESMA estratégia do webhook
-    console.log('🔍 Buscando lead no Supabase...');
+  logger.info && logger.info(reqId, '🔍 Buscando lead no Supabase');
     let lead = null;
 
     // 1) Busca exata
@@ -58,7 +60,7 @@ module.exports = async (req, res) => {
       if (e1) throw e1;
       if (leadExato) {
         lead = leadExato;
-        console.log('✅ Lead encontrado (exato por telefone):', lead.nome);
+        logger.info && logger.info(reqId, '✅ Lead encontrado (exato por telefone)', { nome: lead.nome, id: lead.id });
       }
 
       // 2) Últimos 9 dígitos
@@ -72,7 +74,7 @@ module.exports = async (req, res) => {
         if (e2) throw e2;
         if (candidatos && candidatos.length > 0) {
           lead = candidatos[0];
-          console.log('✅ Lead encontrado (últimos 9):', lead.nome);
+          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 9)', { nome: lead.nome, id: lead.id });
         }
       }
 
@@ -87,7 +89,7 @@ module.exports = async (req, res) => {
         if (e3) throw e3;
         if (candidatos8 && candidatos8.length > 0) {
           lead = candidatos8[0];
-          console.log('✅ Lead encontrado (últimos 8):', lead.nome);
+          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 8)', { nome: lead.nome, id: lead.id });
         }
       }
     }
@@ -102,12 +104,12 @@ module.exports = async (req, res) => {
       if (e4) throw e4;
       if (leadEmail) {
         lead = leadEmail;
-        console.log('✅ Lead encontrado por EMAIL:', lead.nome);
+        logger.info && logger.info(reqId, '✅ Lead encontrado por EMAIL', { nome: lead.nome, id: lead.id });
       }
     }
 
     if (!lead) {
-      console.log('❌ Lead não encontrado');
+      logger.error && logger.error(reqId, '❌ Lead não encontrado', { phone: phoneNormalized, email });
       return res.status(404).json({
         success: false,
         error: 'Lead não encontrado',
@@ -116,7 +118,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    console.log('✅ Lead encontrado:', lead.nome);
+    logger.info && logger.info(reqId, '✅ Lead encontrado', { nome: lead.nome, id: lead.id });
 
     // Se o telefone no DB estiver com formatação diferente, normaliza e atualiza
     try {
@@ -126,7 +128,7 @@ module.exports = async (req, res) => {
           .from('quiz_leads')
           .update({ celular: dbNorm, updated_at: new Date().toISOString() })
           .eq('id', lead.id);
-        console.log('🛠️ Telefone do lead normalizado no banco:', lead.celular, '→', dbNorm);
+        logger.info && logger.info(reqId, '🛠️ Telefone do lead normalizado no banco', { before: lead.celular, after: dbNorm });
         lead.celular = dbNorm;
       }
     } catch (e) {
@@ -137,7 +139,7 @@ module.exports = async (req, res) => {
     const utm_public = lead.celular || (lead.email ? lead.email.split('@')[0] : 'unknown');
     const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${utm_public}&utm_content=convite-desafio`;
 
-    console.log('🔗 Link gerado:', referralLink);
+  logger.info && logger.info(reqId, '🔗 Link gerado', { referralLink });
 
     // Opcional: salvar o link gerado no lead (para tracking)
     await supabase
@@ -181,9 +183,9 @@ module.exports = async (req, res) => {
       // Adicionar tag
       try { await require('../lib/tags').addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
 
-      console.log('📬 Status atualizado para desafio_enviado e log registrado.');
+      logger.info && logger.info(reqId, '📬 Status atualizado para desafio_enviado e log registrado.');
     } catch (e) {
-      console.log('⚠️ Falha ao atualizar status/log do desafio:', e.message);
+      logger.error && logger.error(reqId, '⚠️ Falha ao atualizar status/log do desafio', e.message);
     }
 
     // Retornar resposta
@@ -198,9 +200,8 @@ module.exports = async (req, res) => {
       }
     });
 
-  } catch (error) {
-    console.error('❌ Erro ao gerar link:', error.message);
-    console.error('Stack:', error.stack);
+    } catch (error) {
+    logger.error && logger.error(reqId, '❌ Erro ao gerar link', { message: error.message, stack: error.stack });
     
     return res.status(500).json({
       success: false,

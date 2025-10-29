@@ -13,6 +13,7 @@ const DEBUG = process.env.WHATSAPP_DEBUG === 'true' || process.env.NODE_ENV !== 
 const SIMULATION = process.env.WHATSAPP_SIMULATION_MODE === 'true' || process.env.NODE_ENV !== 'production';
 
 // Usa util compartilhado em lib/phone para garantir consistência entre API e serverless
+const logger = require('../../../lib/logger');
 
 module.exports = async (req, res) => {
   // CORS
@@ -29,14 +30,14 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
     if (DEBUG) {
-      console.log('\n📥 WEBHOOK RECEBIDO');
       const safePreview = { ...req.body };
       if (safePreview.phone) safePreview.phone = '[REDACTED]';
       if (safePreview.from) safePreview.from = '[REDACTED]';
       if (safePreview.contact?.phone) safePreview.contact.phone = '[REDACTED]';
       if (safePreview.contact?.email) safePreview.contact.email = '[REDACTED]';
-      console.log('📋 Payload (resumo):', JSON.stringify(safePreview, null, 2));
+      logger.info && logger.info(reqId, '� WEBHOOK RECEBIDO (resumo payload)', safePreview);
     }
     
     const webhookData = req.body;
@@ -53,9 +54,7 @@ module.exports = async (req, res) => {
     const nameFromWebhook = webhookData.name || webhookData.contact?.name;
     
     if (DEBUG) {
-      console.log('📱 Telefone recebido:', phoneFromWebhook ? '[OK]' : 'N/D');
-      console.log('📧 Email recebido:', emailFromWebhook ? '[OK]' : 'N/D');
-      console.log('👤 Nome recebido:', nameFromWebhook || 'N/D');
+      logger.info && logger.info(reqId, '📱/📧/👤 Dados do webhook (presença)', { hasPhone: !!phoneFromWebhook, hasEmail: !!emailFromWebhook, name: nameFromWebhook || null });
     }
     
     let lead = null;
@@ -77,7 +76,7 @@ module.exports = async (req, res) => {
       
       if (leadExato) {
         lead = leadExato;
-        console.log('✅ Lead encontrado (busca exata):', lead.nome);
+        logger.info && logger.info(reqId, '✅ Lead encontrado (busca exata)', { nome: lead.nome, id: lead.id });
       }
       
       // Tentativa 2: Últimos 10 dígitos (cobre casos com 9 extra em celulares)
@@ -91,7 +90,7 @@ module.exports = async (req, res) => {
           .limit(5);
         if (leads10 && leads10.length > 0) {
           lead = leads10[0];
-          if (DEBUG) console.log('✅ Lead encontrado (últimos 10 dígitos):', lead.nome);
+          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 10 dígitos)', { nome: lead.nome, id: lead.id });
         }
       }
 
@@ -108,7 +107,7 @@ module.exports = async (req, res) => {
         
         if (leadsParecidos && leadsParecidos.length > 0) {
           lead = leadsParecidos[0];
-          console.log('✅ Lead encontrado (últimos 9 dígitos):', lead.nome);
+          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 9 dígitos)', { nome: lead.nome, id: lead.id });
         }
       }
       
@@ -125,7 +124,7 @@ module.exports = async (req, res) => {
         
         if (leadsComUltimos8 && leadsComUltimos8.length > 0) {
           lead = leadsComUltimos8[0];
-          console.log('✅ Lead encontrado (últimos 8 dígitos):', lead.nome);
+          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 8 dígitos)', { nome: lead.nome, id: lead.id });
         }
       }
     }
@@ -134,7 +133,7 @@ module.exports = async (req, res) => {
     // MÉTODO 2: FALLBACK POR EMAIL
     // ========================================
     if (!lead && emailFromWebhook) {
-  if (DEBUG) console.log('🔍 Fallback: Buscando por email');
+  if (DEBUG) logger.info && logger.info(reqId, '🔍 Fallback: Buscando por email', { email: emailFromWebhook });
       
       const { data: leadByEmail } = await supabase
         .from('quiz_leads')
@@ -144,7 +143,7 @@ module.exports = async (req, res) => {
       
       if (leadByEmail) {
         lead = leadByEmail;
-        console.log('✅ Lead encontrado por EMAIL:', lead.nome);
+        logger.info && logger.info(reqId, '✅ Lead encontrado por EMAIL', { nome: lead.nome, id: lead.id });
       }
     }
 
@@ -159,14 +158,7 @@ module.exports = async (req, res) => {
     // 
     // Se nenhum método funcionar, retornamos 404 para evitar envio errado
     if (!lead) {
-      if (DEBUG) {
-        console.error('❌ ERRO: Nenhum lead identificado!');
-        console.error('   Telefone webhook (raw):', phoneFromWebhook);
-        console.error('   Telefone normalizado:', phoneFromWebhook ? normalizePhone(phoneFromWebhook) : 'N/A');
-        console.error('   Email webhook:', emailFromWebhook);
-        console.error('   Nome webhook:', nameFromWebhook);
-        console.error('\n💡 DICA: Verifique se o telefone está cadastrado corretamente no banco de dados');
-      }
+      logger.error && logger.error(reqId, '❌ ERRO: Nenhum lead identificado!', { phoneFromWebhook, normalized: phoneFromWebhook ? normalizePhone(phoneFromWebhook) : null, emailFromWebhook, nameFromWebhook });
       return res.status(404).json({ 
         success: false, 
         message: 'Lead não identificado. Verifique se o telefone está cadastrado corretamente.' 
@@ -174,10 +166,7 @@ module.exports = async (req, res) => {
     }
 
     if (DEBUG) {
-      console.log('\n✅ LEAD IDENTIFICADO:');
-      console.log('   Nome:', lead.nome);
-      console.log('   Telefone:', lead.celular);
-      console.log('   Elemento:', lead.elemento_principal);
+      logger.info && logger.info(reqId, '✅ LEAD IDENTIFICADO', { nome: lead.nome, celular: lead.celular, elemento: lead.elemento_principal });
     }
 
     // Preparar telefone para Unnichat (normaliza + adiciona DDI 55 somente uma vez)
@@ -191,11 +180,11 @@ module.exports = async (req, res) => {
           .from('quiz_leads')
           .update({ celular: normalizedDbPhone, updated_at: new Date().toISOString() })
           .eq('id', lead.id);
-  if (DEBUG) console.log('🛠️ Telefone do lead normalizado no banco:', lead.celular, '→', normalizedDbPhone);
+  if (DEBUG) logger.info && logger.info(reqId, '🛠️ Telefone do lead normalizado no banco', { before: lead.celular, after: normalizedDbPhone });
         // refletir em memória para logs consistentes
         lead.celular = normalizedDbPhone;
       } catch (e) {
-        console.log('⚠️ Não foi possível atualizar telefone normalizado no banco:', e.message);
+        logger.error && logger.error(reqId, '⚠️ Não foi possível atualizar telefone normalizado no banco', e.message);
       }
     }
 
@@ -214,12 +203,12 @@ module.exports = async (req, res) => {
           tags: ['quiz_resultados_enviados']
         })
       });
-      
-  if (DEBUG) console.log('✅ Contato atualizado');
+      let contactJson = null;
+      try { contactJson = await contactResp.json(); } catch (e) { contactJson = { raw: 'non-json response' }; }
+      logger.info && logger.info(reqId, 'Contato atualizado (Unnichat)', { status: contactResp.status, body: contactJson });
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
     } catch (error) {
-      console.log('⚠️ Aviso contato:', error.message);
+      logger.error && logger.error(reqId, '⚠️ Aviso contato (updateContact) falhou', error.message);
     }
 
     // Preparar diagnóstico
@@ -243,7 +232,7 @@ ${diagnosticoFormatado}
 Fez sentido esse Diagnóstico para você? 🙏
     `.trim();
 
-  if (DEBUG) console.log('📨 Enviando diagnóstico...');
+  if (DEBUG) logger.info && logger.info(reqId, '📨 Enviando diagnóstico...');
     
     // SIMULAÇÃO (staging/dev): não envia para Unnichat, mas atualiza DB e logs
     if (SIMULATION) {
@@ -280,7 +269,7 @@ Fez sentido esse Diagnóstico para você? 🙏
 
   let msgResult = await sendOnce();
     if (msgResult && msgResult.message && /Contact not found/i.test(msgResult.message)) {
-  if (DEBUG) console.log('🔁 Retry após "Contact not found" (forçando atualização de contato)');
+  if (DEBUG) logger.info && logger.info(reqId, '🔁 Retry após "Contact not found" (forçando atualização de contato)');
       try {
         await fetch(`${UNNICHAT_API_URL}/contact`, {
           method: 'POST',
@@ -297,41 +286,48 @@ Fez sentido esse Diagnóstico para você? 🙏
         });
         await new Promise(r => setTimeout(r, 800));
       } catch (e) {
-        console.log('⚠️ Falha ao atualizar contato no retry:', e.message);
+        logger.error && logger.error(reqId, '⚠️ Falha ao atualizar contato no retry', e.message);
       }
       msgResult = await sendOnce();
     }
 
+    logger.info && logger.info(reqId, 'Unnichat send result', msgResult);
     if (msgResult.code && msgResult.code !== '200') {
-      console.error('❌ Erro ao enviar:', msgResult);
+      logger.error && logger.error(reqId, '❌ Erro ao enviar', msgResult);
       throw new Error(msgResult.message || 'Erro ao enviar mensagem');
     }
 
-  if (DEBUG) console.log('✅ Diagnóstico enviado com sucesso!\n');
+  if (DEBUG) logger.info && logger.info(reqId, '✅ Diagnóstico enviado com sucesso!');
 
     // Atualizar status e tags
-    await supabase
-      .from('quiz_leads')
-      .update({
-        whatsapp_status: 'diagnostico_enviado',
-        whatsapp_sent_at: new Date().toISOString()
-      })
-      .eq('id', lead.id);
-    try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) {}
+    try {
+      await supabase
+        .from('quiz_leads')
+        .update({
+          whatsapp_status: 'diagnostico_enviado',
+          whatsapp_sent_at: new Date().toISOString()
+        })
+        .eq('id', lead.id);
+      try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) { logger.error && logger.error(reqId, 'Falha ao addLeadTags', e.message); }
 
-    // Registrar log
-    await supabase.from('whatsapp_logs').insert({
-      lead_id: lead.id,
-      phone: lead.celular,
-      status: 'diagnostico_enviado',
-      metadata: { 
-        action: 'ver_resultados',
-        unnichat_response: msgResult,
-        triggered_by_webhook: true,
-        webhook_payload: webhookData
-      },
-      sent_at: new Date().toISOString()
-    });
+      // Registrar log
+      const { error: logErr } = await supabase.from('whatsapp_logs').insert({
+        lead_id: lead.id,
+        phone: lead.celular,
+        status: 'diagnostico_enviado',
+        metadata: { 
+          action: 'ver_resultados',
+          unnichat_response: msgResult,
+          triggered_by_webhook: true,
+          webhook_payload: webhookData
+        },
+        sent_at: new Date().toISOString()
+      });
+      if (logErr) logger.error && logger.error(reqId, 'Falha ao inserir whatsapp_logs', logErr.message);
+      else logger.info && logger.info(reqId, 'whatsapp_logs inserido', { leadId: lead.id });
+    } catch (e) {
+      logger.error && logger.error(reqId, 'Erro atualizando lead ou registrando log', e.message);
+    }
 
     res.json({ 
       success: true, 

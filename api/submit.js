@@ -25,6 +25,7 @@ try {
 
   // Carregar diagnósticos uma vez por cold start
   diagnosticosData = getDiagnosticos();
+  logger = require('../lib/logger');
   console.log('✅ Módulos carregados com sucesso');
 } catch (error) {
   console.error('❌ Erro ao carregar módulos:', error.message);
@@ -57,9 +58,9 @@ module.exports = async (req, res) => {
   }
 
   try {
-  console.log('📥 Requisição recebida em /api/submit');
-  console.log('🔑 SUPABASE_URL:', process.env.SUPABASE_URL ? '✅' : '❌');
-  console.log('🔑 SUPABASE_KEY:', process.env.SUPABASE_KEY ? '✅' : '❌');
+    // Correlation id for this request
+    const reqId = (logger && typeof logger.mkid === 'function') ? logger.mkid() : `req-${Date.now()}`;
+    logger && logger.info && logger.info(reqId, '📥 Requisição recebida em /api/submit', { env: { SUPABASE_URL: !!process.env.SUPABASE_URL, SUPABASE_KEY: !!process.env.SUPABASE_KEY } });
     
     const { lead, respostas } = req.body;
 
@@ -78,7 +79,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    console.log('\n📥 NOVO QUIZ:', lead.NOME);
+  logger && logger.info && logger.info(reqId, '📥 NOVO QUIZ', { nome: lead.NOME });
     
     // Normalizar telefone ANTES de salvar
     // IMPORTANTE: Salvar SEMPRE sem DDI 55 para facilitar buscas
@@ -90,14 +91,8 @@ module.exports = async (req, res) => {
     const rawDigits = (lead.CELULAR || '').toString().replace(/\D/g, '');
     const validationTarget = (rawDigits.length >= 12 && !rawDigits.startsWith('55')) ? rawDigits : celularNormalizado;
 
-    console.log('📱 Telefone original:', lead.CELULAR);
-    console.log('📱 Telefone normalizado (SEM DDI):', celularNormalizado);
-    console.log('🔎 Telefone debug:', { rawDigits, validationTarget, validationTargetLen: validationTarget.length });
-    console.log('🔧 Phone utils types:', {
-      isValidPhoneUniversal: typeof isValidPhoneUniversal,
-      isValidBrazilianPhone: typeof isValidBrazilianPhone,
-      isValidInternationalPhone: typeof isValidInternationalPhone
-    });
+    logger && logger.info && logger.info(reqId, '📱 Telefone original e normalizado', { original: lead.CELULAR, normalizado: celularNormalizado, rawDigits, validationTarget, validationTargetLen: validationTarget.length });
+    logger && logger.info && logger.info(reqId, '🔧 Phone utils types', { isValidPhoneUniversal: typeof isValidPhoneUniversal, isValidBrazilianPhone: typeof isValidBrazilianPhone, isValidInternationalPhone: typeof isValidInternationalPhone });
 
     // Validação: aceitar BR (10/11) ou internacional E.164 (12-15)
     let phoneValid = false;
@@ -117,7 +112,7 @@ module.exports = async (req, res) => {
     }
 
     if (!phoneValid) {
-      console.log('❌ Telefone inválido (após heurística):', validationTarget);
+      logger && logger.error && logger.error(reqId, '❌ Telefone inválido (após heurística)', { validationTarget });
       return res.status(400).json({
         success: false,
         error: 'Telefone inválido. Use formato BR (11 99999-9999) ou internacional com DDI (ex.: 351...)'
@@ -134,7 +129,7 @@ module.exports = async (req, res) => {
     const prioridade = leadScore >= 70 ? 'ALTA' : leadScore >= 40 ? 'MÉDIA' : 'BAIXA';
     const isHotLeadVIP = leadScore >= 80 || quadrante === 1 || respostas.P8 === 'A';
     
-    console.log('🎯 Elemento:', elementoPrincipal, '| Score:', leadScore, '| VIP:', isHotLeadVIP ? 'SIM 🔥' : 'NÃO');
+  logger && logger.info && logger.info(reqId, '🎯 Diagnóstico calculado', { elemento: elementoPrincipal, leadScore, isHotLeadVIP });
     
     // Buscar configuração do elemento com fallback
     const config = diagnosticosData[elementoPrincipal] || diagnosticosData['BAÇO'];
@@ -182,7 +177,7 @@ module.exports = async (req, res) => {
         })
         .eq('celular', celularNormalizado);
         
-      console.log('✅ Lead ATUALIZADO\n');
+  logger && logger.info && logger.info(reqId, '✅ Lead ATUALIZADO', { id: existe.id });
       // Registrar evento de linha do tempo (diagnóstico solicitado)
       try {
         await supabase.from('whatsapp_logs').insert({
@@ -194,7 +189,7 @@ module.exports = async (req, res) => {
         });
         // Adicionar tag de diagnóstico finalizado
         await addLeadTags(supabase, existe.id, ['diagnostico_finalizado']);
-      } catch (e) { console.log('⚠️ Log submit (update) falhou:', e.message); }
+  } catch (e) { logger && logger.error && logger.error(reqId, '⚠️ Log submit (update) falhou', e.message); }
       
     } else {
       // Inserir novo lead
@@ -209,7 +204,7 @@ module.exports = async (req, res) => {
         .maybeSingle();
       if (insertErr) throw insertErr;
         
-      console.log('✅ Lead INSERIDO\n');
+  logger && logger.info && logger.info(reqId, '✅ Lead INSERIDO', { id: inserted?.id });
       // Registrar evento de linha do tempo (diagnóstico solicitado)
       try {
         await supabase.from('whatsapp_logs').insert({
@@ -221,7 +216,7 @@ module.exports = async (req, res) => {
         });
         // Adicionar tag de diagnóstico finalizado
         await addLeadTags(supabase, inserted?.id, ['diagnostico_finalizado']);
-      } catch (e) { console.log('⚠️ Log submit (insert) falhou:', e.message); }
+  } catch (e) { logger && logger.error && logger.error(reqId, '⚠️ Log submit (insert) falhou', e.message); }
     }
     
     // Resposta de sucesso
@@ -240,9 +235,13 @@ module.exports = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ ERRO:', error.message);
-    console.error('Stack:', error.stack);
-    
+    try {
+      const errId = (typeof logger !== 'undefined' && logger.mkid) ? logger.mkid() : `err-${Date.now()}`;
+      logger && logger.error && logger.error(errId, '❌ ERRO no /api/submit', { message: error.message, stack: error.stack });
+    } catch (e) {
+      console.error('Erro ao logar erro:', e.message);
+    }
+
     return res.status(500).json({
       success: false,
       error: 'Erro ao processar quiz',
