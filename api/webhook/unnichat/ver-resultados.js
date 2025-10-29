@@ -190,7 +190,7 @@ module.exports = async (req, res) => {
 
     // Atualizar contato
     try {
-      await fetch(`${UNNICHAT_API_URL}/contact`, {
+      const contactResp = await fetch(`${UNNICHAT_API_URL}/contact`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${UNNICHAT_TOKEN}`,
