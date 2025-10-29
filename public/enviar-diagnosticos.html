@@ -466,14 +466,23 @@
       </div>
 
       <div class="actions">
+        <!-- Botão principal (1) -->
         <button class="btn btn-send" id="sendBtn">
           <span>📤</span>
           <span>Enviar Diagnóstico via WhatsApp</span>
         </button>
-        <button class="btn btn-secondary" onclick="copiarDiagnostico()">
+
+  <!-- Botão 2: full width abaixo do botão principal -->
+  <button class="btn btn-secondary" id="triggerAutomationBtn" title="Acionar automação do Unnichat para este lead" style="grid-column:1 / -1;display:block;padding:16px 16px;font-size:1rem;margin-top:12px;box-sizing:border-box;text-align:center;">
+          <span style="margin-right:10px;">🤖</span>
+          <span>Inserir Lead na Automação de Diagnóstico</span>
+        </button>
+
+        <!-- Botão 3 e Botão 4 ocupando as duas colunas lado a lado -->
+        <button class="btn btn-secondary" onclick="copiarDiagnostico()" style="margin-top:14px;">
           📋 Copiar Texto
         </button>
-        <button class="btn btn-secondary" onclick="limparBusca()">
+        <button class="btn btn-secondary" onclick="limparBusca()" style="margin-top:14px;">
           🔄 Nova Busca
         </button>
       </div>
@@ -752,6 +761,41 @@
       } finally {
         sendBtn.disabled = false;
         sendBtn.innerHTML = '<span>📤</span> <span>Enviar Diagnóstico via WhatsApp</span>';
+      }
+    });
+
+    // Botão: Inserir Lead na Automação de Diagnóstico (gatilho Unnichat)
+    document.getElementById('triggerAutomationBtn').addEventListener('click', async () => {
+      if (!currentLead) return;
+
+      const btn = document.getElementById('triggerAutomationBtn');
+      btn.disabled = true;
+      const original = btn.innerHTML;
+      btn.innerHTML = '<span class="loading"></span> <span>Acionando...</span>';
+
+      try {
+        const response = await fetch(`${API_URL}/api/whatsapp/trigger-automation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: currentLead.id })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showResult(`✅ Lead inserido na automação: ${currentLead.nome}`, true);
+          addToHistory(currentLead);
+          // opcional: limpar busca
+          setTimeout(() => { limparBusca(); }, 1500);
+        } else {
+          showResult('❌ Erro ao acionar automação: ' + (data.error || 'Erro desconhecido'), false);
+        }
+
+      } catch (error) {
+        showResult('❌ Erro: ' + error.message, false);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = original;
       }
     });
 

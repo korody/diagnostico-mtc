@@ -184,6 +184,11 @@ app.get('/enviar-diagnosticos', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'enviar-diagnosticos.html'));
 });
 
+// Alias compatível com produção: algumas infra geram esta URL com o prefixo /api
+app.get('/api/enviar-diagnosticos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'enviar-diagnosticos.html'));
+});
+
 app.get('/test-whatsapp', (req, res) => {
   if (isProduction) return res.status(404).send('Not found');
   res.sendFile(path.join(__dirname, 'public', 'test-whatsapp.html'));
@@ -406,6 +411,10 @@ app.post('/api/whatsapp/send', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// ===== ROTA: TRIGGER / GATILHO DE AUTOMAÇÃO (insere lead na automação Unnichat)
+const triggerAutomationHandler = require('./api/whatsapp/trigger-automation');
+app.post('/api/whatsapp/trigger-automation', triggerAutomationHandler);
 
 // ===== ROTA: ENVIO DIAGNÓSTICO (GET) - DEBUG/ADMIN =====
 app.get('/api/whatsapp/send/diagnostico/:leadId', async (req, res) => {
