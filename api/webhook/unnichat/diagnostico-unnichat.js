@@ -69,7 +69,8 @@ module.exports = async (req, res) => {
         },
         sent_at: new Date().toISOString()
       });
-      logger.info && logger.info(reqId, 'Status/tags/logs atualizados para consulta de diagnóstico', { leadId: lead.id });
+  // Log VERCEL friendly igual ver-resultados
+  logger.info && logger.info(reqId, `📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido → { "leadId": "${lead.id}", "nome": "${lead.nome}" }`, { leadId: lead.id, nome: lead.nome });
     } catch (e) {
       logger.error && logger.error(reqId, 'Erro ao atualizar status/tags/logs', e.message);
     }
