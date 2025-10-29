@@ -65,6 +65,34 @@ module.exports = async (req, res) => {
     if (phoneFromWebhook) {
   const phoneClean = normalizePhone(phoneFromWebhook);
   if (DEBUG) console.log('🔍 Telefone normalizado (sem DDI):', phoneClean);
+  // Montar candidatos para debug/auditoria (não altera fluxo atual)
+  const candidates = [];
+  const digitsOnly = (phoneFromWebhook || '').toString().replace(/\D/g, '');
+  // raw cleaned
+  candidates.push(phoneClean);
+  // se já começa com 55 e for longo, preserve; caso contrário, tente com/sem 55
+  if (digitsOnly.startsWith('55')) {
+    candidates.push(digitsOnly);
+    if (!digitsOnly.startsWith('5511') && digitsOnly.length === 11) {
+      // caso raro: entrada 55xxxxxxxxx com length 11, também incluir sem o prefixo 55
+      candidates.push(digitsOnly.substring(2));
+    }
+  } else {
+    candidates.push(`55${phoneClean}`);
+  }
+  // últimas N variações
+  if (phoneClean.length >= 10) candidates.push(phoneClean.slice(-10));
+  if (phoneClean.length >= 9) candidates.push(phoneClean.slice(-9));
+  if (phoneClean.length >= 8) candidates.push(phoneClean.slice(-8));
+  // detectar double-9 pattern (ex.: DDI+DD + 99xxxxx) e tentar variante removendo um 9
+  const afterDd = phoneClean.replace(/^11/, '');
+  if (/^99\d{6,9}/.test(afterDd)) {
+    // remove um dos 9s
+    candidates.push(phoneClean.replace(/^99/, '9'));
+  }
+  // dedupe
+  const dedup = [...new Set(candidates.filter(Boolean))];
+  logger.info && logger.info(reqId, '🔎 Candidates de telefone para debug', { raw: phoneFromWebhook, normalized: phoneClean, candidates: dedup });
       
       // Tentativa 1: Busca exata (telefone salvo SEM DDI 55)
   if (DEBUG) console.log('🔍 Tentativa 1: Busca exata por telefone...');
@@ -172,6 +200,9 @@ module.exports = async (req, res) => {
     // Preparar telefone para Unnichat (normaliza + adiciona DDI 55 somente uma vez)
     const normalizedDbPhone = normalizePhone(lead.celular);
     const phoneForUnnichat = formatPhoneForUnnichat(normalizedDbPhone);
+
+  // Log detalhado antes do envio para facilitar correlação com Unnichat
+  logger.info && logger.info(reqId, '📲 phoneForUnnichat', { phoneForUnnichat, normalizedDbPhone });
 
     // Se detectar divergência (ex.: número salvo com 55 ou com espaços), corrigir no banco
     if (normalizedDbPhone && normalizedDbPhone !== lead.celular) {
