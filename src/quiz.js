@@ -477,14 +477,7 @@ if (step === 'identificacao') {
                 Celular (WhatsApp) *
               </label>
               
-              {/* 📱 Aviso importante */}
-              <p className="text-sm text-blue-600 mb-2 flex items-center">
-                <span className="mr-1">📱</span>
-                Revise com atenção! Seu diagnóstico será enviado via WhatsApp.
-              </p>
-              <p className="text-xs text-slate-500 mb-2">
-                Se você estiver fora do Brasil, inclua o DDI no formato +DD (ex: +351917068586). Para números locais, aceitamos 8 a 11 dígitos (ex: (11) 99999-9999 ou 99999999).
-              </p>
+              {/* Aviso removido a pedido do produto */}
 
               <input
                 type="tel"
