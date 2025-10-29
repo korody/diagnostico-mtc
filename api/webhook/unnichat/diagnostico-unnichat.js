@@ -4,6 +4,8 @@
 const { createClient } = require('@supabase/supabase-js');
 const { normalizePhone } = require('../../../lib/phone');
 const { calcularDiagnosticoCompleto } = require('../../../lib/diagnosticos');
+const { addLeadTags } = require('../../../lib/tags');
+const logger = require('../../../lib/logger');
 
 // Carregar variáveis de ambiente
 require('dotenv').config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local' });
@@ -24,6 +26,7 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
     const phoneNormalized = normalizePhone(phone);
     // Buscar lead no Supabase
     const { data: lead, error } = await supabase
@@ -40,6 +43,35 @@ module.exports = async (req, res) => {
     let diagnostico = lead.diagnostico_completo;
     if (!diagnostico) {
       diagnostico = calcularDiagnosticoCompleto(lead);
+    }
+
+    // Atualizar status, tags e registrar log
+    try {
+      // Atualizar status do lead
+      await supabase
+        .from('quiz_leads')
+        .update({
+          whatsapp_status: 'diagnostico_enviado',
+          whatsapp_sent_at: new Date().toISOString()
+        })
+        .eq('id', lead.id);
+      // Adicionar tag
+      await addLeadTags(supabase, lead.id, ['diagnostico_enviado']);
+      // Registrar log
+      await supabase.from('whatsapp_logs').insert({
+        lead_id: lead.id,
+        phone: lead.celular,
+        status: 'diagnostico_enviado',
+        metadata: {
+          action: 'diagnostico-unnichat',
+          triggered_by_webhook: true,
+          webhook_payload: req.body
+        },
+        sent_at: new Date().toISOString()
+      });
+      logger.info && logger.info(reqId, 'Status/tags/logs atualizados para consulta de diagnóstico', { leadId: lead.id });
+    } catch (e) {
+      logger.error && logger.error(reqId, 'Erro ao atualizar status/tags/logs', e.message);
     }
 
     // Retornar apenas o campo 'diagnostico' para Unnichat
