@@ -60,7 +60,7 @@ const unni = require('../lib/unnichat');
 
       // Atualizar DB e logs
       await sup.from('quiz_leads').update({ whatsapp_status:'resultados_enviados', whatsapp_sent_at:new Date().toISOString(), whatsapp_attempts:(lead.whatsapp_attempts||0)+1 }).eq('id',lead.id);
-      await sup.from('whatsapp_logs').insert({ lead_id:lead.id, phone:lead.celular, status:'resultados_enviados', metadata:{ method:'direct_send', unnichat_response: res }, sent_at:new Date().toISOString() });
+  await sup.from('whatsapp_logs').insert({ lead_id:lead.id, phone:lead.celular, status:'resultados_enviados', metadata:{ method:'direct_send', unnichat_response: res, logged_at_iso: new Date().toISOString(), logged_at_epoch: Date.now() }, sent_at:new Date().toISOString() });
 
       console.log('\n🎯 Diagnóstico enviado direto e logs atualizados.');
       process.exit(0);
@@ -81,7 +81,7 @@ const unni = require('../lib/unnichat');
         console.log('📥 Resposta do gatilho:', JSON.stringify(jr, null, 2));
 
         await sup.from('quiz_leads').update({ whatsapp_status:'template_enviado', whatsapp_sent_at:new Date().toISOString(), whatsapp_attempts:(lead.whatsapp_attempts||0)+1 }).eq('id',lead.id);
-        await sup.from('whatsapp_logs').insert({ lead_id:lead.id, phone:lead.celular, status:'gatilho_enviado', metadata:{ gatilho_response: jr }, sent_at:new Date().toISOString() });
+  await sup.from('whatsapp_logs').insert({ lead_id:lead.id, phone:lead.celular, status:'gatilho_enviado', metadata:{ gatilho_response: jr, logged_at_iso: new Date().toISOString(), logged_at_epoch: Date.now() }, sent_at:new Date().toISOString() });
 
         console.log('\n✅ Gatilho acionado e logs atualizados.');
         process.exit(0);
