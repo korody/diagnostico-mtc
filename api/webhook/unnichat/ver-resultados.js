@@ -3,7 +3,7 @@
 // URL: /api/webhook-ver-resultados
 // ========================================
 
-const { normalizePhone, formatPhoneForUnnichat } = require('../../../lib/phone');
+const { findLeadByPhone, formatForUnnichat } = require('../../../lib/phone-simple');
 const supabase = require('../../../lib/supabase');
 const { addLeadTags } = require('../../../lib/tags');
 
@@ -57,255 +57,41 @@ module.exports = async (req, res) => {
       logger.info && logger.info(reqId, '📱/📧/👤 Dados do webhook (presença)', { hasPhone: !!phoneFromWebhook, hasEmail: !!emailFromWebhook, name: nameFromWebhook || null });
     }
     
-    let lead = null;
-    
-    // ========================================
-    // MÉTODO 1: BUSCAR POR TELEFONE
-    // ========================================
-    if (phoneFromWebhook) {
-  const phoneClean = normalizePhone(phoneFromWebhook);
-  if (DEBUG) console.log('🔍 Telefone normalizado (sem DDI):', phoneClean);
-  // Montar candidatos para debug/auditoria (não altera fluxo atual)
-  const candidates = [];
-  const digitsOnly = (phoneFromWebhook || '').toString().replace(/\D/g, '');
-  // raw cleaned
-  candidates.push(phoneClean);
-  // se já começa com 55 e for longo, preserve; caso contrário, tente com/sem 55
-  if (digitsOnly.startsWith('55')) {
-    candidates.push(digitsOnly);
-    if (!digitsOnly.startsWith('5511') && digitsOnly.length === 11) {
-      // caso raro: entrada 55xxxxxxxxx com length 11, também incluir sem o prefixo 55
-      candidates.push(digitsOnly.substring(2));
-    }
-  } else {
-    candidates.push(`55${phoneClean}`);
-  }
-  // últimas N variações
-  if (phoneClean.length >= 10) candidates.push(phoneClean.slice(-10));
-  if (phoneClean.length >= 9) candidates.push(phoneClean.slice(-9));
-  if (phoneClean.length >= 8) candidates.push(phoneClean.slice(-8));
-  // detectar double-9 pattern (ex.: DDI+DD + 99xxxxx) e tentar variante removendo um 9
-  const afterDd = phoneClean.replace(/^11/, '');
-  if (/^99\d{6,9}/.test(afterDd)) {
-    // remove um dos 9s
-    candidates.push(phoneClean.replace(/^99/, '9'));
-  }
-  // dedupe
-  const dedup = [...new Set(candidates.filter(Boolean))];
-  logger.info && logger.info(reqId, '🔎 Candidates de telefone para debug', { raw: phoneFromWebhook, normalized: phoneClean, candidates: dedup });
-      
-      // Tentativa 1: Busca exata (telefone salvo SEM DDI 55)
-  if (DEBUG) console.log('🔍 Tentativa 1: Busca exata por telefone...');
-      const { data: leadExato } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .eq('celular', phoneClean)
-        .maybeSingle();
-      
-      if (leadExato) {
-        lead = leadExato;
-        logger.info && logger.info(reqId, '✅ Lead encontrado (busca exata)', { nome: lead.nome, id: lead.id });
-      }
-      
-      // Tentativa 2: Últimos 10 dígitos (cobre casos com 9 extra em celulares)
-      if (!lead && phoneClean.length >= 10) {
-        const ultimos10 = phoneClean.slice(-10);
-        if (DEBUG) console.log('🔍 Tentativa 2: Busca pelos últimos 10 dígitos:', ultimos10);
-        const { data: leads10 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${ultimos10}%`)
-          .limit(5);
-        if (leads10 && leads10.length > 0) {
-          lead = leads10[0];
-          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 10 dígitos)', { nome: lead.nome, id: lead.id });
-        }
-      }
-
-      // Tentativa 3: Busca pelos últimos 9 dígitos (caso tenha DDI diferente ou erro)
-      if (!lead && phoneClean.length >= 9) {
-        const ultimos9 = phoneClean.slice(-9);
-        if (DEBUG) console.log('🔍 Tentativa 3: Busca pelos últimos 9 dígitos:', ultimos9);
-        
-        const { data: leadsParecidos } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${ultimos9}%`)
-          .limit(5);
-        
-        if (leadsParecidos && leadsParecidos.length > 0) {
-          lead = leadsParecidos[0];
-          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 9 dígitos)', { nome: lead.nome, id: lead.id });
-        }
-      }
-      
-      // Tentativa 4: Busca pelos últimos 8 dígitos (número fixo sem DDD ou celular antigo)
-      if (!lead && phoneClean.length >= 8) {
-        const ultimos8 = phoneClean.slice(-8);
-        if (DEBUG) console.log('🔍 Tentativa 4: Busca pelos últimos 8 dígitos:', ultimos8);
-        
-        const { data: leadsComUltimos8 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${ultimos8}%`)
-          .limit(5);
-        
-        if (leadsComUltimos8 && leadsComUltimos8.length > 0) {
-          lead = leadsComUltimos8[0];
-          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 8 dígitos)', { nome: lead.nome, id: lead.id });
-        }
-      }
-    }
-
-    // ========================================
-    // MÉTODO 1.5: HEURÍSTICA 9º DÍGITO (celular antigo ↔ novo)
-    // ========================================
-    // Tentativa 5: Quando temos 10 dígitos (DDD + 8), tentar também com 9 na frente
-    if (!lead && phoneClean.length === 10) {
-      const ddd = phoneClean.substring(0, 2);
-      const numeroLocal = phoneClean.substring(2);
-      
-      if (!numeroLocal.startsWith('9')) {
-        const comNove = `${ddd}9${numeroLocal}`;
-        if (DEBUG) console.log('🔍 Tentativa 5: Heurística 9º dígito - tentando com 9 na frente:', comNove);
-        
-        const { data: leadCom9 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .eq('celular', comNove)
-          .maybeSingle();
-        
-        if (leadCom9) {
-          lead = leadCom9;
-          logger.info && logger.info(reqId, '✅ Lead encontrado com 9º dígito adicionado!', { 
-            nome: lead.nome, 
-            id: lead.id,
-            celularEncontrado: lead.celular,
-            celularRecebido: phoneClean
-          });
-        }
-      }
-    }
-
-    // Tentativa 6: Quando temos 11 dígitos, tentar SEM o 9
-    if (!lead && phoneClean.length === 11) {
-      const ddd = phoneClean.substring(0, 2);
-      const numeroLocal = phoneClean.substring(2);
-      
-      if (numeroLocal.startsWith('9')) {
-        const semNove = `${ddd}${numeroLocal.substring(1)}`;
-        if (DEBUG) console.log('🔍 Tentativa 6: Heurística 9º dígito - tentando sem o 9:', semNove);
-        
-        const { data: leadSem9 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .eq('celular', semNove)
-          .maybeSingle();
-        
-        if (leadSem9) {
-          lead = leadSem9;
-          logger.info && logger.info(reqId, '✅ Lead encontrado sem 9º dígito!', { 
-            nome: lead.nome, 
-            id: lead.id,
-            celularEncontrado: lead.celular,
-            celularRecebido: phoneClean
-          });
-        }
-      }
+    // Buscar lead usando função simplificada (3 tentativas: exata E.164, email, últimos 8/9 dígitos)
+    if (DEBUG) {
+      logger.info && logger.info(reqId, '🔍 Buscando lead...', { phone: phoneFromWebhook, email: emailFromWebhook });
     }
     
-    // ========================================
-    // MÉTODO 2: FALLBACK POR EMAIL
-    // ========================================
-    if (!lead && emailFromWebhook) {
-  if (DEBUG) logger.info && logger.info(reqId, '🔍 Fallback: Buscando por email', { email: emailFromWebhook });
+    const lead = await findLeadByPhone(supabase, phoneFromWebhook, emailFromWebhook);
       
-      const { data: leadByEmail } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .eq('email', emailFromWebhook)
-        .maybeSingle();
-      
-      if (leadByEmail) {
-        lead = leadByEmail;
-        logger.info && logger.info(reqId, '✅ Lead encontrado por EMAIL', { nome: lead.nome, id: lead.id });
-      }
-    }
-
-    // ❌ Se não encontrou, retornar erro
-    // IMPORTANTE: NÃO usar fallback genérico para evitar enviar diagnóstico para pessoa errada
-    // 
-    // ESTRATÉGIA DE BUSCA:
-    // 1. Busca exata pelo telefone normalizado (sem DDI)
-    // 2. Busca pelos últimos 10 dígitos (cobre casos com 9 extra)
-    // 3. Busca pelos últimos 9 dígitos (cobre variações de DDI/DDD)
-    // 4. Busca pelos últimos 8 dígitos (cobre fixos e celulares antigos)
-    // 5. Heurística 9º dígito: tenta adicionar/remover o 9 (celular antigo ↔ novo)
-    // 6. Busca por email (se fornecido)
-    // 
-    // Se nenhum método funcionar, retornamos 404 para evitar envio errado
     if (!lead) {
-      logger.error && logger.error(reqId, '❌ ERRO: Nenhum lead identificado!', { phoneFromWebhook, normalized: phoneFromWebhook ? normalizePhone(phoneFromWebhook) : null, emailFromWebhook, nameFromWebhook });
+      logger.error && logger.error(reqId, '❌ Lead não encontrado', { 
+        phoneFromWebhook, 
+        emailFromWebhook, 
+        nameFromWebhook 
+      });
       return res.status(404).json({ 
         success: false, 
         message: 'Lead não identificado. Verifique se o telefone está cadastrado corretamente.' 
       });
     }
 
-    // Determinar qual método encontrou o lead
-    let metodoEncontrado = 'desconhecido';
-    if (lead) {
-      if (lead.celular === phoneClean) {
-        metodoEncontrado = '1-busca-exata';
-      } else if (phoneClean.length >= 10 && lead.celular.includes(phoneClean.slice(-10))) {
-        metodoEncontrado = '2-ultimos-10-digitos';
-      } else if (phoneClean.length >= 9 && lead.celular.includes(phoneClean.slice(-9))) {
-        metodoEncontrado = '3-ultimos-9-digitos';
-      } else if (phoneClean.length >= 8 && lead.celular.includes(phoneClean.slice(-8))) {
-        metodoEncontrado = '4-ultimos-8-digitos';
-      } else if (phoneClean.length === 10 && lead.celular === `${phoneClean.substring(0,2)}9${phoneClean.substring(2)}`) {
-        metodoEncontrado = '5-heuristica-adicionar-9';
-      } else if (phoneClean.length === 11 && lead.celular === `${phoneClean.substring(0,2)}${phoneClean.substring(3)}`) {
-        metodoEncontrado = '6-heuristica-remover-9';
-      } else if (emailFromWebhook && lead.email === emailFromWebhook) {
-        metodoEncontrado = '7-fallback-email';
-      }
-    }
-
     if (DEBUG) {
-      logger.info && logger.info(reqId, '✅ LEAD IDENTIFICADO', { 
+      logger.info && logger.info(reqId, '✅ Lead encontrado', { 
         nome: lead.nome, 
         celular: lead.celular, 
-        elemento: lead.elemento_principal,
-        metodoEncontrado: metodoEncontrado,
-        telefoneRecebido: phoneFromWebhook,
-        telefoneNormalizado: phoneClean
+        elemento: lead.elemento_principal
       });
     }
 
-    // Preparar telefone para Unnichat (normaliza + adiciona DDI 55 somente uma vez)
-    const normalizedDbPhone = normalizePhone(lead.celular);
-    const phoneForUnnichat = formatPhoneForUnnichat(normalizedDbPhone);
-
-  // Log detalhado antes do envio para facilitar correlação com Unnichat
-  logger.info && logger.info(reqId, '📲 phoneForUnnichat', { phoneForUnnichat, normalizedDbPhone });
-
-    // Se detectar divergência (ex.: número salvo com 55 ou com espaços), corrigir no banco
-    if (normalizedDbPhone && normalizedDbPhone !== lead.celular) {
-      try {
-        await supabase
-          .from('quiz_leads')
-          .update({ celular: normalizedDbPhone, updated_at: new Date().toISOString() })
-          .eq('id', lead.id);
-  if (DEBUG) logger.info && logger.info(reqId, '🛠️ Telefone do lead normalizado no banco', { before: lead.celular, after: normalizedDbPhone });
-        // refletir em memória para logs consistentes
-        lead.celular = normalizedDbPhone;
-      } catch (e) {
-        logger.error && logger.error(reqId, '⚠️ Não foi possível atualizar telefone normalizado no banco', e.message);
-      }
+    // Preparar telefone para Unnichat (E.164 sem +)
+    const phoneForUnnichat = formatForUnnichat(lead.celular);
+    
+    if (DEBUG) {
+      logger.info && logger.info(reqId, '� Telefone para Unnichat', { phoneForUnnichat });
     }
 
-    // Atualizar contato
+    // Atualizar contato no Unnichat
     try {
       const contactResp = await fetch(`${UNNICHAT_API_URL}/contact`, {
         method: 'POST',
@@ -316,16 +102,26 @@ module.exports = async (req, res) => {
         body: JSON.stringify({
           name: lead.nome,
           phone: phoneForUnnichat,
-          email: lead.email || `${lead.celular}@placeholder.com`,
+          email: lead.email || `${lead.celular.replace('+', '')}@placeholder.com`,
           tags: ['quiz_resultados_enviados']
         })
       });
+      
       let contactJson = null;
-      try { contactJson = await contactResp.json(); } catch (e) { contactJson = { raw: 'non-json response' }; }
-      logger.info && logger.info(reqId, 'Contato atualizado (Unnichat)', { status: contactResp.status, body: contactJson });
+      try { 
+        contactJson = await contactResp.json(); 
+      } catch (e) { 
+        contactJson = { raw: 'non-json response' }; 
+      }
+      
+      logger.info && logger.info(reqId, '📝 Contato atualizado', { 
+        status: contactResp.status, 
+        body: contactJson 
+      });
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (error) {
-      logger.error && logger.error(reqId, '⚠️ Aviso contato (updateContact) falhou', error.message);
+      logger.error && logger.error(reqId, '⚠️ Falha ao atualizar contato', error.message);
     }
 
     // Preparar diagnóstico
@@ -349,25 +145,49 @@ ${diagnosticoFormatado}
 Fez sentido esse Diagnóstico para você? 🙏
     `.trim();
 
-  if (DEBUG) logger.info && logger.info(reqId, '📨 Enviando diagnóstico...');
+    if (DEBUG) {
+      logger.info && logger.info(reqId, '📨 Enviando diagnóstico...');
+    }
     
-    // SIMULAÇÃO (staging/dev): não envia para Unnichat, mas atualiza DB e logs
+    // SIMULAÇÃO (staging/dev): não envia para Unnichat, mas atualiza DB
     if (SIMULATION) {
       try {
         await supabase
           .from('quiz_leads')
-          .update({ whatsapp_status: 'diagnostico_enviado', whatsapp_sent_at: new Date().toISOString() })
+          .update({ 
+            whatsapp_status: 'diagnostico_enviado', 
+            whatsapp_sent_at: new Date().toISOString() 
+          })
           .eq('id', lead.id);
-        try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) {}
+        
+        try { 
+          await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); 
+        } catch (e) {
+          logger.error && logger.error(reqId, '⚠️ Falha ao adicionar tag', e.message);
+        }
+        
         await supabase.from('whatsapp_logs').insert({
           lead_id: lead.id,
           phone: lead.celular,
           status: 'simulated',
-          metadata: { action: 'ver_resultados', simulated: true },
+          metadata: { 
+            action: 'ver_resultados', 
+            simulated: true,
+            webhook_payload: webhookData
+          },
           sent_at: new Date().toISOString()
         });
-      } catch (e) { console.log('⚠️ Falha ao registrar simulação:', e.message); }
-      return res.json({ success: true, message: 'Resultados simulados (staging/dev)', leadId: lead.id, leadName: lead.nome, simulation: true });
+      } catch (e) { 
+        logger.error && logger.error(reqId, '⚠️ Falha ao registrar simulação', e.message); 
+      }
+      
+      return res.json({ 
+        success: true, 
+        message: 'Resultados simulados (staging/dev)', 
+        leadId: lead.id, 
+        leadName: lead.nome, 
+        simulation: true 
+      });
     }
     
     // Enviar diagnóstico (com 1 retry em caso de 'Contact not found')
@@ -384,9 +204,14 @@ Fez sentido esse Diagnóstico para você? 🙏
       return json;
     }
 
-  let msgResult = await sendOnce();
+    let msgResult = await sendOnce();
+    
+    // Retry se contato não encontrado
     if (msgResult && msgResult.message && /Contact not found/i.test(msgResult.message)) {
-  if (DEBUG) logger.info && logger.info(reqId, '🔁 Retry após "Contact not found" (forçando atualização de contato)');
+      if (DEBUG) {
+        logger.info && logger.info(reqId, '🔁 Retry após "Contact not found"');
+      }
+      
       try {
         await fetch(`${UNNICHAT_API_URL}/contact`, {
           method: 'POST',
@@ -397,26 +222,30 @@ Fez sentido esse Diagnóstico para você? 🙏
           body: JSON.stringify({
             name: lead.nome,
             phone: phoneForUnnichat,
-            email: lead.email || `${lead.celular}@placeholder.com`,
-            tags: ['quiz_resultados_enviados','auto_retry']
+            email: lead.email || `${lead.celular.replace('+', '')}@placeholder.com`,
+            tags: ['quiz_resultados_enviados', 'auto_retry']
           })
         });
         await new Promise(r => setTimeout(r, 800));
       } catch (e) {
-        logger.error && logger.error(reqId, '⚠️ Falha ao atualizar contato no retry', e.message);
+        logger.error && logger.error(reqId, '⚠️ Falha no retry', e.message);
       }
+      
       msgResult = await sendOnce();
     }
 
-    logger.info && logger.info(reqId, 'Unnichat send result', msgResult);
+    logger.info && logger.info(reqId, '📬 Resultado Unnichat', msgResult);
+    
     if (msgResult.code && msgResult.code !== '200') {
       logger.error && logger.error(reqId, '❌ Erro ao enviar', msgResult);
       throw new Error(msgResult.message || 'Erro ao enviar mensagem');
     }
 
-  if (DEBUG) logger.info && logger.info(reqId, '✅ Diagnóstico enviado com sucesso!');
+    if (DEBUG) {
+      logger.info && logger.info(reqId, '✅ Diagnóstico enviado!');
+    }
 
-    // Atualizar status e tags
+    // Atualizar status e registrar logs
     try {
       await supabase
         .from('quiz_leads')
@@ -425,7 +254,12 @@ Fez sentido esse Diagnóstico para você? 🙏
           whatsapp_sent_at: new Date().toISOString()
         })
         .eq('id', lead.id);
-      try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) { logger.error && logger.error(reqId, 'Falha ao addLeadTags', e.message); }
+      
+      try { 
+        await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); 
+      } catch (e) { 
+        logger.error && logger.error(reqId, '⚠️ Falha ao adicionar tag', e.message); 
+      }
 
       // Registrar log
       const { error: logErr } = await supabase.from('whatsapp_logs').insert({
@@ -436,18 +270,18 @@ Fez sentido esse Diagnóstico para você? 🙏
           action: 'ver_resultados',
           unnichat_response: msgResult,
           triggered_by_webhook: true,
-          webhook_payload: webhookData,
-          metodo_busca: metodoEncontrado,
-          telefone_recebido: phoneFromWebhook,
-          telefone_normalizado: phoneClean,
-          estrategia_busca: '6 tentativas: (1)exata, (2)ultimos-10, (3)ultimos-9, (4)ultimos-8, (5)add-9, (6)remove-9, (7)email'
+          webhook_payload: webhookData
         },
         sent_at: new Date().toISOString()
       });
-      if (logErr) logger.error && logger.error(reqId, 'Falha ao inserir whatsapp_logs', logErr.message);
-  else logger.info && logger.info(reqId, '📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido', { leadId: lead.id });
+      
+      if (logErr) {
+        logger.error && logger.error(reqId, '⚠️ Falha ao inserir log', logErr.message);
+      } else {
+        logger.info && logger.info(reqId, '📃 Log registrado', { leadId: lead.id });
+      }
     } catch (e) {
-      logger.error && logger.error(reqId, 'Erro atualizando lead ou registrando log', e.message);
+      logger.error && logger.error(reqId, '⚠️ Erro ao atualizar status', e.message);
     }
 
     res.json({ 
