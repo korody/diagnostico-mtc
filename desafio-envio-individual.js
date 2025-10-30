@@ -2,7 +2,7 @@
 // Envia o DESAFIO DA VITALIDADE para UM lead específico por telefone
 
 const { createClient } = require('@supabase/supabase-js');
-const { normalizePhone, formatPhoneForUnnichat } = require('./lib/phone');
+const { formatForUnnichat, findLeadByPhone } = require('./lib/phone-simple');
 const { addLeadTags } = require('./lib/tags');
 
 // Forçar produção
@@ -43,43 +43,25 @@ async function main() {
   console.log('========================================\n');
   
   try {
-    // Normalizar telefone
-    const phoneNormalized = normalizePhone(TELEFONE);
-    console.log('🔍 Telefone normalizado:', phoneNormalized);
+    // Buscar lead usando função simplificada (E.164)
     console.log('🔍 Buscando lead no Supabase...\n');
     
-    // Buscar lead no banco
-    const { data: lead, error } = await supabase
-      .from('quiz_leads')
-      .select('*')
-      .eq('celular', phoneNormalized)
-      .single();
-    
-    if (error) {
-      console.error('❌ Erro ao buscar lead:', error.message);
-      
-      // Tentar buscar similares
-      console.log('\n💡 Buscando leads similares...');
-      const { data: similares } = await supabase
-        .from('quiz_leads')
-        .select('nome, celular, email, whatsapp_status')
-        .ilike('celular', `%${phoneNormalized.slice(-8)}%`)
-        .limit(5);
-      
-      if (similares && similares.length > 0) {
-        console.log('\n📋 Leads encontrados com números similares:');
-        similares.forEach((l, i) => {
-          console.log(`   ${i+1}. ${l.nome} - ${l.celular} - ${l.whatsapp_status}`);
-        });
-      } else {
-        console.log('\n❌ Nenhum lead encontrado!');
-      }
-      
-      return;
-    }
+    const lead = await findLeadByPhone(supabase, TELEFONE, null);
     
     if (!lead) {
       console.log('❌ Lead não encontrado!\n');
+      console.log('💡 Primeiros 10 leads do banco:');
+      
+      const { data: allLeads } = await supabase
+        .from('quiz_leads')
+        .select('nome, celular, whatsapp_status')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      allLeads?.forEach((l, i) => {
+        console.log(`   ${i+1}. ${l.nome} - ${l.celular} - ${l.whatsapp_status}`);
+      });
+      
       return;
     }
     
@@ -113,8 +95,8 @@ async function main() {
     }
     
     // Preparar dados
-    const phoneForUnnichat = formatPhoneForUnnichat(lead.celular);
-    const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${lead.celular}&utm_content=msg-inicial-desafio`;
+    const phoneForUnnichat = formatForUnnichat(lead.celular);
+    const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${lead.celular.replace('+', '')}&utm_content=msg-inicial-desafio`;
     
     // Mensagens (igual ao script de lotes)
     const message1 = `*Quer ganhar acesso ao SUPER COMBO Vitalício do Mestre Ye, sem pagar nada?*

@@ -2,7 +2,7 @@
 // Testa envio de dados do lead para nova automação Unnichat
 
 const { createClient } = require('@supabase/supabase-js');
-const { normalizePhone, formatPhoneForUnnichat } = require('./lib/phone');
+const { formatForUnnichat, findLeadByPhone } = require('./lib/phone-simple');
 
 // Forçar produção para evitar confusão
 const isProduction = true; // <- FORCE TRUE
@@ -44,20 +44,13 @@ async function main() {
 	console.log('========================================\n');
 
 	try {
-		// Normalizar telefone
-		const phoneNormalized = normalizePhone(TELEFONE);
-		console.log('🔍 Telefone normalizado:', phoneNormalized);
+		// Buscar lead usando função simplificada (E.164)
 		console.log('🔍 Buscando lead no Supabase...\n');
 
-		// Buscar lead no banco
-		const { data: lead, error } = await supabase
-			.from('quiz_leads')
-			.select('*')
-			.eq('celular', phoneNormalized)
-			.single();
+		const lead = await findLeadByPhone(supabase, TELEFONE, null);
 
-		if (error || !lead) {
-			console.error('❌ Lead não encontrado ou erro:', error?.message);
+		if (!lead) {
+			console.error('❌ Lead não encontrado!');
 			return;
 		}
 
@@ -72,12 +65,12 @@ async function main() {
 		console.log('========================================\n');
 
 		// Preparar dados para automação
-		const phoneForUnnichat = formatPhoneForUnnichat(lead.celular);
+		const phoneForUnnichat = formatForUnnichat(lead.celular);
 
 		// Adicionar campo personalizado 'diagnostico'
 		const leadData = {
 			name: lead.nome,
-			email: lead.email || `${lead.celular}@placeholder.com`,
+			email: lead.email || `${lead.celular.replace('+', '')}@placeholder.com`,
 			phone: phoneForUnnichat,
 			diagnostico: lead.diagnostico_completo || 'Diagnóstico não disponível.'
 		};

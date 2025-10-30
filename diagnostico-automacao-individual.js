@@ -2,7 +2,7 @@
 // Busca lead no Supabase por telefone e envia template via gatilho
 
 const { createClient } = require('@supabase/supabase-js');
-const { normalizePhone, formatPhoneForUnnichat } = require('./lib/phone');
+const { formatToE164, formatForUnnichat, findLeadByPhone } = require('./lib/phone-simple');
 
 // Forçar produção para evitar confusão
 const isProduction = true; // <- FORCE TRUE
@@ -43,54 +43,25 @@ async function main() {
   console.log('========================================\n');
   
   try {
-    // Normalizar telefone
-    const phoneNormalized = normalizePhone(TELEFONE);
-    console.log('🔍 Telefone normalizado:', phoneNormalized);
+    // Buscar lead usando função simplificada (E.164)
     console.log('🔍 Buscando lead no Supabase...\n');
     
-    // Buscar lead no banco
-    const { data: lead, error } = await supabase
-      .from('quiz_leads')
-      .select('*')
-      .eq('celular', phoneNormalized)
-      .single();
-    
-    if (error) {
-      console.error('❌ Erro ao buscar lead:', error.message);
-      
-      // Tentar buscar leads similares
-      console.log('\n💡 Buscando leads similares...');
-      const { data: similares } = await supabase
-        .from('quiz_leads')
-        .select('nome, celular, email, whatsapp_status')
-        .ilike('celular', `%${phoneNormalized.slice(-8)}%`)
-        .limit(5);
-      
-      if (similares && similares.length > 0) {
-        console.log('\n📋 Leads encontrados com números similares:');
-        similares.forEach((l, i) => {
-          console.log(`   ${i+1}. ${l.nome} - ${l.celular} - ${l.whatsapp_status}`);
-        });
-      } else {
-        console.log('\n❌ Nenhum lead encontrado com esse telefone!');
-        console.log('\n💡 Primeiros 10 leads do banco:');
-        
-        const { data: allLeads } = await supabase
-          .from('quiz_leads')
-          .select('nome, celular, whatsapp_status')
-          .order('created_at', { ascending: false })
-          .limit(10);
-        
-        allLeads?.forEach((l, i) => {
-          console.log(`   ${i+1}. ${l.nome} - ${l.celular} - ${l.whatsapp_status}`);
-        });
-      }
-      
-      return;
-    }
+    const lead = await findLeadByPhone(supabase, TELEFONE, null);
     
     if (!lead) {
       console.log('❌ Lead não encontrado!\n');
+      console.log('💡 Primeiros 10 leads do banco:');
+      
+      const { data: allLeads } = await supabase
+        .from('quiz_leads')
+        .select('nome, celular, whatsapp_status')
+        .order('created_at', { ascending: false })
+        .limit(10);
+      
+      allLeads?.forEach((l, i) => {
+        console.log(`   ${i+1}. ${l.nome} - ${l.celular} - ${l.whatsapp_status}`);
+      });
+      
       return;
     }
     
@@ -123,11 +94,11 @@ async function main() {
     }
     
     // Preparar dados para o gatilho
-  const phoneForUnnichat = formatPhoneForUnnichat(lead.celular);
+    const phoneForUnnichat = formatForUnnichat(lead.celular);
     
     const leadData = {
       name: lead.nome,
-      email: lead.email || `${lead.celular}@placeholder.com`,
+      email: lead.email || `${lead.celular.replace('+', '')}@placeholder.com`,
       phone: phoneForUnnichat
     };
     

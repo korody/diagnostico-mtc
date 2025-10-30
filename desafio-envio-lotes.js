@@ -178,13 +178,12 @@ async function enviarDesafioVitalidade() {
     
     for (const lead of batchLeads) {
       console.log(`\n👤 ${lead.nome}`);
-      console.log(`   📱 55${lead.celular}`);
+      console.log(`   📱 ${lead.celular}`);
       console.log(`   📊 Score: ${lead.lead_score || 0} | Status: ${lead.whatsapp_status}`);
       
       try {
-  const { normalizePhone, formatPhoneForUnnichat } = require('./lib/phone');
-  const normalizedDbPhone = normalizePhone(lead.celular);
-  const phoneForUnnichat = formatPhoneForUnnichat(normalizedDbPhone);
+        const { formatForUnnichat } = require('./lib/phone-simple');
+        const phoneForUnnichat = formatForUnnichat(lead.celular);
         const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${lead.celular}&utm_content=msg-inicial-desafio`;
         
         // COPY DO SERVER.JS

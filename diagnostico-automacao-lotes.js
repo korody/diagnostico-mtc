@@ -1,6 +1,6 @@
 // diagnostico-automacao-lotes.js - ENVIO DIRETO DE DIAGNÓSTICO
 const { createClient } = require('@supabase/supabase-js');
-const { formatPhoneForUnnichat } = require('./lib/phone');
+const { formatForUnnichat } = require('./lib/phone-simple');
 
 // ========================================
 // CONFIGURAÇÃO DE AMBIENTE
@@ -201,7 +201,7 @@ async function enviarEmLotes() {
       console.log(`   📊 Score: ${lead.lead_score} | 🎯 ${lead.elemento_principal || 'N/A'}`);
       
       try {
-        const phoneForUnnichat = formatPhoneForUnnichat(lead.celular);
+        const phoneForUnnichat = formatForUnnichat(lead.celular);
         
         // Preparar diagnóstico completo
         const primeiroNome = lead.nome.split(' ')[0];
