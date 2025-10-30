@@ -72,23 +72,23 @@ async function testarBuscaLead() {
     console.log(`   Tel: ${leadOriginal.celular}`);
     
     // Teste 1: Busca exata (E.164)
-    const lead1 = await findLeadByPhone(supabase, leadOriginal.celular, null);
-    console.log(`   ✅ Busca exata: ${lead1 ? 'ENCONTRADO' : 'FALHOU'}`);
+    const result1 = await findLeadByPhone(supabase, leadOriginal.celular, null);
+    console.log(`   ✅ Busca exata: ${result1 && result1.lead ? 'ENCONTRADO' : 'FALHOU'}`);
     
     // Teste 2: Busca com formatação diferente
     const telSemMais = leadOriginal.celular.replace('+', '');
-    const lead2 = await findLeadByPhone(supabase, telSemMais, null);
-    console.log(`   ✅ Busca sem +: ${lead2 ? 'ENCONTRADO' : 'FALHOU'}`);
+    const result2 = await findLeadByPhone(supabase, telSemMais, null);
+    console.log(`   ✅ Busca sem +: ${result2 && result2.lead ? 'ENCONTRADO' : 'FALHOU'}`);
     
     // Teste 3: Busca pelos últimos 8 dígitos
     const ultimos8 = leadOriginal.celular.slice(-8);
-    const lead3 = await findLeadByPhone(supabase, ultimos8, null);
-    console.log(`   ✅ Busca últimos 8: ${lead3 ? 'ENCONTRADO' : 'FALHOU'}`);
+    const result3 = await findLeadByPhone(supabase, ultimos8, null);
+    console.log(`   ✅ Busca últimos 8: ${result3 && result3.lead ? 'ENCONTRADO' : 'FALHOU'}`);
     
     // Teste 4: Busca por email (se disponível)
     if (leadOriginal.email) {
-      const lead4 = await findLeadByPhone(supabase, null, leadOriginal.email);
-      console.log(`   ✅ Busca por email: ${lead4 ? 'ENCONTRADO' : 'FALHOU'}`);
+      const result4 = await findLeadByPhone(supabase, null, leadOriginal.email);
+      console.log(`   ✅ Busca por email: ${result4 && result4.lead ? 'ENCONTRADO' : 'FALHOU'}`);
     }
     
     console.log('');

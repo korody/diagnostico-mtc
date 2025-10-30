@@ -24,18 +24,22 @@ module.exports = async (req, res) => {
   try {
     // Buscar lead usando função simplificada (3 tentativas: exata, email, últimos 8/9 dígitos)
     logger.info && logger.info(reqId, '🔍 Buscando lead', { phone, email });
-    const lead = await findLeadByPhone(supabase, phone, email);
+    const result = await findLeadByPhone(supabase, phone, email);
     
-    if (!lead) {
+    if (!result || !result.lead) {
       logger.error && logger.error(reqId, '❌ Lead não encontrado', { phone, email });
       return res.status(404).json({ success: false, error: 'Lead não encontrado' });
     }
+
+    const lead = result.lead;
+    const searchMethod = result.method;
 
     logger.info && logger.info(reqId, '✅ Lead encontrado', { 
       nome: lead.nome, 
       id: lead.id,
       celular: lead.celular, 
-      elemento: lead.elemento_principal
+      elemento: lead.elemento_principal,
+      searchMethod: searchMethod
     });
 
     // Verificar se tem diagnóstico no banco

@@ -47,15 +47,17 @@ async function main() {
 		// Buscar lead usando função simplificada (E.164)
 		console.log('🔍 Buscando lead no Supabase...\n');
 
-		const lead = await findLeadByPhone(supabase, TELEFONE, null);
+		const searchResult = await findLeadByPhone(supabase, TELEFONE, null);
 
-		if (!lead) {
+		if (!searchResult || !searchResult.lead) {
 			console.error('❌ Lead não encontrado!');
 			return;
 		}
 
+		const lead = searchResult.lead;
+
 		// Lead encontrado!
-		console.log('✅ Lead encontrado!');
+		console.log('✅ Lead encontrado! (método:', searchResult.method + ')');
 		console.log('========================================');
 		console.log('👤 Nome:', lead.nome);
 		console.log('📱 Celular:', lead.celular);

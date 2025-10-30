@@ -42,9 +42,9 @@ module.exports = async (req, res) => {
     // Buscar lead usando função simplificada (E.164)
     logger.info && logger.info(reqId, '🔍 Buscando lead no Supabase');
     
-    const lead = await findLeadByPhone(supabase, phoneRaw, email);
+    const result = await findLeadByPhone(supabase, phoneRaw, email);
 
-    if (!lead) {
+    if (!result || !result.lead) {
       logger.error && logger.error(reqId, '❌ Lead não encontrado', { phone: phoneNormalized, email });
       return res.status(404).json({
         success: false,
@@ -54,7 +54,8 @@ module.exports = async (req, res) => {
       });
     }
 
-    logger.info && logger.info(reqId, '✅ Lead encontrado', { nome: lead.nome, id: lead.id });
+    const lead = result.lead;
+    logger.info && logger.info(reqId, '✅ Lead encontrado', { nome: lead.nome, id: lead.id, searchMethod: result.method });
 
     // Se o telefone no DB estiver com formatação diferente, normaliza e atualiza
     try {

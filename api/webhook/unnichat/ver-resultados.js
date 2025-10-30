@@ -62,9 +62,9 @@ module.exports = async (req, res) => {
       logger.info && logger.info(reqId, '🔍 Buscando lead...', { phone: phoneFromWebhook, email: emailFromWebhook });
     }
     
-    const lead = await findLeadByPhone(supabase, phoneFromWebhook, emailFromWebhook);
+    const result = await findLeadByPhone(supabase, phoneFromWebhook, emailFromWebhook);
       
-    if (!lead) {
+    if (!result || !result.lead) {
       logger.error && logger.error(reqId, '❌ Lead não encontrado', { 
         phoneFromWebhook, 
         emailFromWebhook, 
@@ -76,11 +76,15 @@ module.exports = async (req, res) => {
       });
     }
 
+    const lead = result.lead;
+    const searchMethod = result.method;
+
     if (DEBUG) {
       logger.info && logger.info(reqId, '✅ Lead encontrado', { 
         nome: lead.nome, 
         celular: lead.celular, 
-        elemento: lead.elemento_principal
+        elemento: lead.elemento_principal,
+        searchMethod: searchMethod
       });
     }
 

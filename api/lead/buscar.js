@@ -43,9 +43,9 @@ module.exports = async (req, res) => {
     console.log('🔍 Buscando lead com telefone:', phone);
     
     // Buscar usando função simplificada (E.164)
-    const lead = await findLeadByPhone(supabase, phone, null);
+    const result = await findLeadByPhone(supabase, phone, null);
     
-    if (!lead) {
+    if (!result || !result.lead) {
       console.log('❌ Lead não encontrado:', phone);
       return res.status(404).json({ 
         success: false, 
@@ -53,7 +53,8 @@ module.exports = async (req, res) => {
       });
     }
     
-    console.log('✅ Lead encontrado:', lead.nome);
+    const lead = result.lead;
+    console.log('✅ Lead encontrado:', lead.nome, '(método:', result.method + ')');
     
     res.json({ 
       success: true, 
