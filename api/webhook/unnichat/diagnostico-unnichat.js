@@ -2,10 +2,9 @@
 // Endpoint para retornar diagnóstico do lead para Unnichat, sem envio direto ao lead
 
 const { findLeadByPhone } = require('../../../lib/phone-simple');
-const { calcularDiagnosticoCompleto } = require('../../../lib/diagnosticos');
 const { addLeadTags } = require('../../../lib/tags');
 const logger = require('../../../lib/logger');
-const supabase = require('../../../lib/supabase'); // ✅ MUDANÇA CRÍTICA: Usar cliente compartilhado
+const supabase = require('../../../lib/supabase');
 
 module.exports = async (req, res) => {
   const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
@@ -39,14 +38,18 @@ module.exports = async (req, res) => {
       elemento: lead.elemento_principal
     });
 
-    // Calcular/preparar diagnóstico
-    let diagnostico = lead.diagnostico_completo;
+    // Verificar se tem diagnóstico no banco
+    const diagnostico = lead.diagnostico_completo || lead.script_abertura;
+    
     if (!diagnostico) {
-      logger.info && logger.info(reqId, '🔧 Calculando diagnóstico (não estava no DB)', { leadId: lead.id });
-      diagnostico = calcularDiagnosticoCompleto(lead);
-    } else {
-      logger.info && logger.info(reqId, '📋 Diagnóstico já existe no DB', { leadId: lead.id });
+      logger.error && logger.error(reqId, '❌ Lead sem diagnóstico', { leadId: lead.id });
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Lead encontrado mas diagnóstico não disponível. Complete o quiz primeiro.' 
+      });
     }
+    
+    logger.info && logger.info(reqId, '📋 Diagnóstico encontrado', { leadId: lead.id });
 
     // Atualizar status, tags e registrar log
     logger.info && logger.info(reqId, '💾 Atualizando status do lead no banco', { leadId: lead.id });
