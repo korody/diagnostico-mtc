@@ -3,11 +3,11 @@
 // Busca lead por telefone
 // ========================================
 
-let supabase, normalizePhone;
+let supabase, findLeadByPhone;
 
 try {
   supabase = require('../../lib/supabase');
-  ({ normalizePhone } = require('../../lib/phone'));
+  ({ findLeadByPhone } = require('../../lib/phone-simple'));
 } catch (error) {
   console.error('❌ Erro ao carregar módulos:', error.message);
 }
@@ -40,58 +40,16 @@ module.exports = async (req, res) => {
   }
   
   try {
-    const phoneClean = normalizePhone(phone);
+    console.log('🔍 Buscando lead com telefone:', phone);
     
-    console.log('🔍 Buscando lead com telefone:', phoneClean);
-    
-    // Tentar busca exata
-    let { data: lead, error } = await supabase
-      .from('quiz_leads')
-      .select('*')
-      .eq('celular', phoneClean)
-      .maybeSingle();
-    
-    if (error) throw error;
-    
-    // Fallback: últimos 9 dígitos
-    if (!lead && phoneClean.length >= 9) {
-      const last9 = phoneClean.slice(-9);
-      console.log('🔍 Tentando busca pelos últimos 9 dígitos:', last9);
-      
-      const { data: candidates } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .ilike('celular', `%${last9}%`)
-        .limit(5);
-      
-      if (candidates && candidates.length > 0) {
-        lead = candidates[0];
-        console.log('✅ Lead encontrado (últimos 9):', lead.nome);
-      }
-    }
-    
-    // Fallback: últimos 8 dígitos
-    if (!lead && phoneClean.length >= 8) {
-      const last8 = phoneClean.slice(-8);
-      console.log('🔍 Tentando busca pelos últimos 8 dígitos:', last8);
-      
-      const { data: candidates } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .ilike('celular', `%${last8}%`)
-        .limit(5);
-      
-      if (candidates && candidates.length > 0) {
-        lead = candidates[0];
-        console.log('✅ Lead encontrado (últimos 8):', lead.nome);
-      }
-    }
+    // Buscar usando função simplificada (E.164)
+    const lead = await findLeadByPhone(supabase, phone, null);
     
     if (!lead) {
-      console.log('❌ Lead não encontrado:', phoneClean);
+      console.log('❌ Lead não encontrado:', phone);
       return res.status(404).json({ 
         success: false, 
-        error: 'Lead não encontrado: ' + phoneClean
+        error: 'Lead não encontrado: ' + phone
       });
     }
     

@@ -1,7 +1,7 @@
 // api/gerar-link-compartilhamento.js
 // Gera link único de compartilhamento do desafio para o lead
 
-const { normalizePhone } = require('../lib/phone');
+const { findLeadByPhone } = require('../lib/phone-simple');
 const supabase = require('../lib/supabase');
 const logger = require('../lib/logger');
 
@@ -39,74 +39,10 @@ module.exports = async (req, res) => {
       });
     }
 
-    // Normalizar telefone se fornecido
-    let phoneNormalized = null;
-    if (phoneRaw) {
-      phoneNormalized = normalizePhone(phoneRaw);
-      logger.info && logger.info(reqId, '📱 Telefone normalizado', { phoneNormalized });
-    }
-
-    // Buscar lead no banco com a MESMA estratégia do webhook
-  logger.info && logger.info(reqId, '🔍 Buscando lead no Supabase');
-    let lead = null;
-
-    // 1) Busca exata
-    if (phoneNormalized) {
-      const { data: leadExato, error: e1 } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .eq('celular', phoneNormalized)
-        .maybeSingle();
-      if (e1) throw e1;
-      if (leadExato) {
-        lead = leadExato;
-        logger.info && logger.info(reqId, '✅ Lead encontrado (exato por telefone)', { nome: lead.nome, id: lead.id });
-      }
-
-      // 2) Últimos 9 dígitos
-      if (!lead && phoneNormalized.length >= 9) {
-        const last9 = phoneNormalized.slice(-9);
-        const { data: candidatos, error: e2 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${last9}%`)
-          .limit(5);
-        if (e2) throw e2;
-        if (candidatos && candidatos.length > 0) {
-          lead = candidatos[0];
-          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 9)', { nome: lead.nome, id: lead.id });
-        }
-      }
-
-      // 3) Últimos 8 dígitos (fallback adicional)
-      if (!lead && phoneNormalized.length >= 8) {
-        const last8 = phoneNormalized.slice(-8);
-        const { data: candidatos8, error: e3 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${last8}%`)
-          .limit(5);
-        if (e3) throw e3;
-        if (candidatos8 && candidatos8.length > 0) {
-          lead = candidatos8[0];
-          logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 8)', { nome: lead.nome, id: lead.id });
-        }
-      }
-    }
-
-    // 4) Fallback por email
-    if (!lead && email) {
-      const { data: leadEmail, error: e4 } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-      if (e4) throw e4;
-      if (leadEmail) {
-        lead = leadEmail;
-        logger.info && logger.info(reqId, '✅ Lead encontrado por EMAIL', { nome: lead.nome, id: lead.id });
-      }
-    }
+    // Buscar lead usando função simplificada (E.164)
+    logger.info && logger.info(reqId, '🔍 Buscando lead no Supabase');
+    
+    const lead = await findLeadByPhone(supabase, phoneRaw, email);
 
     if (!lead) {
       logger.error && logger.error(reqId, '❌ Lead não encontrado', { phone: phoneNormalized, email });

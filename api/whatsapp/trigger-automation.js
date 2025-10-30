@@ -1,5 +1,5 @@
 
-const { normalizePhone, formatPhoneForUnnichat } = require('../../lib/phone');
+const { formatForUnnichat, findLeadByPhone } = require('../../lib/phone-simple');
 const supabase = require('../../lib/supabase');
 
 module.exports = async function triggerAutomationHandler(req, res) {
@@ -21,22 +21,19 @@ module.exports = async function triggerAutomationHandler(req, res) {
     }
 
     if (!lead && phone) {
-      // tentar normalizar e buscar por celular
-      const phoneNormalized = normalizePhone(phone);
-      const { data, error } = await supabase.from('quiz_leads').select('*').ilike('celular', `%${phoneNormalized.slice(-8)}%`).limit(1).maybeSingle();
-      if (error) throw error;
-      lead = data;
+      // Buscar por telefone usando função simplificada
+      lead = await findLeadByPhone(supabase, phone, null);
     }
 
     if (!lead) {
       return res.status(404).json({ success: false, error: 'Lead não encontrado' });
     }
 
-    const phoneForUnnichat = formatPhoneForUnnichat(normalizePhone(lead.celular || ''));
+    const phoneForUnnichat = formatForUnnichat(lead.celular || '');
 
     const payload = {
       name: lead.nome || 'Contato',
-      email: lead.email || `${lead.celular}@placeholder.com`,
+      email: lead.email || `${lead.celular.replace('+', '')}@placeholder.com`,
       phone: phoneForUnnichat
     };
 
