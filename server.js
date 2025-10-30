@@ -202,10 +202,6 @@ app.get('/test-whatsapp', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'test-whatsapp.html'));
 });
 
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
-});
-
 // ===== ROTA: BUSCAR LEAD POR TELEFONE OU EMAIL =====
 app.get('/api/lead/buscar', async (req, res) => {
   try {

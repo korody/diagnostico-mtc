@@ -1,24 +1,14 @@
-// Serve a página estática buscar-enviar.html via serverless (evita conflito de SPA)
+// Página de Busca e Envio de Mensagens (Admin)
 const fs = require('fs');
 const path = require('path');
 
 module.exports = async (req, res) => {
   try {
-    // Em produção (Vercel), o HTML está na mesma pasta da função
-    // Em dev local, pode estar em public/
-    const sameDirPath = path.join(__dirname, 'buscar-enviar-page.html');
+    // HTML template está na mesma pasta com prefixo _ para não virar rota
+    const templatePath = path.join(__dirname, '_buscar-enviar-template.html');
     const publicPath = path.join(__dirname, '..', 'public', 'buscar-enviar.html');
-    const buildPath = path.join(__dirname, '..', 'build', 'buscar-enviar.html');
     
-    let filePath;
-    if (fs.existsSync(sameDirPath)) {
-      filePath = sameDirPath;
-    } else if (fs.existsSync(buildPath)) {
-      filePath = buildPath;
-    } else {
-      filePath = publicPath;
-    }
-    
+    const filePath = fs.existsSync(templatePath) ? templatePath : publicPath;
     let html = fs.readFileSync(filePath, 'utf-8');
     
     // Cache bust: adiciona timestamp no HTML
