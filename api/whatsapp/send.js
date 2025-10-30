@@ -91,10 +91,11 @@ module.exports = async (req, res) => {
     const phoneForUnnichat = formatForUnnichat(phoneE164);
     
     console.log('\n📞 Processando telefone:');
-    console.log(`   Original: ${phoneToUse}`);
-    console.log(`   E.164: ${phoneE164}`);
-    console.log(`   Unnichat: ${phoneForUnnichat}`);
+    console.log(`   Original (do banco): ${phoneToUse}`);
+    console.log(`   E.164 (interno): ${phoneE164}`);
+    console.log(`   Unnichat (sem +): ${phoneForUnnichat}`);
     console.log(`   Display: ${formatForDisplay(phoneE164)}`);
+    console.log(`   ⚠️  IMPORTANTE: Unnichat receberá: ${phoneForUnnichat}`);
 
     // Preparar mensagens baseado no tipo
     if (sendChallenge) {
@@ -257,9 +258,10 @@ Compartilhe vitalidade. Inspire transformação`,
       const msgNum = i + 1;
       const totalMsgs = messagesToSend.length;
       
-      console.log(`\n� Mensagem ${msgNum}/${totalMsgs}:`);
+      console.log(`\n📨 Mensagem ${msgNum}/${totalMsgs}:`);
       console.log(`   📏 Tamanho: ${msg.text.length} chars`);
-      console.log(`   📤 Enviando para ${phoneForUnnichat}...`);
+      console.log(`   📤 Enviando para Unnichat: ${phoneForUnnichat}`);
+      console.log(`   🔍 Verificar: NÃO deve ter + no número acima`);
       
       await sendMessage(phoneForUnnichat, msg.text);
       messagesSent++;
