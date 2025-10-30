@@ -374,6 +374,11 @@ Compartilhe vitalidade. Inspire transformação`
     } else {
       // Diagnóstico ou mensagem customizada (1 mensagem)
       messageToSend = customMessage || (sendDiagnostico ? lead.diagnostico_completo : lead.script_abertura);
+      
+      // Adicionar pergunta de feedback no final do diagnóstico
+      if (sendDiagnostico && messageToSend) {
+        messageToSend = messageToSend.trim() + '\n\nFez sentido esse Diagnóstico para você? 🙏';
+      }
     }
   }
 

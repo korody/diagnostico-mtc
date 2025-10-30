@@ -129,7 +129,13 @@ Compartilhe vitalidade. Inspire transformação`,
       
     } else {
       // Diagnóstico ou mensagem customizada (1 mensagem)
-      const messageText = customMessage || (leadData ? (sendDiagnostico ? (leadData.diagnostico_completo || leadData.script_abertura) : leadData.script_abertura) : '');
+      let messageText = customMessage || (leadData ? (sendDiagnostico ? (leadData.diagnostico_completo || leadData.script_abertura) : leadData.script_abertura) : '');
+      
+      // Adicionar pergunta de feedback no final do diagnóstico
+      if (sendDiagnostico && messageText) {
+        messageText = messageText.trim() + '\n\nFez sentido esse Diagnóstico para você? 🙏';
+      }
+      
       messagesToSend = [
         {
           text: messageText,
