@@ -19,10 +19,16 @@ module.exports = async (req, res) => {
       filePath = publicPath;
     }
     
-    const html = fs.readFileSync(filePath, 'utf-8');
+    let html = fs.readFileSync(filePath, 'utf-8');
+    
+    // Cache bust: adiciona timestamp no HTML
+    const timestamp = new Date().toISOString();
+    html = html.replace('</head>', `<!-- Deploy: ${timestamp} --></head>`);
     
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.status(200).send(html);
   } catch (e) {
     // Fallback para redirect se der erro
