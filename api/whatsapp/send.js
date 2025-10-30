@@ -30,21 +30,22 @@ module.exports = async (req, res) => {
     const { phone, customMessage, leadId, sendDiagnostico, sendChallenge } = req.body || {};
     
     // Determinar tipo de envio
-    const messageType = sendChallenge ? 'DESAFIO' : (sendDiagnostico ? 'DIAGNOSTICO' : 'CUSTOM');
-    const typeEmoji = sendChallenge ? '🎈 ' : (sendDiagnostico ? '📋' : '💬');
+    const messageType = sendChallenge ? 'DESAFIO' : (sendDiagnostico ? 'DIAGNÓSTICO' : 'MENSAGEM CUSTOMIZADA');
+    const typeEmoji = sendChallenge ? '🎈' : (sendDiagnostico ? '📋' : '💬');
     
-    console.log('\n📨 ========================================');
-    console.log(`   ${typeEmoji} ENVIO: ${messageType}`);
-    console.log('========================================');
-    console.log('🎯 Modo:', SIMULATION ? '🧪 SIMULACAO' : '🔴 PRODUCAO');
-    console.log('📱 Telefone recebido:', phone || 'N/A');
-    console.log('🆔 Lead ID:', leadId || 'N/A');
-    if (customMessage) console.log('💬 Mensagem customizada:', customMessage.length, 'chars');
-    console.log('========================================\n');
+    console.log('\n' + '='.repeat(70));
+    console.log(`${typeEmoji} ENVIO WHATSAPP: ${messageType}`);
+    console.log('='.repeat(70));
+    console.log(`🎯 Modo: ${SIMULATION ? '🧪 SIMULAÇÃO (não envia)' : '🔴 PRODUÇÃO (envia real)'}`);
+    console.log(`📱 Telefone: ${phone || 'N/A'}`);
+    console.log(`🆔 Lead ID: ${leadId || 'N/A'}`);
+    if (customMessage) console.log(`💬 Custom: ${customMessage.length} caracteres`);
+    console.log('='.repeat(70));
     
     // Validações básicas
     if (!phone && !leadId) {
-      console.log('❌ ERRO: Telefone ou leadId obrigatório\n');
+      console.log('\n❌ ERRO: Telefone ou leadId obrigatório');
+      console.log('='.repeat(70) + '\n');
       return res.status(400).json({
         success: false,
         error: 'Telefone ou leadId obrigatório'
@@ -58,7 +59,8 @@ module.exports = async (req, res) => {
 
     // Se forneceu leadId, buscar dados
     if (leadId) {
-      console.log('🔍 Buscando lead ID:', leadId);
+      console.log('\n🔍 Buscando lead no banco...');
+      console.log(`   ID: ${leadId}`);
       
       const { data: lead, error } = await supabase
         .from('quiz_leads')
@@ -67,7 +69,8 @@ module.exports = async (req, res) => {
         .single();
       
       if (error || !lead) {
-        console.log('❌ Lead não encontrado:', error?.message || 'ID inválido\n');
+        console.log(`\n❌ Lead não encontrado: ${error?.message || 'ID inválido'}`);
+        console.log('='.repeat(70) + '\n');
         return res.status(404).json({
           success: false,
           error: 'Lead não encontrado'
@@ -77,21 +80,21 @@ module.exports = async (req, res) => {
       leadData = lead;
       phoneToUse = lead.celular;
       
-      console.log('✅ Lead encontrado:');
-      console.log('   Nome:', lead.nome);
-      console.log('   Telefone:', lead.celular);
-      console.log('   Email:', lead.email || 'N/A');
+      console.log('✅ Lead encontrado!');
+      console.log(`   👤 Nome: ${lead.nome}`);
+      console.log(`   📱 Telefone: ${lead.celular}`);
+      console.log(`   📧 Email: ${lead.email || 'N/A'}`);
     }
 
     // Processar telefone (já deve estar em E.164 se veio do banco)
     const phoneE164 = phoneToUse.startsWith('+') ? phoneToUse : formatToE164(phoneToUse);
     const phoneForUnnichat = formatForUnnichat(phoneE164);
     
-    console.log('\n📞 PROCESSAMENTO DO TELEFONE:');
-    console.log('   Original:', phoneToUse);
-    console.log('   E.164:', phoneE164);
-    console.log('   Para Unnichat:', phoneForUnnichat);
-    console.log('   Display:', formatForDisplay(phoneE164));
+    console.log('\n📞 Processando telefone:');
+    console.log(`   Original: ${phoneToUse}`);
+    console.log(`   E.164: ${phoneE164}`);
+    console.log(`   Unnichat: ${phoneForUnnichat}`);
+    console.log(`   Display: ${formatForDisplay(phoneE164)}`);
 
     // Preparar mensagens baseado no tipo
     if (sendChallenge) {
@@ -125,8 +128,9 @@ Compartilhe vitalidade. Inspire transformação`,
         }
       ];
       
-      console.log('\n🔗 Link compartilhamento:', referralLink);
-      console.log('📝 2 MENSAGENS preparadas:', messagesToSend[0].text.length, '+', messagesToSend[1].text.length, 'chars\n');
+      console.log('\n🎈 Desafio da Vitalidade:');
+      console.log(`   🔗 Link: ${referralLink}`);
+      console.log(`   📝 Mensagens: 2 (${messagesToSend[0].text.length} + ${messagesToSend[1].text.length} chars)`);
       
     } else {
       // Diagnóstico ou mensagem customizada (1 mensagem)
@@ -144,19 +148,20 @@ Compartilhe vitalidade. Inspire transformação`,
         }
       ];
       
-      console.log('\n📝 PREVIEW DA MENSAGEM:');
-      console.log('   Tamanho:', messageText.length, 'caracteres');
-      console.log('   Primeiros 150 chars:', messageText.substring(0, 150) + '...\n');
+      console.log(`\n${sendDiagnostico ? '�' : '💬'} Mensagem preparada:`);
+      console.log(`   📏 Tamanho: ${messageText.length} caracteres`);
+      console.log(`   📄 Preview: ${messageText.substring(0, 100)}...`);
     }
 
     // SIMULAÇÃO (staging/dev): não exige UNNICHAT_*, apenas registra sucesso
     if (SIMULATION) {
-      console.log('🧪 MODO SIMULACAO - Nao enviando para Unnichat');
-      console.log(`   (Apenas registrando no banco - ${messagesToSend.length} mensagem(ns))\n`);
+      console.log('\n🧪 MODO SIMULAÇÃO ATIVO');
+      console.log(`   ⚠️  Não enviará para Unnichat (apenas registro no banco)`);
+      console.log(`   📊 Mensagens a simular: ${messagesToSend.length}`);
       
       try {
         if (leadId) {
-          console.log('💾 Atualizando status do lead...');
+          console.log('\n💾 Registrando no banco...');
           
           const newStatus = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
           const newTag = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
@@ -169,11 +174,13 @@ Compartilhe vitalidade. Inspire transformação`,
             })
             .eq('id', leadId);
           
+          console.log(`   ✅ Status atualizado: ${newStatus}`);
+          
           try { 
             await addLeadTags(supabase, leadId, [newTag]); 
-            console.log(`🏷️  Tag "${newTag}" adicionada`);
+            console.log(`   🏷️  Tag adicionada: ${newTag}`);
           } catch (e) {
-            console.log('⚠️  Falha ao adicionar tag:', e.message);
+            console.log(`   ⚠️  Tag falhou: ${e.message}`);
           }
 
           // Registrar logs para cada mensagem
@@ -192,13 +199,15 @@ Compartilhe vitalidade. Inspire transformação`,
           
           await supabase.from('whatsapp_logs').insert(logsToInsert);
           
-          console.log(`✅ Status atualizado no banco (${messagesToSend.length} mensagem(ns) simulada(s))`);
+          console.log(`   ✅ Logs inseridos: ${messagesToSend.length} mensagem(ns)`);
         }
       } catch (e) {
-        console.log('⚠️ Falha ao registrar simulacao:', e.message);
+        console.log(`\n⚠️  Erro ao registrar simulação: ${e.message}`);
       }
       
-      console.log(`\n✅ ${typeEmoji} SIMULACAO CONCLUIDA COM SUCESSO\n`);
+      console.log(`\n${'='.repeat(70)}`);
+      console.log(`${typeEmoji} SIMULAÇÃO CONCLUÍDA COM SUCESSO`);
+      console.log('='.repeat(70) + '\n');
       return res.status(200).json({ 
         success: true, 
         message: `${messageType} simulado (staging/dev)`, 
@@ -209,58 +218,68 @@ Compartilhe vitalidade. Inspire transformação`,
     }
 
     // Produção: exigir UNNICHAT_*
-    console.log('🔴 MODO PRODUCAO - Enviando via Unnichat\n');
+    console.log('\n🔴 MODO PRODUÇÃO - Enviando via Unnichat');
     
     if (!process.env.UNNICHAT_ACCESS_TOKEN) {
-      console.log('❌ ERRO: UNNICHAT_ACCESS_TOKEN nao configurado\n');
+      console.log('\n❌ ERRO: UNNICHAT_ACCESS_TOKEN não configurado');
+      console.log('='.repeat(70) + '\n');
       return res.status(500).json({ success: false, error: 'WhatsApp não configurado (UNNICHAT_ACCESS_TOKEN ausente)' });
     }
     if (!process.env.UNNICHAT_API_URL) {
-      console.log('❌ ERRO: UNNICHAT_API_URL nao configurado\n');
+      console.log('\n❌ ERRO: UNNICHAT_API_URL não configurado');
+      console.log('='.repeat(70) + '\n');
       return res.status(500).json({ success: false, error: 'WhatsApp não configurado (UNNICHAT_API_URL ausente)' });
     }
     
     // Criar/atualizar contato antes (best-effort)
     try {
       if (leadId && leadData) {
-        console.log('📝 Criando/atualizando contato no Unnichat...');
+        console.log('\n📝 Atualizando contato no Unnichat...');
         const tags = sendChallenge ? ['desafio_vitalidade'] : ['manual_send'];
         await updateContact(leadData.nome, phoneForUnnichat, leadData.email || `${phoneE164.replace('+', '')}@placeholder.com`, tags);
-        console.log('✅ Contato atualizado');
+        console.log('   ✅ Contato atualizado');
+        console.log('   ⏳ Aguardando 800ms...');
         await new Promise(r => setTimeout(r, 800));
       }
     } catch (e) {
-      console.log('⚠️  Aviso ao criar contato:', e.message);
+      console.log(`   ⚠️  Erro ao atualizar contato: ${e.message}`);
     }
 
     // Enviar mensagens
     const DELAY_BETWEEN_MESSAGES = 2000; // 2 segundos
     let messagesSent = 0;
     
+    console.log(`\n📤 Iniciando envio de ${messagesToSend.length} mensagem(ns)...`);
+    console.log('-'.repeat(70));
+    
     for (let i = 0; i < messagesToSend.length; i++) {
       const msg = messagesToSend[i];
       const msgNum = i + 1;
       const totalMsgs = messagesToSend.length;
       
-      console.log(`\n📤 Enviando mensagem ${msgNum}/${totalMsgs}...`);
-      await sendMessage(phoneForUnnichat, msg.text);
-      console.log(`✅ Mensagem ${msgNum}/${totalMsgs} enviada!`);
+      console.log(`\n� Mensagem ${msgNum}/${totalMsgs}:`);
+      console.log(`   📏 Tamanho: ${msg.text.length} chars`);
+      console.log(`   📤 Enviando para ${phoneForUnnichat}...`);
       
+      await sendMessage(phoneForUnnichat, msg.text);
       messagesSent++;
+      
+      console.log(`   ✅ Enviada com sucesso!`);
       
       // Aguardar antes da próxima mensagem (se houver)
       if (i < messagesToSend.length - 1) {
-        console.log(`⏳ Aguardando ${DELAY_BETWEEN_MESSAGES/1000} segundos...`);
+        console.log(`   ⏳ Aguardando ${DELAY_BETWEEN_MESSAGES/1000}s antes da próxima...`);
         await new Promise(r => setTimeout(r, DELAY_BETWEEN_MESSAGES));
       }
     }
     
-    console.log(`\n✅ ${messagesSent} mensagem(ns) enviada(s) via Unnichat!\n`);
+    console.log('\n' + '-'.repeat(70));
+    console.log(`✅ Total enviado: ${messagesSent}/${messagesToSend.length} mensagem(ns)`);
     
     // Atualizações pós-envio
     try {
       if (leadId) {
-        console.log('💾 Atualizando status do lead no banco...');
+        console.log('\n💾 Registrando no banco de dados...');
         
         const newStatus = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
         const newTag = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
@@ -273,11 +292,13 @@ Compartilhe vitalidade. Inspire transformação`,
           })
           .eq('id', leadId);
         
+        console.log(`   ✅ Status atualizado: ${newStatus}`);
+        
         try { 
           await addLeadTags(supabase, leadId, [newTag]); 
-          console.log(`🏷️  Tag "${newTag}" adicionada`);
+          console.log(`   🏷️  Tag adicionada: ${newTag}`);
         } catch (e) {
-          console.log('⚠️  Falha ao adicionar tag:', e.message);
+          console.log(`   ⚠️  Tag falhou: ${e.message}`);
         }
         
         // Registrar logs para cada mensagem
@@ -295,14 +316,15 @@ Compartilhe vitalidade. Inspire transformação`,
         
         await supabase.from('whatsapp_logs').insert(logsToInsert);
         
-        console.log(`✅ Status atualizado no banco (${messagesSent} mensagem(ns))`);
+        console.log(`   ✅ Logs inseridos: ${messagesSent} registro(s)`);
       }
     } catch (e) {
-      console.log('⚠️ Falha ao registrar pos-envio:', e.message);
+      console.log(`\n⚠️  Erro ao registrar pós-envio: ${e.message}`);
     }
 
-    console.log(`\n${typeEmoji} ENVIO CONCLUIDO COM SUCESSO!`);
-    console.log('========================================\n');
+    console.log('\n' + '='.repeat(70));
+    console.log(`${typeEmoji} ENVIO CONCLUÍDO COM SUCESSO`);
+    console.log('='.repeat(70) + '\n');
     
     return res.status(200).json({ 
       success: true, 
@@ -313,13 +335,13 @@ Compartilhe vitalidade. Inspire transformação`,
     });
     
   } catch (error) {
-    console.error('\n❌ ========================================');
-    console.error('   ERRO NO ENVIO');
-    console.error('========================================');
-    console.error('Tipo:', error.constructor.name);
-    console.error('Mensagem:', error.message);
-    console.error('Stack:', error.stack);
-    console.error('========================================\n');
+    console.error('\n' + '='.repeat(70));
+    console.error('❌ ERRO NO ENVIO WHATSAPP');
+    console.error('='.repeat(70));
+    console.error(`📛 Tipo: ${error.constructor.name}`);
+    console.error(`💬 Mensagem: ${error.message}`);
+    console.error(`📚 Stack:\n${error.stack}`);
+    console.error('='.repeat(70) + '\n');
     
     return res.status(500).json({
       success: false,
