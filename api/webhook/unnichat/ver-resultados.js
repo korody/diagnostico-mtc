@@ -156,6 +156,63 @@ module.exports = async (req, res) => {
         }
       }
     }
+
+    // ========================================
+    // MÉTODO 1.5: HEURÍSTICA 9º DÍGITO (celular antigo ↔ novo)
+    // ========================================
+    // Tentativa 5: Quando temos 10 dígitos (DDD + 8), tentar também com 9 na frente
+    if (!lead && phoneClean.length === 10) {
+      const ddd = phoneClean.substring(0, 2);
+      const numeroLocal = phoneClean.substring(2);
+      
+      if (!numeroLocal.startsWith('9')) {
+        const comNove = `${ddd}9${numeroLocal}`;
+        if (DEBUG) console.log('🔍 Tentativa 5: Heurística 9º dígito - tentando com 9 na frente:', comNove);
+        
+        const { data: leadCom9 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .eq('celular', comNove)
+          .maybeSingle();
+        
+        if (leadCom9) {
+          lead = leadCom9;
+          logger.info && logger.info(reqId, '✅ Lead encontrado com 9º dígito adicionado!', { 
+            nome: lead.nome, 
+            id: lead.id,
+            celularEncontrado: lead.celular,
+            celularRecebido: phoneClean
+          });
+        }
+      }
+    }
+
+    // Tentativa 6: Quando temos 11 dígitos, tentar SEM o 9
+    if (!lead && phoneClean.length === 11) {
+      const ddd = phoneClean.substring(0, 2);
+      const numeroLocal = phoneClean.substring(2);
+      
+      if (numeroLocal.startsWith('9')) {
+        const semNove = `${ddd}${numeroLocal.substring(1)}`;
+        if (DEBUG) console.log('🔍 Tentativa 6: Heurística 9º dígito - tentando sem o 9:', semNove);
+        
+        const { data: leadSem9 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .eq('celular', semNove)
+          .maybeSingle();
+        
+        if (leadSem9) {
+          lead = leadSem9;
+          logger.info && logger.info(reqId, '✅ Lead encontrado sem 9º dígito!', { 
+            nome: lead.nome, 
+            id: lead.id,
+            celularEncontrado: lead.celular,
+            celularRecebido: phoneClean
+          });
+        }
+      }
+    }
     
     // ========================================
     // MÉTODO 2: FALLBACK POR EMAIL
@@ -180,9 +237,11 @@ module.exports = async (req, res) => {
     // 
     // ESTRATÉGIA DE BUSCA:
     // 1. Busca exata pelo telefone normalizado (sem DDI)
-    // 2. Busca pelos últimos 9 dígitos (cobre variações de DDI/DDD)
-    // 3. Busca pelos últimos 8 dígitos (cobre fixos e celulares antigos)
-    // 4. Busca por email (se fornecido)
+    // 2. Busca pelos últimos 10 dígitos (cobre casos com 9 extra)
+    // 3. Busca pelos últimos 9 dígitos (cobre variações de DDI/DDD)
+    // 4. Busca pelos últimos 8 dígitos (cobre fixos e celulares antigos)
+    // 5. Heurística 9º dígito: tenta adicionar/remover o 9 (celular antigo ↔ novo)
+    // 6. Busca por email (se fornecido)
     // 
     // Se nenhum método funcionar, retornamos 404 para evitar envio errado
     if (!lead) {

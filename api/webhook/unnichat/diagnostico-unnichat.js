@@ -113,6 +113,73 @@ module.exports = async (req, res) => {
       }
     }
 
+    // Tentativa 5: Heurística 9º dígito (compatibilidade celular antigo ↔ novo)
+    // Quando temos 10 dígitos (DDD + 8), tentar também com 9 na frente (DDD + 9 + 8)
+    if (!lead && phoneNormalized.length === 10) {
+      const ddd = phoneNormalized.substring(0, 2);
+      const numeroLocal = phoneNormalized.substring(2);
+      
+      // Se não começa com 9, tentar adicionar o 9
+      if (!numeroLocal.startsWith('9')) {
+        const comNove = `${ddd}9${numeroLocal}`;
+        logger.info && logger.info(reqId, '🔍 Tentativa 5: Heurística 9º dígito - tentando com 9 na frente', { 
+          original: phoneNormalized, 
+          comNove 
+        });
+        
+        const { data: leadCom9 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .eq('celular', comNove)
+          .maybeSingle();
+        
+        if (leadCom9) {
+          lead = leadCom9;
+          logger.info && logger.info(reqId, '✅ Lead encontrado com 9º dígito adicionado!', { 
+            nome: lead.nome, 
+            id: lead.id,
+            celularEncontrado: lead.celular,
+            celularRecebido: phoneNormalized
+          });
+        } else {
+          logger.info && logger.info(reqId, '⚠️ Não encontrado mesmo com 9º dígito', { comNove });
+        }
+      }
+    }
+
+    // Tentativa 6: Heurística inversa - tentar SEM o 9 quando temos 11 dígitos
+    if (!lead && phoneNormalized.length === 11) {
+      const ddd = phoneNormalized.substring(0, 2);
+      const numeroLocal = phoneNormalized.substring(2);
+      
+      // Se começa com 9, tentar remover o 9
+      if (numeroLocal.startsWith('9')) {
+        const semNove = `${ddd}${numeroLocal.substring(1)}`;
+        logger.info && logger.info(reqId, '🔍 Tentativa 6: Heurística 9º dígito - tentando sem o 9', { 
+          original: phoneNormalized, 
+          semNove 
+        });
+        
+        const { data: leadSem9 } = await supabase
+          .from('quiz_leads')
+          .select('*')
+          .eq('celular', semNove)
+          .maybeSingle();
+        
+        if (leadSem9) {
+          lead = leadSem9;
+          logger.info && logger.info(reqId, '✅ Lead encontrado sem 9º dígito!', { 
+            nome: lead.nome, 
+            id: lead.id,
+            celularEncontrado: lead.celular,
+            celularRecebido: phoneNormalized
+          });
+        } else {
+          logger.info && logger.info(reqId, '⚠️ Não encontrado mesmo sem 9º dígito', { semNove });
+        }
+      }
+    }
+
     // Fallback por email
     if (!lead && email) {
       logger.info && logger.info(reqId, '🔍 Fallback: buscando por email', { email });
