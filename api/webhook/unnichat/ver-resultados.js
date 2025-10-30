@@ -252,8 +252,35 @@ module.exports = async (req, res) => {
       });
     }
 
+    // Determinar qual método encontrou o lead
+    let metodoEncontrado = 'desconhecido';
+    if (lead) {
+      if (lead.celular === phoneClean) {
+        metodoEncontrado = '1-busca-exata';
+      } else if (phoneClean.length >= 10 && lead.celular.includes(phoneClean.slice(-10))) {
+        metodoEncontrado = '2-ultimos-10-digitos';
+      } else if (phoneClean.length >= 9 && lead.celular.includes(phoneClean.slice(-9))) {
+        metodoEncontrado = '3-ultimos-9-digitos';
+      } else if (phoneClean.length >= 8 && lead.celular.includes(phoneClean.slice(-8))) {
+        metodoEncontrado = '4-ultimos-8-digitos';
+      } else if (phoneClean.length === 10 && lead.celular === `${phoneClean.substring(0,2)}9${phoneClean.substring(2)}`) {
+        metodoEncontrado = '5-heuristica-adicionar-9';
+      } else if (phoneClean.length === 11 && lead.celular === `${phoneClean.substring(0,2)}${phoneClean.substring(3)}`) {
+        metodoEncontrado = '6-heuristica-remover-9';
+      } else if (emailFromWebhook && lead.email === emailFromWebhook) {
+        metodoEncontrado = '7-fallback-email';
+      }
+    }
+
     if (DEBUG) {
-      logger.info && logger.info(reqId, '✅ LEAD IDENTIFICADO', { nome: lead.nome, celular: lead.celular, elemento: lead.elemento_principal });
+      logger.info && logger.info(reqId, '✅ LEAD IDENTIFICADO', { 
+        nome: lead.nome, 
+        celular: lead.celular, 
+        elemento: lead.elemento_principal,
+        metodoEncontrado: metodoEncontrado,
+        telefoneRecebido: phoneFromWebhook,
+        telefoneNormalizado: phoneClean
+      });
     }
 
     // Preparar telefone para Unnichat (normaliza + adiciona DDI 55 somente uma vez)
@@ -409,7 +436,11 @@ Fez sentido esse Diagnóstico para você? 🙏
           action: 'ver_resultados',
           unnichat_response: msgResult,
           triggered_by_webhook: true,
-          webhook_payload: webhookData
+          webhook_payload: webhookData,
+          metodo_busca: metodoEncontrado,
+          telefone_recebido: phoneFromWebhook,
+          telefone_normalizado: phoneClean,
+          estrategia_busca: '6 tentativas: (1)exata, (2)ultimos-10, (3)ultimos-9, (4)ultimos-8, (5)add-9, (6)remove-9, (7)email'
         },
         sent_at: new Date().toISOString()
       });

@@ -206,11 +206,34 @@ module.exports = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Lead não encontrado' });
     }
 
+    // Determinar qual método encontrou o lead
+    let metodoEncontrado = 'desconhecido';
+    if (lead) {
+      if (lead.celular === phoneNormalized) {
+        metodoEncontrado = '1-busca-exata';
+      } else if (phoneNormalized.length >= 10 && lead.celular.includes(phoneNormalized.slice(-10))) {
+        metodoEncontrado = '2-ultimos-10-digitos';
+      } else if (phoneNormalized.length >= 9 && lead.celular.includes(phoneNormalized.slice(-9))) {
+        metodoEncontrado = '3-ultimos-9-digitos';
+      } else if (phoneNormalized.length >= 8 && lead.celular.includes(phoneNormalized.slice(-8))) {
+        metodoEncontrado = '4-ultimos-8-digitos';
+      } else if (phoneNormalized.length === 10 && lead.celular === `${phoneNormalized.substring(0,2)}9${phoneNormalized.substring(2)}`) {
+        metodoEncontrado = '5-heuristica-adicionar-9';
+      } else if (phoneNormalized.length === 11 && lead.celular === `${phoneNormalized.substring(0,2)}${phoneNormalized.substring(3)}`) {
+        metodoEncontrado = '6-heuristica-remover-9';
+      } else if (email && lead.email === email) {
+        metodoEncontrado = '7-fallback-email';
+      }
+    }
+
     logger.info && logger.info(reqId, '✅ LEAD IDENTIFICADO', { 
       nome: lead.nome, 
       id: lead.id,
       celular: lead.celular, 
-      elemento: lead.elemento_principal 
+      elemento: lead.elemento_principal,
+      metodoEncontrado: metodoEncontrado,
+      telefoneRecebido: phone,
+      telefoneNormalizado: phoneNormalized
     });
 
     // Calcular/preparar diagnóstico
@@ -256,7 +279,11 @@ module.exports = async (req, res) => {
         metadata: {
           action: 'diagnostico-unnichat',
           triggered_by_webhook: true,
-          webhook_payload: req.body
+          webhook_payload: req.body,
+          metodo_busca: metodoEncontrado,
+          telefone_recebido: phone,
+          telefone_normalizado: phoneNormalized,
+          estrategia_busca: '6 tentativas: (1)exata, (2)ultimos-10, (3)ultimos-9, (4)ultimos-8, (5)add-9, (6)remove-9, (7)email'
         },
         sent_at: new Date().toISOString()
       });
