@@ -26,6 +26,9 @@ module.exports = async (req, res) => {
     // Busca robusta igual ver-resultados
     let lead = null;
     const phoneNormalized = normalizePhone(phone);
+    logger.info && logger.info(reqId, '🔍 Telefone normalizado (sem DDI)', { raw: phone, normalized: phoneNormalized });
+    
+    // Montar candidatos para debug/auditoria
     const candidates = [];
     const digitsOnly = (phone || '').toString().replace(/\D/g, '');
     candidates.push(phoneNormalized);
@@ -48,6 +51,7 @@ module.exports = async (req, res) => {
     logger.info && logger.info(reqId, '🔎 Candidates de telefone para debug', { raw: phone, normalized: phoneNormalized, candidates: dedup });
 
     // Tentativa 1: Busca exata
+    logger.info && logger.info(reqId, '🔍 Tentativa 1: Busca exata por telefone', { phoneNormalized });
     const { data: leadExato } = await supabase
       .from('quiz_leads')
       .select('*')
@@ -58,10 +62,10 @@ module.exports = async (req, res) => {
       logger.info && logger.info(reqId, '✅ Lead encontrado (busca exata)', { nome: lead.nome, id: lead.id });
     }
 
-    // Tentativa 2: Últimos 10 dígitos
+    // Tentativa 2: Últimos 10 dígitos (cobre casos com 9 extra em celulares)
     if (!lead && phoneNormalized.length >= 10) {
       const ultimos10 = phoneNormalized.slice(-10);
-      logger.info && logger.info(reqId, '🔍 Tentativa 2: últimos 10 dígitos', { ultimos10 });
+      logger.info && logger.info(reqId, '🔍 Tentativa 2: Busca pelos últimos 10 dígitos', { ultimos10 });
       const { data: leads10 } = await supabase
         .from('quiz_leads')
         .select('*')
@@ -69,14 +73,16 @@ module.exports = async (req, res) => {
         .limit(5);
       if (leads10 && leads10.length > 0) {
         lead = leads10[0];
-        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 10 dígitos)', { nome: lead.nome, id: lead.id });
+        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 10 dígitos)', { nome: lead.nome, id: lead.id, matched: leads10.length });
+      } else {
+        logger.info && logger.info(reqId, '⚠️ Nenhum lead com últimos 10 dígitos', { ultimos10 });
       }
     }
 
-    // Tentativa 3: Últimos 9 dígitos
+    // Tentativa 3: Busca pelos últimos 9 dígitos (caso tenha DDI diferente ou erro)
     if (!lead && phoneNormalized.length >= 9) {
       const ultimos9 = phoneNormalized.slice(-9);
-      logger.info && logger.info(reqId, '🔍 Tentativa 3: últimos 9 dígitos', { ultimos9 });
+      logger.info && logger.info(reqId, '🔍 Tentativa 3: Busca pelos últimos 9 dígitos', { ultimos9 });
       const { data: leads9 } = await supabase
         .from('quiz_leads')
         .select('*')
@@ -84,14 +90,16 @@ module.exports = async (req, res) => {
         .limit(5);
       if (leads9 && leads9.length > 0) {
         lead = leads9[0];
-        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 9 dígitos)', { nome: lead.nome, id: lead.id });
+        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 9 dígitos)', { nome: lead.nome, id: lead.id, matched: leads9.length });
+      } else {
+        logger.info && logger.info(reqId, '⚠️ Nenhum lead com últimos 9 dígitos', { ultimos9 });
       }
     }
 
-    // Tentativa 4: Últimos 8 dígitos
+    // Tentativa 4: Busca pelos últimos 8 dígitos (número fixo sem DDD ou celular antigo)
     if (!lead && phoneNormalized.length >= 8) {
       const ultimos8 = phoneNormalized.slice(-8);
-      logger.info && logger.info(reqId, '🔍 Tentativa 4: últimos 8 dígitos', { ultimos8 });
+      logger.info && logger.info(reqId, '🔍 Tentativa 4: Busca pelos últimos 8 dígitos', { ultimos8 });
       const { data: leads8 } = await supabase
         .from('quiz_leads')
         .select('*')
@@ -99,7 +107,9 @@ module.exports = async (req, res) => {
         .limit(5);
       if (leads8 && leads8.length > 0) {
         lead = leads8[0];
-        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 8 dígitos)', { nome: lead.nome, id: lead.id });
+        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 8 dígitos)', { nome: lead.nome, id: lead.id, matched: leads8.length });
+      } else {
+        logger.info && logger.info(reqId, '⚠️ Nenhum lead com últimos 8 dígitos', { ultimos8 });
       }
     }
 
@@ -123,21 +133,33 @@ module.exports = async (req, res) => {
         phoneNormalized, 
         candidates: dedup,
         email,
+        name,
         body: req.body 
       });
       return res.status(404).json({ success: false, error: 'Lead não encontrado' });
     }
 
+    logger.info && logger.info(reqId, '✅ LEAD IDENTIFICADO', { 
+      nome: lead.nome, 
+      id: lead.id,
+      celular: lead.celular, 
+      elemento: lead.elemento_principal 
+    });
+
     // Calcular/preparar diagnóstico
     let diagnostico = lead.diagnostico_completo;
     if (!diagnostico) {
+      logger.info && logger.info(reqId, '🔧 Calculando diagnóstico (não estava no DB)', { leadId: lead.id });
       diagnostico = calcularDiagnosticoCompleto(lead);
+    } else {
+      logger.info && logger.info(reqId, '📋 Diagnóstico já existe no DB', { leadId: lead.id });
     }
 
     // Atualizar status, tags e registrar log
+    logger.info && logger.info(reqId, '💾 Atualizando status do lead no banco', { leadId: lead.id });
     try {
       // Atualizar status do lead
-      await supabase
+      const { error: updateError } = await supabase
         .from('quiz_leads')
         .update({
           whatsapp_status: 'diagnostico_enviado',
@@ -145,11 +167,22 @@ module.exports = async (req, res) => {
         })
         .eq('id', lead.id);
       
+      if (updateError) {
+        logger.error && logger.error(reqId, '❌ Erro ao atualizar lead', updateError.message);
+      } else {
+        logger.info && logger.info(reqId, '✅ Status do lead atualizado', { leadId: lead.id });
+      }
+      
       // Adicionar tag
-      await addLeadTags(supabase, lead.id, ['diagnostico_enviado']);
+      try {
+        await addLeadTags(supabase, lead.id, ['diagnostico_enviado']);
+        logger.info && logger.info(reqId, '✅ Tag adicionada', { leadId: lead.id, tag: 'diagnostico_enviado' });
+      } catch (tagErr) {
+        logger.error && logger.error(reqId, '⚠️ Falha ao adicionar tag', tagErr.message);
+      }
       
       // Registrar log
-      await supabase.from('whatsapp_logs').insert({
+      const { error: logError } = await supabase.from('whatsapp_logs').insert({
         lead_id: lead.id,
         phone: lead.celular,
         status: 'diagnostico_enviado',
@@ -161,12 +194,17 @@ module.exports = async (req, res) => {
         sent_at: new Date().toISOString()
       });
       
-      // Log VERCEL friendly igual ver-resultados
-      logger.info && logger.info(reqId, `📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido → { "leadId": "${lead.id}", "nome": "${lead.nome}" }`, { leadId: lead.id, nome: lead.nome });
+      if (logError) {
+        logger.error && logger.error(reqId, '❌ Erro ao inserir whatsapp_logs', logError.message);
+      } else {
+        // Log VERCEL friendly igual ver-resultados
+        logger.info && logger.info(reqId, '📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido', { leadId: lead.id, nome: lead.nome });
+      }
     } catch (e) {
-      logger.error && logger.error(reqId, 'Erro ao atualizar status/tags/logs', e.message);
+      logger.error && logger.error(reqId, '❌ Erro geral ao atualizar status/tags/logs', { error: e.message, stack: e.stack });
     }
 
+    logger.info && logger.info(reqId, '✅ Retornando diagnóstico para Unnichat', { leadId: lead.id, diagnosticoLength: diagnostico?.length || 0 });
     // Retornar apenas o campo 'diagnostico' para Unnichat
     return res.status(200).json({ diagnostico });
   } catch (err) {
