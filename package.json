@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && node -e \"require('fs').copyFileSync('public/dashboard.html', 'build/dashboard.html')\"",
-    "vercel-build": "react-scripts build && node -e \"require('fs').copyFileSync('public/dashboard.html', 'build/dashboard.html')\"",
+    "build": "react-scripts build && node -e \"const fs=require('fs'); fs.copyFileSync('public/dashboard.html', 'build/dashboard.html'); fs.copyFileSync('public/buscar-enviar.html', 'build/buscar-enviar.html');\"",
+    "vercel-build": "react-scripts build && node -e \"const fs=require('fs'); fs.copyFileSync('public/dashboard.html', 'build/dashboard.html'); fs.copyFileSync('public/buscar-enviar.html', 'build/buscar-enviar.html');\"",
     "dev:legacy": "npm run api & npm start",
     "dev": "concurrently \"npm:api:test\" \"npm:start\"",
     "dev:vercel": "vercel dev --listen 3001",

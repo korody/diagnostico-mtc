@@ -6,6 +6,7 @@
     { "source": "/admin/enviar-diagnosticos", "destination": "/api/enviar-diagnosticos", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/buscar-enviar", "destination": "/api/buscar-enviar" },
     { "source": "/dashboard", "destination": "/api/dashboard-page" },
     { "source": "/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/ver-resultados" }
   ],
