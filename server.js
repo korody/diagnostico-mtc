@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal, formatPhoneForUnnichat } = require('./lib/phone');
+const { formatToE164, isValidE164, formatForUnnichat, formatForDisplay, findLeadByPhone } = require('./lib/phone-simple');
 const { addLeadTags } = require('./lib/tags');
 const fs = require('fs');
 
@@ -216,69 +216,9 @@ app.get('/api/lead/buscar', async (req, res) => {
     
     let lead = null;
     
-    // Busca por telefone (método 3 níveis)
+    // Busca por telefone usando função simplificada
     if (phone) {
-      const rawDigits = (phone || '').toString().replace(/\D/g, '');
-      const phoneNormalized = normalizePhone(phone);
-      
-      // Tentativa 1: Busca exata
-      const { data: exactLead } = await supabase
-        .from('quiz_leads')
-        .select('*')
-        .eq('celular', phoneNormalized)
-        .maybeSingle();
-      
-      if (exactLead) {
-        lead = exactLead;
-      }
-      
-      // Tentativa 1.1: Se veio com DDI completo (12+), tentar igualdade com o valor integral (legado)
-      if (!lead && rawDigits.length >= 12) {
-        const { data: leadFull } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .eq('celular', rawDigits)
-          .maybeSingle();
-        if (leadFull) lead = leadFull;
-      }
-
-      // Tentativa 2: Últimos 10 dígitos (cobre casos onde o banco tem 11 dígitos com 9 a mais)
-      if (!lead && phoneNormalized.length >= 10) {
-        const last10 = phoneNormalized.slice(-10);
-        const { data: partial10 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${last10}%`)
-          .limit(1)
-          .maybeSingle();
-        if (partial10) lead = partial10;
-      }
-
-      // Tentativa 3: Últimos 9 dígitos
-      if (!lead && phoneNormalized.length >= 9) {
-        const last9 = phoneNormalized.slice(-9);
-        const { data: partial9 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${last9}%`)
-          .limit(1)
-          .maybeSingle();
-        
-        if (partial9) lead = partial9;
-      }
-      
-      // Tentativa 4: Últimos 8 dígitos
-      if (!lead && phoneNormalized.length >= 8) {
-        const last8 = phoneNormalized.slice(-8);
-        const { data: partial8 } = await supabase
-          .from('quiz_leads')
-          .select('*')
-          .ilike('celular', `%${last8}%`)
-          .limit(1)
-          .maybeSingle();
-        
-        if (partial8) lead = partial8;
-      }
+      lead = await findLeadByPhone(supabase, phone, email);
     }
     
     // Busca por email
@@ -389,8 +329,8 @@ Compartilhe vitalidade. Inspire transformação`
   const hasMultipleMessages = messagesToSend && messagesToSend.length > 0;
   if (!hasMultipleMessages && !messageToSend) throw new Error('Mensagem é obrigatória');
 
-  const phoneNormalized = normalizePhone(phoneToUse);
-  const phoneForUnnichat = formatPhoneForUnnichat(phoneNormalized);
+  const phoneE164 = phoneToUse.startsWith('+') ? phoneToUse : formatToE164(phoneToUse);
+  const phoneForUnnichat = formatForUnnichat(phoneE164);
 
   console.log('\n� ======== ENVIO:', sendChallenge ? 'DESAFIO' : (sendDiagnostico ? 'DIAGNOSTICO' : 'CUSTOM'));
   console.log('�📱 Enviando para:', phoneForUnnichat);
@@ -409,7 +349,7 @@ Compartilhe vitalidade. Inspire transformação`
     console.log('========================================\n');
     return { 
       success: true, 
-      phone: phoneNormalized, 
+      phone: phoneE164, 
       message: `${hasMultipleMessages ? messagesToSend.length : 1} mensagem(ns) simulada(s)`,
       simulation: true 
     };
@@ -429,7 +369,7 @@ Compartilhe vitalidade. Inspire transformação`
         body: JSON.stringify({ 
           name: contactName, 
           phone: phoneForUnnichat, 
-          email: contactEmail || `${phoneNormalized}@placeholder.com`, 
+          email: contactEmail || `${phoneE164.replace('+', '')}@placeholder.com`, 
           tags: ['manual_send', sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado'] 
         })
       });
@@ -580,27 +520,19 @@ app.post('/api/submit', async (req, res) => {
     
     console.log('\n📥 NOVO QUIZ:', lead.NOME);
     
-    // Normalizar telefone ANTES de salvar
-    const celularNormalizado = normalizePhone(lead.CELULAR);
-
-    // Heurística de validação: quando o input vier com DDI explícito (rawDigits >= 12
-    // e não começa com 55), validar pelo rawDigits (E.164), caso contrário validar
-    // pelo celularNormalizado (forma BR sem DDI).
-    const rawDigits = (lead.CELULAR || '').toString().replace(/\D/g, '');
-    const validationTarget = (rawDigits.length >= 12 && !rawDigits.startsWith('55')) ? rawDigits : celularNormalizado;
-
-    // Validar telefone (BR 10/11 ou internacional 12-15)
-    console.log('🔎 Telefone debug:', { original: lead.CELULAR, rawDigits, celularNormalizado, validationTarget });
-    if (!isValidPhoneUniversal(validationTarget)) {
-      console.log('❌ Telefone inválido:', lead.CELULAR, '→', validationTarget);
+    // Converter telefone para E.164 (já vem validado do frontend)
+    const celularE164 = formatToE164(lead.CELULAR, lead.PAIS || 'BR');
+    
+    if (!celularE164) {
+      console.log('❌ Telefone inválido:', lead.CELULAR);
       return res.status(400).json({
         success: false,
-        error: 'Telefone inválido. Use formato BR válido ou internacional com DDI.'
+        error: 'Telefone inválido. Use formato internacional com código do país.'
       });
     }
 
     console.log('📱 Telefone original:', lead.CELULAR);
-    console.log('📱 Telefone normalizado:', celularNormalizado);
+    console.log('📱 Telefone E.164:', celularE164);
     
   // Normalizar email
   const emailNormalizado = (lead.EMAIL || '').toString().trim().toLowerCase();
@@ -640,24 +572,24 @@ app.post('/api/submit', async (req, res) => {
       is_hot_lead_vip: isHotLeadVIP
     };
     
-    // Verificar se lead já existe (usando telefone normalizado)
+    // Verificar se lead já existe (usando telefone E.164)
     const { data: existe } = await supabase
       .from('quiz_leads')
       .select('id')
-      .eq('celular', celularNormalizado)
+      .eq('celular', celularE164)
       .maybeSingle();
     
     if (existe) {
       await supabase
         .from('quiz_leads')
         .update({ ...dadosParaSalvar, updated_at: new Date().toISOString() })
-        .eq('celular', celularNormalizado);
+        .eq('celular', celularE164);
       console.log('✅ Lead ATUALIZADO\n');
       // Log de linha do tempo (diagnóstico solicitado)
       try {
         await supabase.from('whatsapp_logs').insert({
           lead_id: existe.id,
-          phone: celularNormalizado,
+          phone: celularE164,
           status: 'diagnostico_solicitado',
           metadata: { source: 'quiz_submit_local', updated: true },
           sent_at: new Date().toISOString()
@@ -669,7 +601,7 @@ app.post('/api/submit', async (req, res) => {
         .from('quiz_leads')
         .insert({
           ...dadosParaSalvar,
-          celular: celularNormalizado,
+          celular: celularE164,
           whatsapp_status: 'AGUARDANDO_CONTATO'
         })
         .select('id')
@@ -680,7 +612,7 @@ app.post('/api/submit', async (req, res) => {
       try {
         await supabase.from('whatsapp_logs').insert({
           lead_id: inserted?.id,
-          phone: celularNormalizado,
+          phone: celularE164,
           status: 'diagnostico_solicitado',
           metadata: { source: 'quiz_submit_local', created: true },
           sent_at: new Date().toISOString()
@@ -884,22 +816,8 @@ app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
     }
 
     // Normalizar telefone salvo e formatar para Unnichat (evita 55 duplicado e espaços)
-    const normalizedDbPhone = normalizePhone(lead.celular);
-    const phoneForUnnichat = require('./lib/phone').formatPhoneForUnnichat(normalizedDbPhone);
-
-    // Se o valor no banco estiver divergente (ex.: com 55 ou espaços), atualizar para o normalizado
-    if (normalizedDbPhone && normalizedDbPhone !== lead.celular) {
-      try {
-        await supabase
-          .from('quiz_leads')
-          .update({ celular: normalizedDbPhone, updated_at: new Date().toISOString() })
-          .eq('id', lead.id);
-  if (DEBUG) console.log('🛠️ Telefone do lead normalizado no banco:', lead.celular, '→', normalizedDbPhone);
-        lead.celular = normalizedDbPhone;
-      } catch (e) {
-        console.log('⚠️ Não foi possível atualizar telefone normalizado no banco:', e.message);
-      }
-    }
+    const phoneE164 = lead.celular.startsWith('+') ? lead.celular : formatToE164(lead.celular);
+    const phoneForUnnichat = formatForUnnichat(phoneE164);
 
     // Atualizar/criar contato
     try {
@@ -1084,7 +1002,7 @@ app.post('/api/send-bulk-referral', async (req, res) => {
 
     for (const lead of leads) {
       try {
-        const phoneForUnnichat = `55${lead.celular}`;
+        const phoneForUnnichat = formatForUnnichat(lead.celular);
         const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${lead.celular}&utm_content=msg-inicial-desafio`;
         
         console.log(`\n👤 ${lead.nome}`);
@@ -1212,14 +1130,14 @@ app.options('/api/gerar-link-compartilhamento', (req, res) => require('./api/ger
 app.post('/api/gerar-link-compartilhamento', (req, res) => require('./api/gerar-link-compartilhamento')(req, res));
 
 // ===== ROTAS DO DASHBOARD =====
-// Requerer o handler APÓS carregar .env para garantir SUPABASE_* disponíveis
-const dashboardHandler = require('./api/dashboard');
-app.get('/dashboard', (req, res) => dashboardHandler(req, res));
-app.get('/api/dashboard', (req, res) => dashboardHandler(req, res));
-app.get('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; dashboardHandler(req, res); });
-app.post('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; dashboardHandler(req, res); });
-app.get('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
-app.post('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
+// Dashboard foi movido para projeto separado
+// const dashboardHandler = require('./api/dashboard');
+// app.get('/dashboard', (req, res) => dashboardHandler(req, res));
+// app.get('/api/dashboard', (req, res) => dashboardHandler(req, res));
+// app.get('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; dashboardHandler(req, res); });
+// app.post('/api/dashboard/metrics', (req, res) => { req.query.action = 'metrics'; dashboardHandler(req, res); });
+// app.get('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
+// app.post('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
 
 // INICIAR SERVIDOR
 // ========================================

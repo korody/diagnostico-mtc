@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkles } from 'lucide-react';
 
+// Importar validador de telefone E.164
+import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
+
 const QuizMTC = () => {
   // Função para ler parâmetros da URL
   const getUrlParams = () => {
@@ -33,7 +36,11 @@ const QuizMTC = () => {
     NOME: urlParams.nome,
     EMAIL: urlParams.email,
     CELULAR: urlParams.celular,
-    LEAD_ID: urlParams.leadId
+    LEAD_ID: urlParams.leadId,
+    PAIS: 'BR', // País padrão
+    CELULAR_VALIDO: null, // null=não validado, true=válido, false=inválido
+    CELULAR_FORMATADO: '',
+    PAIS_NOME: 'Brasil'
   });
   
   const [perguntaAtual, setPerguntaAtual] = useState(0);
@@ -285,16 +292,82 @@ const QuizMTC = () => {
   // Handlers
   const handleInputChange = (campo, valor) => {
     if (campo === 'CELULAR') {
-      // If user types an international number starting with +, preserve the + and digits
-      // and don't apply the Brazilian DDD formatting which would mangle +DDI inputs.
-      if (valor && valor.trim().startsWith('+')) {
-        // Allow +, digits and spaces only; normalize multiple spaces to single
-        valor = valor.replace(/[^\d+\s]/g, '').replace(/\s+/g, ' ').trim();
-      } else {
-        valor = formatarCelular(valor);
+      // Remove caracteres especiais, mantém apenas dígitos
+      const apenasDigitos = valor.replace(/\D/g, '');
+      
+      // Pega o país selecionado (padrão BR)
+      const pais = dadosLead.PAIS || 'BR';
+      
+      // Mapa de nomes de países
+      const nomesPaises = {
+        'BR': 'Brasil',
+        'US': 'Estados Unidos',
+        'PT': 'Portugal',
+        'ES': 'Espanha',
+        'AR': 'Argentina',
+        'MX': 'México',
+        'CO': 'Colômbia',
+        'CL': 'Chile'
+      };
+      
+      // Tenta validar o telefone
+      let valido = false;
+      let formatado = '';
+      
+      if (apenasDigitos.length >= 8) {
+        try {
+          const phoneNumber = parsePhoneNumber(apenasDigitos, pais);
+          valido = phoneNumber && phoneNumber.isValid();
+          if (valido) {
+            formatado = phoneNumber.formatInternational(); // Ex: +55 11 99845-7676
+          }
+        } catch (err) {
+          valido = false;
+        }
       }
+      
+      setDadosLead(prev => ({ 
+        ...prev, 
+        [campo]: apenasDigitos,
+        CELULAR_VALIDO: valido,
+        CELULAR_FORMATADO: formatado,
+        PAIS_NOME: nomesPaises[pais]
+      }));
+    } else if (campo === 'PAIS') {
+      // Quando muda o país, re-valida o telefone
+      setDadosLead(prev => {
+        const novoDados = { ...prev, [campo]: valor };
+        
+        // Re-valida telefone com novo país
+        if (novoDados.CELULAR) {
+          const nomesPaises = {
+            'BR': 'Brasil',
+            'US': 'Estados Unidos',
+            'PT': 'Portugal',
+            'ES': 'Espanha',
+            'AR': 'Argentina',
+            'MX': 'México',
+            'CO': 'Colômbia',
+            'CL': 'Chile'
+          };
+          
+          try {
+            const phoneNumber = parsePhoneNumber(novoDados.CELULAR, valor);
+            novoDados.CELULAR_VALIDO = phoneNumber && phoneNumber.isValid();
+            novoDados.CELULAR_FORMATADO = novoDados.CELULAR_VALIDO ? phoneNumber.formatInternational() : '';
+            novoDados.PAIS_NOME = nomesPaises[valor];
+          } catch (err) {
+            novoDados.CELULAR_VALIDO = false;
+            novoDados.CELULAR_FORMATADO = '';
+            novoDados.PAIS_NOME = nomesPaises[valor];
+          }
+        }
+        
+        return novoDados;
+      });
+    } else {
+      setDadosLead(prev => ({ ...prev, [campo]: valor }));
     }
-    setDadosLead(prev => ({ ...prev, [campo]: valor }));
     setErro('');
   };
 
@@ -307,8 +380,9 @@ const QuizMTC = () => {
       setErro('Por favor, digite um email válido');
       return;
     }
-    if (!validarCelular(dadosLead.CELULAR)) {
-      setErro('Por favor, digite um celular válido COM DDD (Ex: 11999999999 ou +5511999999999). Números sem DDD não serão aceitos.');
+    if (!dadosLead.CELULAR || dadosLead.CELULAR_VALIDO !== true) {
+      const pais = dadosLead.PAIS_NOME || 'Brasil';
+      setErro(`Por favor, digite um celular válido para ${pais}. Verifique o número digitado.`);
       return;
     }
     setStep('quiz');
@@ -369,14 +443,26 @@ const QuizMTC = () => {
     setProcessando(true);
     
     try {
+      // Converte telefone para E.164 antes de enviar
+      let celularE164;
+      try {
+        const phoneNumber = parsePhoneNumber(dadosLead.CELULAR, dadosLead.PAIS || 'BR');
+        celularE164 = phoneNumber.format('E.164'); // Ex: +5511998457676
+      } catch (err) {
+        console.error('❌ Erro ao formatar telefone para E.164:', err);
+        throw new Error('Número de telefone inválido');
+      }
+      
       const payload = {
         lead: {
           NOME: dadosLead.NOME,
           EMAIL: dadosLead.EMAIL,
-          CELULAR: dadosLead.CELULAR
+          CELULAR: celularE164 // Envia em formato E.164
         },
         respostas: respostas
       };
+      
+      console.log('📞 Telefone formatado para E.164:', celularE164);
       
       console.log('📦 Payload preparado:', JSON.stringify(payload, null, 2));
       
@@ -515,14 +601,51 @@ if (step === 'identificacao') {
                 Revise com atenção! Seu diagnóstico será enviado via WhatsApp.
               </p>
 
-              <input
-                type="tel"
-                value={dadosLead.CELULAR}
-                onChange={(e) => handleInputChange('CELULAR', e.target.value)}
-                placeholder="Ex: 55 11 99999-9999"
-                maxLength="25"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400"
-              />
+              {/* Dropdown de País + Input de Telefone */}
+              <div className="flex gap-2">
+                {/* Dropdown de País */}
+                <select
+                  value={dadosLead.PAIS || 'BR'}
+                  onChange={(e) => handleInputChange('PAIS', e.target.value)}
+                  className="w-32 px-3 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer"
+                >
+                  <option value="BR">🇧🇷 +55</option>
+                  <option value="US">🇺🇸 +1</option>
+                  <option value="PT">🇵🇹 +351</option>
+                  <option value="ES">🇪🇸 +34</option>
+                  <option value="AR">🇦🇷 +54</option>
+                  <option value="MX">🇲🇽 +52</option>
+                  <option value="CO">🇨🇴 +57</option>
+                  <option value="CL">🇨🇱 +56</option>
+                </select>
+
+                {/* Input de Telefone */}
+                <input
+                  type="tel"
+                  value={dadosLead.CELULAR}
+                  onChange={(e) => handleInputChange('CELULAR', e.target.value)}
+                  placeholder={(dadosLead.PAIS === 'BR' || !dadosLead.PAIS) ? "11 99999-9999" : "Número local"}
+                  className={`flex-1 px-4 py-3 bg-slate-50 border rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none transition-all ${
+                    dadosLead.CELULAR_VALIDO === false 
+                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                      : 'border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20'
+                  }`}
+                />
+              </div>
+              
+              {/* Feedback de Validação - só mostra erro se digitou número com 8+ dígitos */}
+              {dadosLead.CELULAR && dadosLead.CELULAR.length >= 8 && dadosLead.CELULAR_VALIDO === false && (
+                <p className="text-sm text-red-600 mt-2 flex items-center">
+                  <span className="mr-1">❌</span>
+                  Digite número válido para {dadosLead.PAIS_NOME || 'Brasil'}
+                </p>
+              )}
+              {dadosLead.CELULAR && dadosLead.CELULAR_VALIDO === true && (
+                <p className="text-sm text-green-600 mt-2 flex items-center">
+                  <span className="mr-1">✅</span>
+                  Número válido: {dadosLead.CELULAR_FORMATADO}
+                </p>
+              )}
             </div>
           </div>
 

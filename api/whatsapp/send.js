@@ -4,7 +4,7 @@
 // ========================================
 
 const supabase = require('../../lib/supabase');
-const { normalizePhone, formatPhoneForUnnichat } = require('../../lib/phone');
+const { formatToE164, formatForUnnichat, formatForDisplay } = require('../../lib/phone-simple');
 const { addLeadTags } = require('../../lib/tags');
 const { sendMessage, updateContact } = require('../../lib/unnichat');
 
@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     
     // Determinar tipo de envio
     const messageType = sendChallenge ? 'DESAFIO' : (sendDiagnostico ? 'DIAGNOSTICO' : 'CUSTOM');
-    const typeEmoji = sendChallenge ? '🎈' : (sendDiagnostico ? '📋' : '💬');
+    const typeEmoji = sendChallenge ? '🎈 ' : (sendDiagnostico ? '📋' : '💬');
     
     console.log('\n📨 ========================================');
     console.log(`   ${typeEmoji} ENVIO: ${messageType}`);
@@ -83,19 +83,20 @@ module.exports = async (req, res) => {
       console.log('   Email:', lead.email || 'N/A');
     }
 
-    // Normalizar telefone
-    const phoneNormalized = normalizePhone(phoneToUse);
-    const phoneForUnnichat = formatPhoneForUnnichat(phoneNormalized);
+    // Processar telefone (já deve estar em E.164 se veio do banco)
+    const phoneE164 = phoneToUse.startsWith('+') ? phoneToUse : formatToE164(phoneToUse);
+    const phoneForUnnichat = formatForUnnichat(phoneE164);
     
     console.log('\n📞 PROCESSAMENTO DO TELEFONE:');
     console.log('   Original:', phoneToUse);
-    console.log('   Normalizado:', phoneNormalized);
+    console.log('   E.164:', phoneE164);
     console.log('   Para Unnichat:', phoneForUnnichat);
+    console.log('   Display:', formatForDisplay(phoneE164));
 
     // Preparar mensagens baseado no tipo
     if (sendChallenge) {
       // Desafio da Vitalidade (2 mensagens)
-      referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${phoneNormalized}&utm_content=msg-inicial-desafio`;
+      referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${phoneE164}&utm_content=msg-inicial-desafio`;
       
       messagesToSend = [
         {
@@ -178,7 +179,7 @@ Compartilhe vitalidade. Inspire transformação`,
           // Registrar logs para cada mensagem
           const logsToInsert = messagesToSend.map(msg => ({
             lead_id: leadId,
-            phone: phoneNormalized,
+            phone: phoneE164,
             status: 'simulated',
             metadata: { 
               route: 'api/whatsapp/send', 
@@ -201,7 +202,7 @@ Compartilhe vitalidade. Inspire transformação`,
       return res.status(200).json({ 
         success: true, 
         message: `${messageType} simulado (staging/dev)`, 
-        phone: phoneNormalized, 
+        phone: phoneE164, 
         simulation: true,
         messages_sent: messagesToSend.length
       });
@@ -224,7 +225,7 @@ Compartilhe vitalidade. Inspire transformação`,
       if (leadId && leadData) {
         console.log('📝 Criando/atualizando contato no Unnichat...');
         const tags = sendChallenge ? ['desafio_vitalidade'] : ['manual_send'];
-        await updateContact(leadData.nome, phoneForUnnichat, leadData.email || `${phoneNormalized}@placeholder.com`, tags);
+        await updateContact(leadData.nome, phoneForUnnichat, leadData.email || `${phoneE164.replace('+', '')}@placeholder.com`, tags);
         console.log('✅ Contato atualizado');
         await new Promise(r => setTimeout(r, 800));
       }
@@ -282,7 +283,7 @@ Compartilhe vitalidade. Inspire transformação`,
         // Registrar logs para cada mensagem
         const logsToInsert = messagesToSend.map(msg => ({
           lead_id: leadId,
-          phone: phoneNormalized,
+          phone: phoneE164,
           status: 'sent',
           metadata: { 
             route: 'api/whatsapp/send', 
@@ -306,7 +307,7 @@ Compartilhe vitalidade. Inspire transformação`,
     return res.status(200).json({ 
       success: true, 
       message: `${messageType} enviado com sucesso`, 
-      phone: phoneNormalized,
+      phone: phoneE164,
       messages_sent: messagesSent,
       ...(referralLink && { referral_link: referralLink })
     });

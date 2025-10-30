@@ -3,7 +3,7 @@
 // Vercel Serverless Function
 // ========================================
 
-let supabase, normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal, getDiagnosticos;
+let supabase, formatToE164, isValidE164, getDiagnosticos;
 let addLeadTags;
 let contarElementos, determinarElementoPrincipal, calcularIntensidade;
 let calcularUrgencia, determinarQuadrante, calcularLeadScore;
@@ -11,7 +11,7 @@ let diagnosticosData;
 
 try {
   supabase = require('../lib/supabase');
-  ({ normalizePhone, isValidBrazilianPhone, isValidPhoneUniversal, isValidInternationalPhone } = require('../lib/phone'));
+  ({ formatToE164, isValidE164 } = require('../lib/phone-simple'));
   ({ getDiagnosticos } = require('../lib/diagnosticos'));
   ({ addLeadTags } = require('../lib/tags'));
   ({
@@ -81,43 +81,18 @@ module.exports = async (req, res) => {
 
   logger && logger.info && logger.info(reqId, '📥 NOVO QUIZ', { nome: lead.NOME });
     
-    // Normalizar telefone ANTES de salvar
-    // IMPORTANTE: Salvar SEMPRE sem DDI 55 para facilitar buscas
-    const celularNormalizado = normalizePhone(lead.CELULAR);
-
-    // Heurística de validação: quando o input vier com DDI explícito (rawDigits >= 12
-    // e não começa com 55), validar pelo rawDigits (E.164), caso contrário validar
-    // pelo celularNormalizado (forma BR sem DDI).
-    const rawDigits = (lead.CELULAR || '').toString().replace(/\D/g, '');
-    const validationTarget = (rawDigits.length >= 12 && !rawDigits.startsWith('55')) ? rawDigits : celularNormalizado;
-
-    logger && logger.info && logger.info(reqId, '📱 Telefone original e normalizado', { original: lead.CELULAR, normalizado: celularNormalizado, rawDigits, validationTarget, validationTargetLen: validationTarget.length });
-    logger && logger.info && logger.info(reqId, '🔧 Phone utils types', { isValidPhoneUniversal: typeof isValidPhoneUniversal, isValidBrazilianPhone: typeof isValidBrazilianPhone, isValidInternationalPhone: typeof isValidInternationalPhone });
-
-    // Validação: aceitar BR (10/11) ou internacional E.164 (12-15)
-    let phoneValid = false;
-    try {
-      if (typeof isValidPhoneUniversal === 'function') {
-        phoneValid = !!isValidPhoneUniversal(validationTarget);
-      } else if (typeof isValidBrazilianPhone === 'function' && typeof isValidInternationalPhone === 'function') {
-        phoneValid = !!(isValidBrazilianPhone(validationTarget) || isValidInternationalPhone(validationTarget));
-      } else {
-        // Fallback permissivo: aceitar apenas strings numéricas entre 8 e 15 dígitos
-        const raw = (validationTarget || '').toString().replace(/\D/g, '');
-        phoneValid = raw.length >= 8 && raw.length <= 15;
-      }
-    } catch (e) {
-      console.error('⚠️ Erro ao validar telefone (fallback):', e.message);
-      phoneValid = false;
-    }
-
-    if (!phoneValid) {
-      logger && logger.error && logger.error(reqId, '❌ Telefone inválido (após heurística)', { validationTarget });
+    // Converter telefone para E.164 (já vem validado do frontend)
+    const celularE164 = formatToE164(lead.CELULAR, lead.PAIS || 'BR');
+    
+    if (!celularE164) {
+      logger && logger.error && logger.error(reqId, '❌ Telefone inválido', { celular: lead.CELULAR, pais: lead.PAIS });
       return res.status(400).json({
         success: false,
-        error: 'Telefone inválido. Use formato BR (11 99999-9999) ou internacional com DDI (ex.: 351...)'
+        error: 'Telefone inválido. Use formato internacional com código do país.'
       });
     }
+
+    logger && logger.info && logger.info(reqId, '📱 Telefone convertido', { original: lead.CELULAR, e164: celularE164, pais: lead.PAIS || 'BR' });
     
     // Calcular diagnóstico
     const contagem = contarElementos(respostas);
@@ -160,11 +135,11 @@ module.exports = async (req, res) => {
       is_hot_lead_vip: isHotLeadVIP
     };
     
-    // Verificar se lead já existe (usando telefone normalizado)
+    // Verificar se lead já existe (usando telefone E.164)
     const { data: existe } = await supabase
       .from('quiz_leads')
       .select('id')
-      .eq('celular', celularNormalizado)
+      .eq('celular', celularE164)
       .maybeSingle();
     
     if (existe) {
@@ -175,14 +150,14 @@ module.exports = async (req, res) => {
           ...dadosParaSalvar, 
           updated_at: new Date().toISOString() 
         })
-        .eq('celular', celularNormalizado);
+        .eq('celular', celularE164);
         
   logger && logger.info && logger.info(reqId, '✅ Lead ATUALIZADO', { id: existe.id });
       // Registrar evento de linha do tempo (diagnóstico solicitado)
       try {
         await supabase.from('whatsapp_logs').insert({
           lead_id: existe.id,
-          phone: celularNormalizado,
+          phone: celularE164,
           status: 'diagnostico_solicitado',
           metadata: { source: 'quiz_submit', updated: true },
           sent_at: new Date().toISOString()
@@ -197,7 +172,7 @@ module.exports = async (req, res) => {
         .from('quiz_leads')
         .insert({
           ...dadosParaSalvar,
-          celular: celularNormalizado,
+          celular: celularE164,
           whatsapp_status: 'AGUARDANDO_CONTATO'
         })
         .select('id')
@@ -209,7 +184,7 @@ module.exports = async (req, res) => {
       try {
         await supabase.from('whatsapp_logs').insert({
           lead_id: inserted?.id,
-          phone: celularNormalizado,
+          phone: celularE164,
           status: 'diagnostico_solicitado',
           metadata: { source: 'quiz_submit', created: true },
           sent_at: new Date().toISOString()

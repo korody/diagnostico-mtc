@@ -36,7 +36,15 @@
     "dupes:fix:prod": "cross-env NODE_ENV=production DRY_RUN=1 node relatorios/resolver-duplicados-telefones.js",
     "normalize:test": "cross-env NODE_ENV=development DRY_RUN=1 node normalizar-telefones.js",
     "normalize:prod": "cross-env NODE_ENV=production DRY_RUN=1 node normalizar-telefones.js",
-    "check-sync": "node check-sync.js"
+    "check-sync": "node check-sync.js",
+    "migrate:phones:dry": "node scripts/migrate-phones-to-e164.js --dry-run",
+    "migrate:phones:apply": "node scripts/migrate-phones-to-e164.js --apply",
+    "duplicados:dry": "node scripts/remover-duplicados.js --dry-run",
+    "duplicados:apply": "node scripts/remover-duplicados.js --apply",
+    "remover-nao-migrados:dry": "node scripts/remover-nao-migrados.js --dry-run",
+    "remover-nao-migrados:apply": "node scripts/remover-nao-migrados.js --apply",
+    "migrar-duplicados:dry": "node scripts/migrar-e-remover-duplicados.js --dry-run",
+    "migrar-duplicados:apply": "node scripts/migrar-e-remover-duplicados.js --apply"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.76.0",
