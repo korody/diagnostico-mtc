@@ -27,16 +27,19 @@ module.exports = async (req, res) => {
 
   try {
     const SIMULATION = process.env.WHATSAPP_SIMULATION_MODE === 'true' || process.env.NODE_ENV !== 'production';
-    const { phone, customMessage, leadId, sendDiagnostico } = req.body || {};
+    const { phone, customMessage, leadId, sendDiagnostico, sendChallenge } = req.body || {};
     
-    console.log('\n� ========================================');
-    console.log('   ENDPOINT: /api/whatsapp/send');
+    // Determinar tipo de envio
+    const messageType = sendChallenge ? 'DESAFIO' : (sendDiagnostico ? 'DIAGNOSTICO' : 'CUSTOM');
+    const typeEmoji = sendChallenge ? '🎈' : (sendDiagnostico ? '📋' : '💬');
+    
+    console.log('\n📨 ========================================');
+    console.log(`   ${typeEmoji} ENVIO: ${messageType}`);
     console.log('========================================');
-    console.log('🎯 Modo:', SIMULATION ? '🧪 SIMULAÇÃO' : '🔴 PRODUÇÃO');
+    console.log('🎯 Modo:', SIMULATION ? '🧪 SIMULACAO' : '🔴 PRODUCAO');
     console.log('📱 Telefone recebido:', phone || 'N/A');
     console.log('🆔 Lead ID:', leadId || 'N/A');
-    console.log('� Enviar diagnóstico:', sendDiagnostico ? 'SIM' : 'NÃO');
-    console.log('�💬 Mensagem customizada:', customMessage ? 'SIM ('+customMessage.length+' chars)' : 'NÃO');
+    if (customMessage) console.log('💬 Mensagem customizada:', customMessage.length, 'chars');
     console.log('========================================\n');
     
     // Validações básicas
@@ -49,7 +52,9 @@ module.exports = async (req, res) => {
     }
 
     let phoneToUse = phone;
-    let messageToSend = customMessage;
+    let messagesToSend = [];
+    let leadData = null;
+    let referralLink = null;
 
     // Se forneceu leadId, buscar dados
     if (leadId) {
@@ -69,89 +74,153 @@ module.exports = async (req, res) => {
         });
       }
       
+      leadData = lead;
       phoneToUse = lead.celular;
-      // Se não veio uma mensagem customizada, usar o diagnóstico completo quando solicitado
-      if (!messageToSend) {
-        messageToSend = sendDiagnostico ? (lead.diagnostico_completo || lead.script_abertura) : lead.script_abertura;
-      }
       
       console.log('✅ Lead encontrado:');
       console.log('   Nome:', lead.nome);
       console.log('   Telefone:', lead.celular);
       console.log('   Email:', lead.email || 'N/A');
-      console.log('   Tipo mensagem:', sendDiagnostico ? 'DIAGNÓSTICO COMPLETO' : 'SCRIPT ABERTURA');
     }
 
-    // Normalizar telefone e preparar para Unnichat
+    // Normalizar telefone
     const phoneNormalized = normalizePhone(phoneToUse);
     const phoneForUnnichat = formatPhoneForUnnichat(phoneNormalized);
     
-    console.log('\n� PROCESSAMENTO DO TELEFONE:');
+    console.log('\n📞 PROCESSAMENTO DO TELEFONE:');
     console.log('   Original:', phoneToUse);
     console.log('   Normalizado:', phoneNormalized);
     console.log('   Para Unnichat:', phoneForUnnichat);
-    console.log('\n📝 PREVIEW DA MENSAGEM:');
-    console.log('   Tamanho:', (messageToSend || '').length, 'caracteres');
-    console.log('   Primeiros 150 chars:', (messageToSend || '').substring(0, 150) + '...');
-    console.log('');
+
+    // Preparar mensagens baseado no tipo
+    if (sendChallenge) {
+      // Desafio da Vitalidade (2 mensagens)
+      referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${phoneNormalized}&utm_content=msg-inicial-desafio`;
+      
+      messagesToSend = [
+        {
+          text: `*Quer ganhar acesso ao SUPER COMBO Vitalício do Mestre Ye, sem pagar nada?*
+
+Preparamos algo muito especial para você: o *Desafio da Vitalidade*.
+
+Durante as próximas semanas, você vai receber *missões simples durante as Lives de Aquecimento da Black November da Saúde Vitalícia*.
+
+Cada missão vai te aproximar mais do *equilíbrio, da leveza e da vitalidade que o seu corpo merece.* 🀄
+
+*Veja como participar:*
+
+1. Compartilhe suas missões no Instagram Stories e marque *@mestre_ye*;
+2. Convide amigos e familiares para o evento através do seu link único`,
+          metadata: { message: 1, referral_link: referralLink }
+        },
+        {
+          text: `Para aumentar suas chances de ganhar o *SUPER COMBO Vitalício do Mestre Ye*, compartilhe o link abaixo com o máximo de amigos e familiares.
+
+Cada pessoa que se inscrever através do seu link único aumenta suas chances de ser o grande vencedor ou vencedrora!
+
+*Seu link de compartilhamento*:
+${referralLink}
+
+Compartilhe vitalidade. Inspire transformação`,
+          metadata: { message: 2, referral_link: referralLink }
+        }
+      ];
+      
+      console.log('\n🔗 Link compartilhamento:', referralLink);
+      console.log('📝 2 MENSAGENS preparadas:', messagesToSend[0].text.length, '+', messagesToSend[1].text.length, 'chars\n');
+      
+    } else {
+      // Diagnóstico ou mensagem customizada (1 mensagem)
+      const messageText = customMessage || (leadData ? (sendDiagnostico ? (leadData.diagnostico_completo || leadData.script_abertura) : leadData.script_abertura) : '');
+      messagesToSend = [
+        {
+          text: messageText,
+          metadata: { tipo: sendDiagnostico ? 'diagnostico_completo' : 'custom' }
+        }
+      ];
+      
+      console.log('\n📝 PREVIEW DA MENSAGEM:');
+      console.log('   Tamanho:', messageText.length, 'caracteres');
+      console.log('   Primeiros 150 chars:', messageText.substring(0, 150) + '...\n');
+    }
 
     // SIMULAÇÃO (staging/dev): não exige UNNICHAT_*, apenas registra sucesso
     if (SIMULATION) {
-      console.log('🧪 MODO SIMULAÇÃO - Não enviando para Unnichat');
-      console.log('   (Apenas registrando no banco de dados)\n');
+      console.log('🧪 MODO SIMULACAO - Nao enviando para Unnichat');
+      console.log(`   (Apenas registrando no banco - ${messagesToSend.length} mensagem(ns))\n`);
       
       try {
-        // Atualiza status se estiver enviando diagnóstico
-        if (leadId && sendDiagnostico) {
+        if (leadId) {
           console.log('💾 Atualizando status do lead...');
+          
+          const newStatus = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
+          const newTag = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
           
           await supabase
             .from('quiz_leads')
-            .update({ whatsapp_status: 'diagnostico_enviado', whatsapp_sent_at: new Date().toISOString() })
+            .update({ 
+              whatsapp_status: newStatus, 
+              whatsapp_sent_at: new Date().toISOString() 
+            })
             .eq('id', leadId);
           
           try { 
-            await addLeadTags(supabase, leadId, ['diagnostico_enviado']); 
-            console.log('🏷️  Tag "diagnostico_enviado" adicionada');
+            await addLeadTags(supabase, leadId, [newTag]); 
+            console.log(`🏷️  Tag "${newTag}" adicionada`);
           } catch (e) {
             console.log('⚠️  Falha ao adicionar tag:', e.message);
           }
 
-          await supabase.from('whatsapp_logs').insert({
+          // Registrar logs para cada mensagem
+          const logsToInsert = messagesToSend.map(msg => ({
             lead_id: leadId,
             phone: phoneNormalized,
             status: 'simulated',
-            metadata: { route: 'api/whatsapp/send', simulated: true, sendDiagnostico: !!sendDiagnostico },
+            metadata: { 
+              route: 'api/whatsapp/send', 
+              simulated: true, 
+              messageType,
+              ...msg.metadata
+            },
             sent_at: new Date().toISOString()
-          });
+          }));
           
-          console.log('✅ Status atualizado no banco');
+          await supabase.from('whatsapp_logs').insert(logsToInsert);
+          
+          console.log(`✅ Status atualizado no banco (${messagesToSend.length} mensagem(ns) simulada(s))`);
         }
       } catch (e) {
-        console.log('⚠️ Falha ao registrar simulação:', e.message);
+        console.log('⚠️ Falha ao registrar simulacao:', e.message);
       }
       
-      console.log('\n✅ SIMULAÇÃO CONCLUÍDA COM SUCESSO\n');
-      return res.status(200).json({ success: true, message: 'Simulado (staging/dev)', phone: phoneNormalized, simulation: true });
+      console.log(`\n✅ ${typeEmoji} SIMULACAO CONCLUIDA COM SUCESSO\n`);
+      return res.status(200).json({ 
+        success: true, 
+        message: `${messageType} simulado (staging/dev)`, 
+        phone: phoneNormalized, 
+        simulation: true,
+        messages_sent: messagesToSend.length
+      });
     }
 
     // Produção: exigir UNNICHAT_*
-    console.log('🔴 MODO PRODUÇÃO - Enviando via Unnichat\n');
+    console.log('🔴 MODO PRODUCAO - Enviando via Unnichat\n');
     
     if (!process.env.UNNICHAT_ACCESS_TOKEN) {
-      console.log('❌ ERRO: UNNICHAT_ACCESS_TOKEN não configurado\n');
+      console.log('❌ ERRO: UNNICHAT_ACCESS_TOKEN nao configurado\n');
       return res.status(500).json({ success: false, error: 'WhatsApp não configurado (UNNICHAT_ACCESS_TOKEN ausente)' });
     }
     if (!process.env.UNNICHAT_API_URL) {
-      console.log('❌ ERRO: UNNICHAT_API_URL não configurado\n');
+      console.log('❌ ERRO: UNNICHAT_API_URL nao configurado\n');
       return res.status(500).json({ success: false, error: 'WhatsApp não configurado (UNNICHAT_API_URL ausente)' });
     }
     
     // Criar/atualizar contato antes (best-effort)
     try {
-      if (leadId) {
+      if (leadId && leadData) {
         console.log('📝 Criando/atualizando contato no Unnichat...');
-        await updateContact('Contato Quiz', phoneForUnnichat, `${phoneNormalized}@placeholder.com`, ['manual_send']);
+        const tags = sendChallenge ? ['desafio_vitalidade'] : ['manual_send'];
+        await updateContact(leadData.nome, phoneForUnnichat, leadData.email || `${phoneNormalized}@placeholder.com`, tags);
         console.log('✅ Contato atualizado');
         await new Promise(r => setTimeout(r, 800));
       }
@@ -159,47 +228,84 @@ module.exports = async (req, res) => {
       console.log('⚠️  Aviso ao criar contato:', e.message);
     }
 
-    // Enviar via Unnichat
-    console.log('\n📤 Enviando mensagem via Unnichat...');
-    await sendMessage(phoneForUnnichat, messageToSend);
+    // Enviar mensagens
+    const DELAY_BETWEEN_MESSAGES = 2000; // 2 segundos
+    let messagesSent = 0;
     
-    console.log('✅ Mensagem enviada com sucesso via Unnichat!\n');
+    for (let i = 0; i < messagesToSend.length; i++) {
+      const msg = messagesToSend[i];
+      const msgNum = i + 1;
+      const totalMsgs = messagesToSend.length;
+      
+      console.log(`\n📤 Enviando mensagem ${msgNum}/${totalMsgs}...`);
+      await sendMessage(phoneForUnnichat, msg.text);
+      console.log(`✅ Mensagem ${msgNum}/${totalMsgs} enviada!`);
+      
+      messagesSent++;
+      
+      // Aguardar antes da próxima mensagem (se houver)
+      if (i < messagesToSend.length - 1) {
+        console.log(`⏳ Aguardando ${DELAY_BETWEEN_MESSAGES/1000} segundos...`);
+        await new Promise(r => setTimeout(r, DELAY_BETWEEN_MESSAGES));
+      }
+    }
     
-    // Atualizações pós-envio (diagnóstico)
+    console.log(`\n✅ ${messagesSent} mensagem(ns) enviada(s) via Unnichat!\n`);
+    
+    // Atualizações pós-envio
     try {
-      if (leadId && sendDiagnostico) {
+      if (leadId) {
         console.log('💾 Atualizando status do lead no banco...');
+        
+        const newStatus = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
+        const newTag = sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado';
         
         await supabase
           .from('quiz_leads')
-          .update({ whatsapp_status: 'diagnostico_enviado', whatsapp_sent_at: new Date().toISOString() })
+          .update({ 
+            whatsapp_status: newStatus, 
+            whatsapp_sent_at: new Date().toISOString() 
+          })
           .eq('id', leadId);
         
         try { 
-          await addLeadTags(supabase, leadId, ['diagnostico_enviado']); 
-          console.log('🏷️  Tag "diagnostico_enviado" adicionada');
+          await addLeadTags(supabase, leadId, [newTag]); 
+          console.log(`🏷️  Tag "${newTag}" adicionada`);
         } catch (e) {
           console.log('⚠️  Falha ao adicionar tag:', e.message);
         }
         
-        await supabase.from('whatsapp_logs').insert({
+        // Registrar logs para cada mensagem
+        const logsToInsert = messagesToSend.map(msg => ({
           lead_id: leadId,
           phone: phoneNormalized,
           status: 'sent',
-          metadata: { route: 'api/whatsapp/send', sendDiagnostico: true },
+          metadata: { 
+            route: 'api/whatsapp/send', 
+            messageType,
+            ...msg.metadata
+          },
           sent_at: new Date().toISOString()
-        });
+        }));
         
-        console.log('✅ Status atualizado no banco');
+        await supabase.from('whatsapp_logs').insert(logsToInsert);
+        
+        console.log(`✅ Status atualizado no banco (${messagesSent} mensagem(ns))`);
       }
     } catch (e) {
-      console.log('⚠️ Falha ao registrar pós-envio:', e.message);
+      console.log('⚠️ Falha ao registrar pos-envio:', e.message);
     }
 
-    console.log('\n✅ ENVIO CONCLUÍDO COM SUCESSO');
+    console.log(`\n${typeEmoji} ENVIO CONCLUIDO COM SUCESSO!`);
     console.log('========================================\n');
     
-    return res.status(200).json({ success: true, message: 'Mensagem enviada com sucesso', phone: phoneNormalized });
+    return res.status(200).json({ 
+      success: true, 
+      message: `${messageType} enviado com sucesso`, 
+      phone: phoneNormalized,
+      messages_sent: messagesSent,
+      ...(referralLink && { referral_link: referralLink })
+    });
     
   } catch (error) {
     console.error('\n❌ ========================================');
