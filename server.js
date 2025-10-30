@@ -180,13 +180,21 @@ app.get('/api/status', (req, res) => {
 });
 
 // ===== ROTAS: PÁGINAS HTML (sem extensão) =====
-app.get('/enviar-diagnosticos', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'enviar-diagnosticos.html'));
+app.get('/buscar-enviar', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'buscar-enviar.html'));
 });
 
 // Alias compatível com produção: algumas infra geram esta URL com o prefixo /api
+app.get('/api/buscar-enviar', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'buscar-enviar.html'));
+});
+
+// Redirect antigo para novo (backward compatibility)
+app.get('/enviar-diagnosticos', (req, res) => {
+  res.redirect(301, '/buscar-enviar');
+});
 app.get('/api/enviar-diagnosticos', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'enviar-diagnosticos.html'));
+  res.redirect(301, '/api/buscar-enviar');
 });
 
 app.get('/test-whatsapp', (req, res) => {
