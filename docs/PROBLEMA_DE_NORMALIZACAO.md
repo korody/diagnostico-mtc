@@ -20,6 +20,16 @@ Exemplo adicional reportado:
 - Telefone que o nosso sistema tentou enviar (após normalização/format): 5571987643968
 - Telefone com o qual o lead entrou em contato no Unnichat: 557187643967
 
+Exemplo extra reportado:
+- Telefone inserido no formulário pelo lead: 35997258445
+- Telefone que o nosso sistema normalizou para: 3597258445
+- Telefone com o qual o lead entrou em contato no Unnichat: 553597258445
+
+Exemplo adicional 2 reportado:
+- Lead se cadastrou com: 479978966
+- Nosso sistema normalizou para: 4797896688
+- Pelo Unnichat o lead chamou pelo: 554797896688
+
 Observações importantes
 ----------------------
 - Há discrepância por: DDI (55), DDD, e o dígito "9" extra em celulares brasileiros (comportamento regional). O lead digitou dois 9s e o número recebido no Unnichat apareceu com apenas um 9.

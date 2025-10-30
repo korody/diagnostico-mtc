@@ -220,6 +220,21 @@ const QuizMTC = () => {
     return re.test(email);
   };
 
+  // Lista de DDDs brasileiros válidos
+  const DDDs_VALIDOS = [
+    11, 12, 13, 14, 15, 16, 17, 18, 19, // SP
+    21, 22, 24, // RJ
+    27, 28, // ES
+    31, 32, 33, 34, 35, 37, 38, // MG
+    41, 42, 43, 44, 45, 46, // PR
+    47, 48, 49, // SC
+    51, 53, 54, 55, // RS
+    61, 62, 63, 64, 65, 66, 67, 68, 69, // Centro-Oeste/Norte
+    71, 73, 74, 75, 77, 79, // Nordeste (BA/SE)
+    81, 82, 83, 84, 85, 86, 87, 88, 89, // Nordeste (PE/AL/PB/RN/CE/PI)
+    91, 92, 93, 94, 95, 96, 97, 98, 99  // Norte (PA/AM/RR/AP/RO/MA)
+  ];
+
   const validarCelular = (celular) => {
     if (!celular) return false;
     const texto = celular.trim();
@@ -230,9 +245,26 @@ const QuizMTC = () => {
       return /^\+\d{8,15}$/.test(cleaned);
     }
 
-    // Caso local (sem +): aceitar entre 8 e 11 dígitos (ex: 99999999, 11999999999)
+    // Caso local brasileiro: EXIGIR DDD válido (10 ou 11 dígitos)
     const raw = texto.replace(/\D/g, '');
-    return raw.length >= 8 && raw.length <= 11;
+    
+    // Deve ter 10 (fixo) ou 11 (celular) dígitos
+    if (raw.length !== 10 && raw.length !== 11) {
+      return false;
+    }
+    
+    // Verificar se DDD é válido
+    const ddd = parseInt(raw.substring(0, 2), 10);
+    if (!DDDs_VALIDOS.includes(ddd)) {
+      return false;
+    }
+    
+    // Para 11 dígitos, deve começar com 9 após o DDD
+    if (raw.length === 11 && !raw.substring(2).startsWith('9')) {
+      return false;
+    }
+    
+    return true;
   };
 
   const formatarCelular = (valor) => {
@@ -276,7 +308,7 @@ const QuizMTC = () => {
       return;
     }
     if (!validarCelular(dadosLead.CELULAR)) {
-      setErro('Por favor, digite um número de WhatsApp válido. Use +DD... para internacional ou 8–11 dígitos (ex: +351917068586 ou (11) 99999-9999)');
+      setErro('Por favor, digite um celular válido COM DDD (Ex: 11999999999 ou +5511999999999). Números sem DDD não serão aceitos.');
       return;
     }
     setStep('quiz');
