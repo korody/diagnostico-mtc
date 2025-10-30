@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
   try {
     // Em produção (Vercel), o HTML está na mesma pasta da função
     // Em dev local, pode estar em public/
-    const sameDirPath = path.join(__dirname, 'buscar-enviar.html');
+    const sameDirPath = path.join(__dirname, 'buscar-enviar-page.html');
     const publicPath = path.join(__dirname, '..', 'public', 'buscar-enviar.html');
     const buildPath = path.join(__dirname, '..', 'build', 'buscar-enviar.html');
     

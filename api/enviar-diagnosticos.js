@@ -6,7 +6,7 @@ const path = require('path');
 module.exports = async (req, res) => {
   try {
     // Tenta servir o HTML novo (busca no diretório api/ onde está o arquivo copiado)
-    const sameDirPath = path.join(__dirname, 'buscar-enviar.html');
+    const sameDirPath = path.join(__dirname, 'buscar-enviar-page.html');
     const publicPath = path.join(__dirname, '..', 'public', 'buscar-enviar.html');
     const buildPath = path.join(__dirname, '..', 'build', 'buscar-enviar.html');
     
