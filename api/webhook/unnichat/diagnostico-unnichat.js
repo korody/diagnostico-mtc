@@ -292,13 +292,13 @@ module.exports = async (req, res) => {
         logger.error && logger.error(reqId, '❌ Erro ao inserir whatsapp_logs', logError.message);
       } else {
         // Log VERCEL friendly igual ver-resultados
-        logger.info && logger.info(reqId, '📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido', { leadId: lead.id, nome: lead.nome });
+        logger.info && logger.info(reqId, '📝 Registrando Logs | whatsapp_logs inserido', { leadId: lead.id, nome: lead.nome });
       }
     } catch (e) {
       logger.error && logger.error(reqId, '❌ Erro geral ao atualizar status/tags/logs', { error: e.message, stack: e.stack });
     }
 
-    logger.info && logger.info(reqId, '✅ Retornando diagnóstico para Unnichat', { leadId: lead.id, diagnosticoLength: diagnostico?.length || 0 });
+    logger.info && logger.info(reqId, '📃 DIAGNÓSTICO ENVIADO', { leadId: lead.id, diagnosticoLength: diagnostico?.length || 0 });
     // Retornar apenas o campo 'diagnostico' para Unnichat
     return res.status(200).json({ diagnostico });
   } catch (err) {
