@@ -128,11 +128,9 @@ Cada missão vai te aproximar mais do *equilíbrio, da leveza e da vitalidade qu
 *Veja como participar:*
 
 1. Compartilhe suas missões no Instagram Stories e marque *@mestre_ye*;
-2. Convide amigos e familiares para o evento através do seu link único`;
+2. Convide amigos e familiares para o evento através do seu link único!`;
 
-    const message2 = `Para aumentar suas chances de ganhar o *SUPER COMBO Vitalício do Mestre Ye*, compartilhe o link abaixo com o máximo de amigos e familiares.
-
-Cada pessoa que se inscrever através do seu link único aumenta suas chances de ser o grande vencedor ou vencedora!
+    const message2 = `Cada pessoa que se inscrever através do seu link único aumenta suas chances de ser o grande vencedor ou vencedrora do SUPER COMBO Vitalício do Mestre Ye!
 
 *Seu link de compartilhamento*:
 ${referralLink}

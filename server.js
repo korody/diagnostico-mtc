@@ -329,9 +329,10 @@ app.get('/api/lead/buscar', async (req, res) => {
 });
 
 // ===== ROTA: ENVIO WHATSAPP MANUAL =====
-async function sendWhatsAppInternal({ phone, customMessage, leadId, sendDiagnostico }) {
+async function sendWhatsAppInternal({ phone, customMessage, leadId, sendDiagnostico, sendChallenge }) {
   let phoneToUse = phone;
   let messageToSend = customMessage;
+  let messagesToSend = []; // Suporte a múltiplas mensagens (Desafio)
   let contactName = 'Contato Quiz';
   let contactEmail;
 
@@ -343,75 +344,173 @@ async function sendWhatsAppInternal({ phone, customMessage, leadId, sendDiagnost
       .single();
     if (error || !lead) throw new Error('Lead não encontrado');
     phoneToUse = lead.celular;
-    messageToSend = customMessage || (sendDiagnostico ? lead.diagnostico_completo : lead.script_abertura);
     contactName = lead.nome || contactName;
     contactEmail = lead.email;
+    
+    // DESAFIO DA VITALIDADE (2 mensagens)
+    if (sendChallenge) {
+      const referralLink = `https://curso.qigongbrasil.com/lead/bny-convite-wpp?utm_campaign=BNY2&utm_source=org&utm_medium=whatsapp&utm_public=${lead.celular}&utm_content=msg-inicial-desafio`;
+      
+      messagesToSend = [
+        {
+          text: `*Quer ganhar acesso ao SUPER COMBO Vitalício do Mestre Ye, sem pagar nada?*
+
+Preparamos algo muito especial para você: o *Desafio da Vitalidade*.
+
+Durante as próximas semanas, você vai receber *missões simples durante as Lives de Aquecimento da Black November da Saúde Vitalícia*.
+
+Cada missão vai te aproximar mais do *equilíbrio, da leveza e da vitalidade que o seu corpo merece.* 🀄
+
+*Veja como participar:*
+
+1. Compartilhe suas missões no Instagram Stories e marque *@mestre_ye*;
+2. Convide amigos e familiares para o evento através do seu link único!`
+        },
+        {
+          text: `Cada pessoa que se inscrever através do seu link único aumenta suas chances de ser o grande vencedor ou vencedrora do SUPER COMBO Vitalício do Mestre Ye!
+
+*Seu link de compartilhamento*:
+${referralLink}
+
+Compartilhe vitalidade. Inspire transformação`
+        }
+      ];
+    } else {
+      // Diagnóstico ou mensagem customizada (1 mensagem)
+      messageToSend = customMessage || (sendDiagnostico ? lead.diagnostico_completo : lead.script_abertura);
+    }
   }
 
-  if (!phoneToUse || !messageToSend) throw new Error('Telefone e mensagem são obrigatórios');
+  // Validar telefone
+  if (!phoneToUse) throw new Error('Telefone é obrigatório');
+  
+  // Validar mensagem (única ou múltipla)
+  const hasMultipleMessages = messagesToSend && messagesToSend.length > 0;
+  if (!hasMultipleMessages && !messageToSend) throw new Error('Mensagem é obrigatória');
 
   const phoneNormalized = normalizePhone(phoneToUse);
   const phoneForUnnichat = formatPhoneForUnnichat(phoneNormalized);
 
-  console.log('📱 Enviando para:', phoneForUnnichat);
-  console.log('📝 Mensagem:', messageToSend.substring(0, 100) + '...');
+  console.log('\n� ======== ENVIO:', sendChallenge ? 'DESAFIO' : (sendDiagnostico ? 'DIAGNOSTICO' : 'CUSTOM'));
+  console.log('�📱 Enviando para:', phoneForUnnichat);
+  
+  if (hasMultipleMessages) {
+    console.log(`📝 ${messagesToSend.length} mensagens preparadas`);
+    messagesToSend.forEach((msg, i) => {
+      console.log(`   ${i+1}. ${msg.text.substring(0, 60)}...`);
+    });
+  } else {
+    console.log('📝 Mensagem:', messageToSend.substring(0, 100) + '...');
+  }
 
   if (process.env.WHATSAPP_SIMULATION_MODE === 'true') {
     console.log('🧪 SIMULAÇÃO ATIVA - não enviando');
-    return { success: true, phone: phoneNormalized, message: 'Mensagem simulada (modo teste)', simulation: true };
+    console.log('========================================\n');
+    return { 
+      success: true, 
+      phone: phoneNormalized, 
+      message: `${hasMultipleMessages ? messagesToSend.length : 1} mensagem(ns) simulada(s)`,
+      simulation: true 
+    };
   }
 
   console.log('🔗 API URL:', `${UNNICHAT_API_URL}/meta/messages`);
 
-  // Tentar atualizar/criar contato previamente quando houver leadId
+  // Criar/atualizar contato previamente
   if (leadId) {
     try {
       await fetch(`${UNNICHAT_API_URL}/contact`, {
-        method: 'POST', headers: { 'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: contactName, phone: phoneForUnnichat, email: contactEmail || `${phoneNormalized}@placeholder.com`, tags: ['manual_send','pre_send'] })
+        method: 'POST', 
+        headers: { 
+          'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+          name: contactName, 
+          phone: phoneForUnnichat, 
+          email: contactEmail || `${phoneNormalized}@placeholder.com`, 
+          tags: ['manual_send', sendChallenge ? 'desafio_enviado' : 'diagnostico_enviado'] 
+        })
       });
       await new Promise(r=>setTimeout(r, 1200));
     } catch (e) { console.log('⚠️ Contato (pré-envio):', e.message); }
   }
 
-  async function sendOnce() {
+  // Função para enviar uma mensagem
+  async function sendOnce(msgText) {
     const resp = await fetch(`${UNNICHAT_API_URL}/meta/messages`, {
-      method: 'POST', headers: { 'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phoneForUnnichat, messageText: messageToSend })
+      method: 'POST', 
+      headers: { 
+        'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 
+        'Content-Type': 'application/json' 
+      },
+      body: JSON.stringify({ phone: phoneForUnnichat, messageText: msgText })
     });
     return { status: resp.status, statusText: resp.statusText, json: await resp.json() };
   }
 
-  let first = await sendOnce();
-  console.log('📊 Status HTTP:', first.status, first.statusText);
-  console.log('📦 Resposta Unnichat:', JSON.stringify(first.json, null, 2));
+  // Enviar mensagem(ns)
+  const messagesToProcess = hasMultipleMessages ? messagesToSend : [{ text: messageToSend }];
+  
+  for (let i = 0; i < messagesToProcess.length; i++) {
+    const msg = messagesToProcess[i];
+    console.log(`\n📤 Enviando mensagem ${i+1}/${messagesToProcess.length}...`);
+    
+    let result = await sendOnce(msg.text);
+    console.log('📊 Status HTTP:', result.status, result.statusText);
+    console.log('📦 Resposta Unnichat:', JSON.stringify(result.json, null, 2));
 
-  if ((first.json && first.json.message && /Contact not found/i.test(first.json.message)) || (first.status === 400 && /contact/i.test(JSON.stringify(first.json||{})))) {
-    console.log('🔁 Criando/atualizando contato...');
-    try {
-      await fetch(`${UNNICHAT_API_URL}/contact`, {
-        method: 'POST', headers: { 'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: contactName, phone: phoneForUnnichat, email: contactEmail || `${phoneNormalized}@placeholder.com`, tags: ['manual_send','api_whatsapp_send'] })
-      });
-      await new Promise(r=>setTimeout(r, 800));
-    } catch (e) { console.log('⚠️ Contato:', e.message); }
+    // Retry se contato não encontrado (apenas na primeira mensagem)
+    if (i === 0 && ((result.json && result.json.message && /Contact not found/i.test(result.json.message)) || (result.status === 400 && /contact/i.test(JSON.stringify(result.json||{}))))) {
+      console.log('🔁 Criando/atualizando contato...');
+      try {
+        await fetch(`${UNNICHAT_API_URL}/contact`, {
+          method: 'POST', 
+          headers: { 
+            'Authorization': `Bearer ${UNNICHAT_TOKEN}`, 
+            'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify({ 
+            name: contactName, 
+            phone: phoneForUnnichat, 
+            email: contactEmail || `${phoneNormalized}@placeholder.com`, 
+            tags: ['manual_send', 'api_whatsapp_send'] 
+          })
+        });
+        await new Promise(r=>setTimeout(r, 800));
+      } catch (e) { console.log('⚠️ Contato:', e.message); }
 
-    first = await sendOnce();
-    console.log('📊 Retry Status HTTP:', first.status, first.statusText);
-    console.log('📦 Retry Resposta Unnichat:', JSON.stringify(first.json, null, 2));
+      result = await sendOnce(msg.text);
+      console.log('📊 Retry Status HTTP:', result.status, result.statusText);
+      console.log('📦 Retry Resposta Unnichat:', JSON.stringify(result.json, null, 2));
+    }
+
+    // Verificar se deu erro
+    if (result.json && result.json.code && result.json.code !== '200') {
+      throw new Error(result.json.message || 'Erro ao enviar mensagem');
+    }
+
+    // Delay entre mensagens múltiplas
+    if (i < messagesToProcess.length - 1) {
+      console.log('⏱️  Aguardando 3s antes da próxima mensagem...');
+      await new Promise(r => setTimeout(r, 3000));
+    }
   }
 
-  if (first.json && first.json.code && first.json.code !== '200') {
-    throw new Error(first.json.message || 'Erro ao enviar');
-  }
-
-  console.log('✅ Mensagem enviada com sucesso!\n');
-  return { success: true, phone: phoneNormalized, message: 'Mensagem enviada com sucesso' };
+  console.log('\n✅ Todas as mensagens enviadas com sucesso!');
+  console.log('========================================\n');
+  
+  return { 
+    success: true, 
+    phone: phoneNormalized, 
+    message: `${messagesToProcess.length} mensagem(ns) enviada(s) com sucesso`,
+    messageCount: messagesToProcess.length
+  };
 }
 
+// ROTA LOCAL: POST /api/whatsapp/send (suporta sendDiagnostico, sendChallenge, customMessage)
 app.post('/api/whatsapp/send', async (req, res) => {
   try {
-    console.log('\n📤 ENVIO MANUAL WHATSAPP');
     const result = await sendWhatsAppInternal(req.body || {});
     res.json(result);
   } catch (error) {
