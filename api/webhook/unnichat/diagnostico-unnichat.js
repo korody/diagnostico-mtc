@@ -1,19 +1,11 @@
 // api/webhook/unnichat/diagnostico-unnichat.js
 // Endpoint para retornar diagnóstico do lead para Unnichat, sem envio direto ao lead
 
-const { createClient } = require('@supabase/supabase-js');
 const { normalizePhone } = require('../../../lib/phone');
 const { calcularDiagnosticoCompleto } = require('../../../lib/diagnosticos');
 const { addLeadTags } = require('../../../lib/tags');
 const logger = require('../../../lib/logger');
-
-// Carregar variáveis de ambiente
-require('dotenv').config({ path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.local' });
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = require('../../../lib/supabase'); // ✅ MUDANÇA CRÍTICA: Usar cliente compartilhado
 
 module.exports = async (req, res) => {
   const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
@@ -31,10 +23,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-
     // Busca robusta igual ver-resultados
     let lead = null;
-    let error = null;
     const phoneNormalized = normalizePhone(phone);
     const candidates = [];
     const digitsOnly = (phone || '').toString().replace(/\D/g, '');
@@ -63,53 +53,78 @@ module.exports = async (req, res) => {
       .select('*')
       .eq('celular', phoneNormalized)
       .maybeSingle();
-    if (leadExato) lead = leadExato;
+    if (leadExato) {
+      lead = leadExato;
+      logger.info && logger.info(reqId, '✅ Lead encontrado (busca exata)', { nome: lead.nome, id: lead.id });
+    }
 
     // Tentativa 2: Últimos 10 dígitos
     if (!lead && phoneNormalized.length >= 10) {
       const ultimos10 = phoneNormalized.slice(-10);
+      logger.info && logger.info(reqId, '🔍 Tentativa 2: últimos 10 dígitos', { ultimos10 });
       const { data: leads10 } = await supabase
         .from('quiz_leads')
         .select('*')
         .ilike('celular', `%${ultimos10}%`)
         .limit(5);
-      if (leads10 && leads10.length > 0) lead = leads10[0];
+      if (leads10 && leads10.length > 0) {
+        lead = leads10[0];
+        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 10 dígitos)', { nome: lead.nome, id: lead.id });
+      }
     }
 
     // Tentativa 3: Últimos 9 dígitos
     if (!lead && phoneNormalized.length >= 9) {
       const ultimos9 = phoneNormalized.slice(-9);
+      logger.info && logger.info(reqId, '🔍 Tentativa 3: últimos 9 dígitos', { ultimos9 });
       const { data: leads9 } = await supabase
         .from('quiz_leads')
         .select('*')
         .ilike('celular', `%${ultimos9}%`)
         .limit(5);
-      if (leads9 && leads9.length > 0) lead = leads9[0];
+      if (leads9 && leads9.length > 0) {
+        lead = leads9[0];
+        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 9 dígitos)', { nome: lead.nome, id: lead.id });
+      }
     }
 
     // Tentativa 4: Últimos 8 dígitos
     if (!lead && phoneNormalized.length >= 8) {
       const ultimos8 = phoneNormalized.slice(-8);
+      logger.info && logger.info(reqId, '🔍 Tentativa 4: últimos 8 dígitos', { ultimos8 });
       const { data: leads8 } = await supabase
         .from('quiz_leads')
         .select('*')
         .ilike('celular', `%${ultimos8}%`)
         .limit(5);
-      if (leads8 && leads8.length > 0) lead = leads8[0];
+      if (leads8 && leads8.length > 0) {
+        lead = leads8[0];
+        logger.info && logger.info(reqId, '✅ Lead encontrado (últimos 8 dígitos)', { nome: lead.nome, id: lead.id });
+      }
     }
 
     // Fallback por email
     if (!lead && email) {
+      logger.info && logger.info(reqId, '🔍 Fallback: buscando por email', { email });
       const { data: leadByEmail } = await supabase
         .from('quiz_leads')
         .select('*')
         .eq('email', email)
         .maybeSingle();
-      if (leadByEmail) lead = leadByEmail;
+      if (leadByEmail) {
+        lead = leadByEmail;
+        logger.info && logger.info(reqId, '✅ Lead encontrado por EMAIL', { nome: lead.nome, id: lead.id });
+      }
     }
 
     if (!lead) {
-      logger.error && logger.error(reqId, '❌ ERRO: Nenhum lead identificado!', { phone, phoneNormalized, body: req.body });
+      logger.error && logger.error(reqId, '❌ ERRO: Nenhum lead identificado!', { 
+        phone, 
+        phoneNormalized, 
+        candidates: dedup,
+        email,
+        body: req.body 
+      });
       return res.status(404).json({ success: false, error: 'Lead não encontrado' });
     }
 
@@ -129,8 +144,10 @@ module.exports = async (req, res) => {
           whatsapp_sent_at: new Date().toISOString()
         })
         .eq('id', lead.id);
+      
       // Adicionar tag
       await addLeadTags(supabase, lead.id, ['diagnostico_enviado']);
+      
       // Registrar log
       await supabase.from('whatsapp_logs').insert({
         lead_id: lead.id,
@@ -143,6 +160,7 @@ module.exports = async (req, res) => {
         },
         sent_at: new Date().toISOString()
       });
+      
       // Log VERCEL friendly igual ver-resultados
       logger.info && logger.info(reqId, `📃 DIAGNÓSTICO ENVIADO | whatsapp_logs inserido → { "leadId": "${lead.id}", "nome": "${lead.nome}" }`, { leadId: lead.id, nome: lead.nome });
     } catch (e) {
