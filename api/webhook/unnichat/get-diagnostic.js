@@ -1,4 +1,4 @@
-// api/webhook/unnichat/diagnostico-unnichat.js
+// api/webhook/unnichat/get-diagnostic.js
 // Endpoint para retornar diagnóstico do lead para Unnichat, sem envio direto ao lead
 
 const { findLeadByPhone } = require('../../../lib/phone-simple');
@@ -8,7 +8,7 @@ const supabase = require('../../../lib/supabase');
 
 module.exports = async (req, res) => {
   const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
-  logger.info && logger.info(reqId, '🔔 Diagnostico-Unnichat recebido', { body: req.body });
+  logger.info && logger.info(reqId, '🔔 Get-Diagnostic recebido', { body: req.body });
 
   if (req.method !== 'POST') {
     logger.error && logger.error(reqId, 'Método não permitido', { method: req.method });
@@ -87,7 +87,7 @@ module.exports = async (req, res) => {
         phone: lead.celular,
         status: 'diagnostico_enviado',
         metadata: {
-          action: 'diagnostico-unnichat',
+          action: 'get-diagnostic',
           triggered_by_webhook: true,
           webhook_payload: req.body,
           telefone_recebido: phone
@@ -98,7 +98,7 @@ module.exports = async (req, res) => {
       if (logError) {
         logger.error && logger.error(reqId, '❌ Erro ao inserir whatsapp_logs', logError.message);
       } else {
-        // Log VERCEL friendly igual ver-resultados
+        // Log VERCEL friendly igual send-diagnostic
         logger.info && logger.info(reqId, '📝 Registrando Logs | whatsapp_logs inserido', { leadId: lead.id, nome: lead.nome });
       }
     } catch (e) {

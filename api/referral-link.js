@@ -1,4 +1,4 @@
-// api/gerar-link-compartilhamento.js
+// api/referral-link.js
 // Gera link único de compartilhamento do desafio para o lead
 
 const { findLeadByPhone } = require('../lib/phone-simple');

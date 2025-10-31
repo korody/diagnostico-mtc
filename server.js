@@ -180,26 +180,13 @@ app.get('/api/status', (req, res) => {
 });
 
 // ===== ROTAS: PÁGINAS HTML (sem extensão) =====
-app.get('/buscar-enviar', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'buscar-enviar.html'));
+app.get('/search-send', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'search-send.html'));
 });
 
 // Alias compatível com produção: algumas infra geram esta URL com o prefixo /api
-app.get('/api/buscar-enviar', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'buscar-enviar.html'));
-});
-
-// Redirect antigo para novo (backward compatibility)
-app.get('/enviar-diagnosticos', (req, res) => {
-  res.redirect(301, '/buscar-enviar');
-});
-app.get('/api/enviar-diagnosticos', (req, res) => {
-  res.redirect(301, '/api/buscar-enviar');
-});
-
-app.get('/test-whatsapp', (req, res) => {
-  if (isProduction) return res.status(404).send('Not found');
-  res.sendFile(path.join(__dirname, 'public', 'test-whatsapp.html'));
+app.get('/api/search-send', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'search-send.html'));
 });
 
 // ===== ROTA: BUSCAR LEAD POR TELEFONE OU EMAIL =====
@@ -642,7 +629,7 @@ app.post('/api/submit', async (req, res) => {
 });
 
 // ===== WEBHOOK: VER RESULTADOS (MELHORADO) =====
-app.post('/webhook/unnichat/ver-resultados', async (req, res) => {
+app.post('/webhook/unnichat/send-diagnostic', async (req, res) => {
   try {
     if (DEBUG) {
       console.log('\n📥 WEBHOOK RECEBIDO');
@@ -1126,8 +1113,8 @@ Compartilhe vitalidade. Inspire transformação`;
 // ========================================
 // ===== ROTA (SERVER-LOCAL): GERAR LINK COMPARTILHAMENTO =====
 // Reusa o handler serverless localmente para facilitar testes (mesma assinatura)
-app.options('/api/gerar-link-compartilhamento', (req, res) => require('./api/gerar-link-compartilhamento')(req, res));
-app.post('/api/gerar-link-compartilhamento', (req, res) => require('./api/gerar-link-compartilhamento')(req, res));
+app.options('/api/referral-link', (req, res) => require('./api/referral-link')(req, res));
+app.post('/api/referral-link', (req, res) => require('./api/referral-link')(req, res));
 
 // ===== ROTAS DO DASHBOARD =====
 // Dashboard foi movido para projeto separado
@@ -1151,8 +1138,8 @@ app.listen(PORT, () => {
   console.log('   ');
   console.log('   Rotas disponíveis:');
   console.log('   • POST /api/submit (Quiz)');
-  console.log('   • POST /api/gerar-link-compartilhamento (Link de compartilhamento)');
-  console.log('   • POST /webhook/unnichat/ver-resultados (Webhook)');
+  console.log('   • POST /api/referral-link (Link de compartilhamento)');
+  console.log('   • POST /webhook/unnichat/send-diagnostic (Webhook)');
   console.log('   • POST /api/send-bulk-referral (Envio em massa)');
   console.log('=========================================\n');
 });

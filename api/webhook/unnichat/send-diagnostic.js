@@ -1,6 +1,6 @@
 // ========================================
-// WEBHOOK: Ver Resultados (Vercel Serverless)
-// URL: /api/webhook-ver-resultados
+// WEBHOOK: Send Diagnostic (Vercel Serverless)
+// URL: /api/webhook/unnichat/send-diagnostic
 // ========================================
 
 const { findLeadByPhone, formatForUnnichat } = require('../../../lib/phone-simple');

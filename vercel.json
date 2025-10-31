@@ -2,13 +2,17 @@
   "buildCommand": "npm run build",
   "installCommand": "npm install",
   "redirects": [
-    { "source": "/enviar-diagnosticos", "destination": "/api/buscar-enviar", "permanent": true },
-    { "source": "/admin/enviar-diagnosticos", "destination": "/api/buscar-enviar", "permanent": true },
-    { "source": "/api/enviar-diagnosticos", "destination": "/api/buscar-enviar", "permanent": true }
+    { "source": "/enviar-diagnosticos", "destination": "/api/search-send", "permanent": true },
+    { "source": "/admin/enviar-diagnosticos", "destination": "/api/search-send", "permanent": true },
+    { "source": "/api/enviar-diagnosticos", "destination": "/api/search-send", "permanent": true },
+    { "source": "/buscar-enviar", "destination": "/api/search-send", "permanent": true },
+    { "source": "/api/buscar-enviar", "destination": "/api/search-send", "permanent": true },
+    { "source": "/api/gerar-link-compartilhamento", "destination": "/api/referral-link", "permanent": true },
+    { "source": "/api/webhook/unnichat/diagnostico-unnichat", "destination": "/api/webhook/unnichat/get-diagnostic", "permanent": true },
+    { "source": "/api/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/send-diagnostic", "permanent": true },
+    { "source": "/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/send-diagnostic", "permanent": true }
   ],
   "rewrites": [
-    { "source": "/buscar-enviar", "destination": "/api/buscar-enviar" },
-    { "source": "/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/ver-resultados" }
   ],
   "headers": [
     {

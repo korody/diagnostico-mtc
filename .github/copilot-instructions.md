@@ -3,7 +3,7 @@
 This repo implements a small Node/React project that collects quiz answers, calculates a Traditional Chinese Medicine (TCM) style diagnosis and sends WhatsApp messages via an external Unnichat gateway. The API is an Express app (server.js) plus several Vercel-style serverless handlers in `api/`.
 
 Key responsibilities an AI helper will frequently touch:
-- Identify and normalize leads (phone/email) in `server.js` and `api/webhook/unnichat/ver-resultados.js`.
+- Identify and normalize leads (phone/email) in `server.js` and `api/webhook/unnichat/send-diagnostic.js`.
 - Compute diagnosis & lead scoring in `api/submit.js` (MAPEAMENTO_ELEMENTOS, calcularLeadScore, determinarQuadrante).
 - Send messages via Unnichat in `server.js`, `api/send-bulk-referral.js` and webhook handlers (POST to `${UNNICHAT_API_URL}/meta/messages`).
 - Persist logs and state to Supabase tables like `quiz_leads`, `whatsapp_logs`, and `whatsapp_messages`.
@@ -21,7 +21,7 @@ Environment and secrets
 - Never commit .env files; follow `readme-producao.md` for production checklist.
 
 Project-specific conventions and patterns
-- Phone handling: Normalization and multi-step lookup are central. Follow the existing pattern (strip non-digits, drop leading 55, then try exact -> last 9 digits -> last 8 digits) — see `server.js` webhook and `api/webhook/unnichat/ver-resultados.js` for implementation.
+- Phone handling: Normalization and multi-step lookup are central. Follow the existing pattern (strip non-digits, drop leading 55, then try exact -> last 9 digits -> last 8 digits) — see `server.js` webhook and `api/webhook/unnichat/send-diagnostic.js` for implementation.
 - Lead scoring: Multiple weighted rules live in `api/submit.js`. If you change scoring weights, update both `server.js` (API) and Vercel handler copies in `api/`.
 - Text templating: diagnostics are stored in `api/diagnosticos.json` and patched into messages via simple .replace(/{NOME}/g,...). Keep templates plain-text and escape markdown consistently before sending.
 - Rate limiting: Bulk senders use fixed delays (DELAY_BETWEEN_MESSAGES, DELAY_BETWEEN_LEADS). Prefer these constants to avoid rate-limits by Unnichat/Meta.
@@ -41,7 +41,7 @@ Examples worth reusing in edits
 
 Where to look for follow-ups
 - `server.js` — the canonical runtime API and source of truth for routes and message logic.
-- `api/submit.js`, `api/webhook-ver-resultados` — serverless variants; mirror logic if you change behavior.
+- `api/submit.js`, `api/webhook/unnichat/send-diagnostic.js` — serverless variants; mirror logic if you change behavior.
 - `api/diagnosticos.json` — contains message templates and profile data.
 - `readme-producao.md` — production runbook and checklist.
 

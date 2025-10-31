@@ -15,12 +15,13 @@ api/
 ├── submit.js                         # POST /api/submit (quiz submission)
 ├── diagnosticos.json                 # Dados dos diagnósticos TCM
 ├── lead/
-│   └── buscar.js                     # GET /api/lead/buscar
+│   └── find.js                       # GET /api/lead/find
 ├── whatsapp/
 │   └── send.js                       # POST /api/whatsapp/send
 ├── webhook/
 │   └── unnichat/
-│       └── ver-resultados.js         # POST /webhook/unnichat/ver-resultados
+│       ├── get-diagnostic.js         # POST /api/webhook/unnichat/get-diagnostic
+│       └── send-diagnostic.js        # POST /api/webhook/unnichat/send-diagnostic
 └── utils/
     ├── supabase.js                   # Cliente Supabase (singleton)
     ├── phone.js                      # Normalização de telefone
@@ -106,14 +107,15 @@ vercel --prod
 
 ## 🔀 Rotas Migradas
 
-| Rota Original (Express)              | Nova Rota (Serverless)                |
-|--------------------------------------|---------------------------------------|
-| GET /                                | GET /api/index                        |
-| GET /api/status                      | GET /api/status                       |
-| POST /api/submit                     | POST /api/submit                      |
-| GET /api/lead/buscar                 | GET /api/lead/buscar                  |
-| POST /api/whatsapp/send              | POST /api/whatsapp/send               |
-| POST /webhook/unnichat/ver-resultados| POST /api/webhook/unnichat/ver-resultados |
+| Rota Original (Express)              | Nova Rota (Serverless)                          |
+|--------------------------------------|------------------------------------------------|
+| GET /                                | GET /api/index                                 |
+| GET /api/status                      | GET /api/status                                |
+| POST /api/submit                     | POST /api/submit                               |
+| GET /api/lead/find                   | GET /api/lead/find                             |
+| POST /api/whatsapp/send              | POST /api/whatsapp/send                        |
+| GET /api/webhook/unnichat/get-diagnostic    | GET /api/webhook/unnichat/get-diagnostic |
+| POST /api/webhook/unnichat/send-diagnostic  | POST /api/webhook/unnichat/send-diagnostic |
 
 ---
 

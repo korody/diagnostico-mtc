@@ -63,5 +63,5 @@ jobs:
           echo 'Triggering webhook...'
           curl -fsSL -H "Content-Type: application/json" \
             -d '{"phone": "'$TEST_PHONE'", "name": "CI Test Webhook"}' \
-            "$PROD_ALIAS/api/webhook/unnichat/ver-resultados" | tee webhook.json
+            "$PROD_ALIAS/api/webhook/unnichat/send-diagnostic" | tee webhook.json
           jq -e '.success==true' webhook.json
