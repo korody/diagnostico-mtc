@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
     }
 
     // Log curto final para Vercel Messages
-    console.log(`✅ LINK GERADO | ${lead.nome} | ${referralLink.substring(0, 50)}...`);
+    console.log(`🔗 LINK RECOMENDAÇÃO | ${lead.nome} | ${referralLink.substring(0, 50)}...`);
 
     // Retornar resposta
     return res.status(200).json({
