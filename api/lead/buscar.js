@@ -1,6 +1,8 @@
 // ========================================
 // ENDPOINT: GET /api/lead/buscar?phone=XXX
-// Busca lead por telefone
+// Busca EXATA por telefone (retorna 1 lead ou 404)
+// Usa findLeadByPhone: busca inteligente em 3 passos
+// Para busca FLEXÍVEL (nome/email/parcial) use /api/leads/search
 // ========================================
 
 let supabase, findLeadByPhone;
