@@ -1135,6 +1135,18 @@ app.post('/api/referral-link', (req, res) => require('./api/referral-link')(req,
 // app.get('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
 // app.post('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
 
+// ===== ROTA: DASHBOARD =====
+app.get('/api/dashboard', (req, res) => {
+  const dashboardHandler = require('./api/dashboard/index');
+  dashboardHandler(req, res);
+});
+
+// ===== ROTA: API DASHBOARD LEADS =====
+app.get('/api/dashboard/leads', async (req, res) => {
+  const leadsHandler = require('./api/dashboard/leads');
+  await leadsHandler(req, res);
+});
+
 // ========================================
 // INICIAR SERVIDOR LOCAL
 // ========================================
@@ -1166,6 +1178,8 @@ app.listen(PORT, () => {
   console.log('   • GET  /api/lead/find (Buscar lead)');
   console.log('   • GET  /api/leads/search (Buscar múltiplos)');
   console.log('   • POST /api/whatsapp/send (Enviar WhatsApp)');
+  console.log('   • GET  /api/dashboard (Dashboard de Leads)');
+  console.log('   • GET  /api/dashboard/leads (API de Leads)');
   console.log('=========================================\n');
 });
 
