@@ -1,3 +1,13 @@
+// ========================================
+// SERVER.JS - LOCAL DEVELOPMENT EXPRESS SERVER
+// ========================================
+// 📌 IMPORTANTE:
+// - Este arquivo é usado APENAS para desenvolvimento local
+// - Em produção (Vercel), os arquivos em /api/* são usados como serverless functions
+// - As rotas aqui duplicam a lógica dos handlers serverless para permitir testes locais
+// - Para rodar localmente: npm run api:test ou npm run api:prod
+// ========================================
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -1126,21 +1136,37 @@ app.post('/api/referral-link', (req, res) => require('./api/referral-link')(req,
 // app.get('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
 // app.post('/api/dashboard/alerts', (req, res) => { req.query.action = 'alerts'; dashboardHandler(req, res); });
 
-// INICIAR SERVIDOR
+// ========================================
+// INICIAR SERVIDOR LOCAL
+// ========================================
+// 📊 ESTATÍSTICAS:
+// - ~1030 linhas de código
+// - 13 rotas principais duplicadas dos handlers serverless
+// - Usado por: npm run api:test, npm run api:prod
+// - Scripts de automação (desafio-envio-lotes.js, etc) usam esta API local
+//
+// 💡 OTIMIZAÇÃO FUTURA:
+// - Considerar refatorar para usar require('./api/rota') onde possível
+// - Isso reduziria duplicação mas manteria flexibilidade local
 // ========================================
 
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
   console.log('\n🚀 =========================================');
-  console.log('   API Quiz MTC rodando!');
+  console.log('   API Quiz MTC rodando LOCAL!');
   console.log(`   http://localhost:${PORT}`);
+  console.log('   ');
+  console.log('   ⚠️  Modo: DESENVOLVIMENTO (não usado em produção)');
   console.log('   ');
   console.log('   Rotas disponíveis:');
   console.log('   • POST /api/submit (Quiz)');
   console.log('   • POST /api/referral-link (Link de compartilhamento)');
   console.log('   • POST /webhook/unnichat/send-diagnostic (Webhook)');
   console.log('   • POST /api/send-bulk-referral (Envio em massa)');
+  console.log('   • GET  /api/lead/find (Buscar lead)');
+  console.log('   • GET  /api/leads/search (Buscar múltiplos)');
+  console.log('   • POST /api/whatsapp/send (Enviar WhatsApp)');
   console.log('=========================================\n');
 });
 
