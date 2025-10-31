@@ -33,6 +33,9 @@ module.exports = async (req, res) => {
     const messageType = sendChallenge ? 'DESAFIO' : (sendDiagnostico ? 'DIAGNÓSTICO' : 'MENSAGEM CUSTOMIZADA');
     const typeEmoji = sendChallenge ? '🎈' : (sendDiagnostico ? '📋' : '💬');
     
+    // Log resumido para coluna "Messages" do Vercel
+    console.log(`${typeEmoji} ${messageType} | leadId: ${leadId?.substring(0, 8) || 'N/A'}... | ${SIMULATION ? '🧪 SIM' : '🔴 PROD'}`);
+    
     console.log('\n' + '='.repeat(70));
     console.log(`${typeEmoji} ENVIO WHATSAPP: ${messageType}`);
     console.log('='.repeat(70));
@@ -79,6 +82,9 @@ module.exports = async (req, res) => {
       
       leadData = lead;
       phoneToUse = lead.celular;
+      
+      // Log resumido para Messages
+      console.log(`✅ Lead encontrado: ${lead.nome} | Tel: ${lead.celular}`);
       
       console.log('✅ Lead encontrado!');
       console.log(`   👤 Nome: ${lead.nome}`);
@@ -206,6 +212,9 @@ Compartilhe vitalidade. Inspire transformação`,
         console.log(`\n⚠️  Erro ao registrar simulação: ${e.message}`);
       }
       
+      // Log resumido para Messages
+      console.log(`🧪 SIMULADO: ${messagesToSend.length} msg(s) para ${leadData?.nome || phoneE164} | ${messageType}`);
+      
       console.log(`\n${'='.repeat(70)}`);
       console.log(`${typeEmoji} SIMULAÇÃO CONCLUÍDA COM SUCESSO`);
       console.log('='.repeat(70) + '\n');
@@ -324,6 +333,9 @@ Compartilhe vitalidade. Inspire transformação`,
       console.log(`\n⚠️  Erro ao registrar pós-envio: ${e.message}`);
     }
 
+    // Log resumido para Messages
+    console.log(`✅ ENVIADO: ${messagesSent} msg(s) para ${leadData?.nome || phoneE164} | ${messageType}`);
+    
     console.log('\n' + '='.repeat(70));
     console.log(`${typeEmoji} ENVIO CONCLUÍDO COM SUCESSO`);
     console.log('='.repeat(70) + '\n');

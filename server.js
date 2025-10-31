@@ -203,7 +203,7 @@ app.get('/test-whatsapp', (req, res) => {
 });
 
 // ===== ROTA: BUSCAR LEAD POR TELEFONE OU EMAIL =====
-app.get('/api/lead/buscar', async (req, res) => {
+app.get('/api/lead/find', async (req, res) => {
   try {
     const { phone, email } = req.query;
     

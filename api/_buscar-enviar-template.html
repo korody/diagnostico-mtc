@@ -705,7 +705,7 @@
         const isEmailSearch = isEmail(searchInput);
         const param = isEmailSearch ? `email=${encodeURIComponent(searchInput)}` : `phone=${searchInput}`;
         
-        let response = await fetch(`${API_URL}/api/lead/buscar?${param}`);
+        let response = await fetch(`${API_URL}/api/lead/find?${param}`);
         let data = await response.json();
         
         if (!data.success || !data.lead) {

@@ -460,7 +460,7 @@ Se você recebeu esta mensagem, significa que o sistema está funcionando perfei
       
       try {
         // Buscar lead
-        const searchResponse = await fetch(`${API_URL}/api/lead/buscar?phone=${phone}`);
+        const searchResponse = await fetch(`${API_URL}/api/lead/find?phone=${phone}`);
         const searchData = await searchResponse.json();
         
         if (!searchData.success || !searchData.lead) {
