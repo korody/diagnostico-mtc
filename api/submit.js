@@ -81,10 +81,11 @@ module.exports = async (req, res) => {
 
   logger && logger.info && logger.info(reqId, '📥 NOVO QUIZ', { nome: lead.NOME });
     
-    // Converter telefone para E.164 (já vem validado do frontend)
-    const celularE164 = formatToE164(lead.CELULAR, lead.PAIS || 'BR');
+    // Telefone já vem em formato E.164 do frontend, apenas validar
+    const celularE164 = lead.CELULAR;
     
-    if (!celularE164) {
+    // Validar se está em formato E.164
+    if (!celularE164 || !isValidE164(celularE164)) {
       logger && logger.error && logger.error(reqId, '❌ Telefone inválido', { celular: lead.CELULAR, pais: lead.PAIS });
       return res.status(400).json({
         success: false,
@@ -92,7 +93,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    logger && logger.info && logger.info(reqId, '📱 Telefone convertido', { original: lead.CELULAR, e164: celularE164, pais: lead.PAIS || 'BR' });
+    logger && logger.info && logger.info(reqId, '✅ Telefone validado', { e164: celularE164, pais: lead.PAIS || 'BR' });
     
     // Calcular diagnóstico
     const contagem = contarElementos(respostas);

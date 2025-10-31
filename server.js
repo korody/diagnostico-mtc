@@ -517,10 +517,10 @@ app.post('/api/submit', async (req, res) => {
     
     console.log('\n📥 NOVO QUIZ:', lead.NOME);
     
-    // Converter telefone para E.164 (já vem validado do frontend)
-    const celularE164 = formatToE164(lead.CELULAR, lead.PAIS || 'BR');
+    // Telefone já vem em formato E.164 do frontend, apenas validar
+    const celularE164 = lead.CELULAR;
     
-    if (!celularE164) {
+    if (!celularE164 || !isValidE164(celularE164)) {
       console.log('❌ Telefone inválido:', lead.CELULAR);
       return res.status(400).json({
         success: false,
@@ -528,8 +528,7 @@ app.post('/api/submit', async (req, res) => {
       });
     }
 
-    console.log('📱 Telefone original:', lead.CELULAR);
-    console.log('📱 Telefone E.164:', celularE164);
+    console.log('✅ Telefone validado:', celularE164);
     
   // Normalizar email
   const emailNormalizado = (lead.EMAIL || '').toString().trim().toLowerCase();
