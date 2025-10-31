@@ -31,13 +31,18 @@ module.exports = async (req, res) => {
 
   try {
     const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
+    
+    // Log curto para Vercel Messages
+    const phonePreview = req.body.phone || req.body.from || req.body.contact?.phone || 'no-phone';
+    console.log(`🔔 SEND-DIAGNOSTIC | ${phonePreview} | Unnichat webhook`);
+    
     if (DEBUG) {
       const safePreview = { ...req.body };
       if (safePreview.phone) safePreview.phone = '[REDACTED]';
       if (safePreview.from) safePreview.from = '[REDACTED]';
       if (safePreview.contact?.phone) safePreview.contact.phone = '[REDACTED]';
       if (safePreview.contact?.email) safePreview.contact.email = '[REDACTED]';
-      logger.info && logger.info(reqId, '� WEBHOOK RECEBIDO (resumo payload)', safePreview);
+      logger.info && logger.info(reqId, '🔔 WEBHOOK RECEBIDO (resumo payload)', safePreview);
     }
     
     const webhookData = req.body;
@@ -78,6 +83,9 @@ module.exports = async (req, res) => {
 
     const lead = result.lead;
     const searchMethod = result.method;
+
+    // Log curto para Vercel Messages
+    console.log(`✅ Lead: ${lead.nome} | ${lead.elemento_principal || 'sem-elemento'} | método: ${searchMethod}`);
 
     if (DEBUG) {
       logger.info && logger.info(reqId, '✅ Lead encontrado', { 
@@ -248,6 +256,9 @@ Fez sentido esse Diagnóstico para você? 🙏
     if (DEBUG) {
       logger.info && logger.info(reqId, '✅ Diagnóstico enviado!');
     }
+    
+    // Log curto para Vercel Messages
+    console.log(`📤 DIAGNÓSTICO ENVIADO | ${lead.nome} | WhatsApp: ${phoneForUnnichat}`);
 
     // Atualizar status e registrar logs
     try {
@@ -288,6 +299,8 @@ Fez sentido esse Diagnóstico para você? 🙏
       logger.error && logger.error(reqId, '⚠️ Erro ao atualizar status', e.message);
     }
 
+    console.log(`✅ SUCESSO | ${lead.nome} | Diagnóstico entregue via WhatsApp`);
+    
     res.json({ 
       success: true, 
       message: 'Resultados enviados',
@@ -296,6 +309,7 @@ Fez sentido esse Diagnóstico para você? 🙏
     });
 
   } catch (error) {
+    console.log(`❌ ERRO SEND-DIAGNOSTIC | ${error.message}`);
     console.error('❌ Erro no webhook:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }

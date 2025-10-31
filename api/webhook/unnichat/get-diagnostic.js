@@ -8,6 +8,10 @@ const supabase = require('../../../lib/supabase');
 
 module.exports = async (req, res) => {
   const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
+  
+  // Log curto para Vercel Messages
+  console.log(`🔔 GET-DIAGNOSTIC | ${req.body.phone || 'no-phone'} | Unnichat webhook`);
+  
   logger.info && logger.info(reqId, '🔔 Get-Diagnostic recebido', { body: req.body });
 
   if (req.method !== 'POST') {
@@ -41,6 +45,9 @@ module.exports = async (req, res) => {
       elemento: lead.elemento_principal,
       searchMethod: searchMethod
     });
+    
+    // Log curto para Vercel Messages
+    console.log(`✅ Lead: ${lead.nome} | ${lead.elemento_principal || 'sem-elemento'} | método: ${searchMethod}`);
 
     // Verificar se tem diagnóstico no banco
     const diagnostico = lead.diagnostico_completo || lead.script_abertura;
@@ -106,9 +113,15 @@ module.exports = async (req, res) => {
     }
 
     logger.info && logger.info(reqId, '📃 DIAGNÓSTICO ENVIADO', { leadId: lead.id, diagnosticoLength: diagnostico?.length || 0 });
-    // Retornar apenas o campo 'diagnostico' para Unnichat
-    return res.status(200).json({ diagnostico });
+    
+    // Log curto final para Vercel Messages
+    console.log(`📤 DIAGNÓSTICO RETORNADO | ${lead.nome} | ${diagnostico?.length || 0} chars`);
+    
+    return res.status(200).json({
+      diagnostico
+    });
   } catch (err) {
+    console.log(`❌ ERRO GET-DIAGNOSTIC | ${err.message}`);
     logger.error && logger.error(reqId, '❌ ERRO: Falha inesperada', { error: err.message, stack: err.stack });
     return res.status(500).json({ success: false, error: err.message });
   }

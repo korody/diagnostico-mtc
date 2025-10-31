@@ -24,6 +24,11 @@ module.exports = async (req, res) => {
 
   try {
     const reqId = logger && typeof logger.mkid === 'function' ? logger.mkid() : `req-${Date.now()}`;
+    
+    // Log curto para Vercel Messages
+    const phonePreview = req.body.phone || req.body.from || req.body.contact?.phone || 'no-phone';
+    console.log(`🔗 REFERRAL-LINK | ${phonePreview}`);
+    
     logger.info && logger.info(reqId, '📞 API: Gerar Link de Compartilhamento', { payload: req.body });
     
     // Aceita múltiplas formas de telefone (compatível com Unnichat/webhook)
@@ -55,6 +60,10 @@ module.exports = async (req, res) => {
     }
 
     const lead = result.lead;
+    
+    // Log curto para Vercel Messages
+    console.log(`✅ Lead: ${lead.nome} | método: ${result.method}`);
+    
     logger.info && logger.info(reqId, '✅ Lead encontrado', { nome: lead.nome, id: lead.id, searchMethod: result.method });
 
     // Se o telefone no DB estiver com formatação diferente, normaliza e atualiza
@@ -125,6 +134,9 @@ module.exports = async (req, res) => {
       logger.error && logger.error(reqId, '⚠️ Falha ao atualizar status/log do desafio', e.message);
     }
 
+    // Log curto final para Vercel Messages
+    console.log(`✅ LINK GERADO | ${lead.nome} | ${referralLink.substring(0, 50)}...`);
+
     // Retornar resposta
     return res.status(200).json({
       success: true,
@@ -138,6 +150,7 @@ module.exports = async (req, res) => {
     });
 
     } catch (error) {
+    console.log(`❌ ERRO REFERRAL-LINK | ${error.message}`);
     logger.error && logger.error(reqId, '❌ Erro ao gerar link', { message: error.message, stack: error.stack });
     
     return res.status(500).json({
