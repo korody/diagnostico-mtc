@@ -607,16 +607,66 @@ if (step === 'identificacao') {
                 <select
                   value={dadosLead.PAIS || 'BR'}
                   onChange={(e) => handleInputChange('PAIS', e.target.value)}
-                  className="w-32 px-3 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer"
+                  className="w-36 px-3 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
                 >
-                  <option value="BR">🇧🇷 +55</option>
-                  <option value="US">🇺🇸 +1</option>
-                  <option value="PT">🇵🇹 +351</option>
-                  <option value="ES">🇪🇸 +34</option>
-                  <option value="AR">🇦🇷 +54</option>
-                  <option value="MX">🇲🇽 +52</option>
-                  <option value="CO">🇨🇴 +57</option>
-                  <option value="CL">🇨🇱 +56</option>
+                  <option value="BR">🇧🇷 Brasil +55</option>
+                  <option value="PT">�� Portugal +351</option>
+                  <option value="AO">🇦🇴 Angola +244</option>
+                  <option value="MZ">🇲🇿 Moçambique +258</option>
+                  <option value="CV">🇨🇻 Cabo Verde +238</option>
+                  <option value="GW">🇬🇼 Guiné-Bissau +245</option>
+                  <option value="ST">�🇹 São Tomé +239</option>
+                  <option value="TL">🇹🇱 Timor-Leste +670</option>
+                  <optgroup label="━━ América do Sul ━━">
+                    <option value="AR">🇦🇷 Argentina +54</option>
+                    <option value="BO">🇧🇴 Bolívia +591</option>
+                    <option value="CL">🇨🇱 Chile +56</option>
+                    <option value="CO">🇨🇴 Colômbia +57</option>
+                    <option value="EC">🇪� Equador +593</option>
+                    <option value="GY">🇬🇾 Guiana +592</option>
+                    <option value="PY">🇵🇾 Paraguai +595</option>
+                    <option value="PE">🇵🇪 Peru +51</option>
+                    <option value="SR">�🇷 Suriname +597</option>
+                    <option value="UY">🇺🇾 Uruguai +598</option>
+                    <option value="VE">🇻🇪 Venezuela +58</option>
+                  </optgroup>
+                  <optgroup label="━━ América Central ━━">
+                    <option value="MX">🇲🇽 México +52</option>
+                    <option value="GT">🇬🇹 Guatemala +502</option>
+                    <option value="BZ">🇧🇿 Belize +501</option>
+                    <option value="SV">🇸🇻 El Salvador +503</option>
+                    <option value="HN">🇭🇳 Honduras +504</option>
+                    <option value="NI">🇳🇮 Nicarágua +505</option>
+                    <option value="CR">🇨🇷 Costa Rica +506</option>
+                    <option value="PA">�🇦 Panamá +507</option>
+                  </optgroup>
+                  <optgroup label="━━ Caribe ━━">
+                    <option value="CU">🇨� Cuba +53</option>
+                    <option value="DO">🇩🇴 Rep. Dominicana +1</option>
+                    <option value="PR">🇵🇷 Porto Rico +1</option>
+                  </optgroup>
+                  <optgroup label="━━ América do Norte ━━">
+                    <option value="US">🇺🇸 EUA +1</option>
+                    <option value="CA">🇨🇦 Canadá +1</option>
+                  </optgroup>
+                  <optgroup label="━━ Europa ━━">
+                    <option value="ES">🇪🇸 Espanha +34</option>
+                    <option value="FR">🇫🇷 França +33</option>
+                    <option value="IT">🇮🇹 Itália +39</option>
+                    <option value="DE">🇩🇪 Alemanha +49</option>
+                    <option value="GB">🇬🇧 Reino Unido +44</option>
+                    <option value="CH">🇨🇭 Suíça +41</option>
+                  </optgroup>
+                  <optgroup label="━━ Ásia ━━">
+                    <option value="CN">🇨🇳 China +86</option>
+                    <option value="JP">🇯🇵 Japão +81</option>
+                    <option value="IN">🇮🇳 Índia +91</option>
+                  </optgroup>
+                  <optgroup label="━━ Outros ━━">
+                    <option value="AU">🇦🇺 Austrália +61</option>
+                    <option value="NZ">🇳🇿 Nova Zelândia +64</option>
+                    <option value="ZA">🇿🇦 África do Sul +27</option>
+                  </optgroup>
                 </select>
 
                 {/* Input de Telefone */}
