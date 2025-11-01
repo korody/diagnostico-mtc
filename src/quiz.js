@@ -255,7 +255,8 @@ const QuizMTC = () => {
     // Caso local brasileiro: EXIGIR DDD válido (10 ou 11 dígitos)
     const raw = texto.replace(/\D/g, '');
     
-    // Deve ter 10 (fixo) ou 11 (celular) dígitos
+    // CELULAR: deve ter EXATAMENTE 11 dígitos (DDD + 9 + 8 dígitos)
+    // FIXO: deve ter EXATAMENTE 10 dígitos (DDD + 8 dígitos)
     if (raw.length !== 10 && raw.length !== 11) {
       return false;
     }
@@ -266,9 +267,19 @@ const QuizMTC = () => {
       return false;
     }
     
-    // Para 11 dígitos, deve começar com 9 após o DDD
-    if (raw.length === 11 && !raw.substring(2).startsWith('9')) {
-      return false;
+    // Para CELULAR (11 dígitos), DEVE começar com 9 após o DDD
+    if (raw.length === 11) {
+      if (!raw.substring(2).startsWith('9')) {
+        return false;
+      }
+    }
+    
+    // Para FIXO (10 dígitos), NÃO pode começar com 9 (começa com 2,3,4,5)
+    if (raw.length === 10) {
+      const primeiroDigito = raw.substring(2, 3);
+      if (!['2', '3', '4', '5'].includes(primeiroDigito)) {
+        return false;
+      }
     }
     
     return true;
@@ -447,10 +458,23 @@ const QuizMTC = () => {
       let celularE164;
       try {
         const phoneNumber = parsePhoneNumber(dadosLead.CELULAR, dadosLead.PAIS || 'BR');
+        
+        // Validar se o telefone é realmente válido
+        if (!phoneNumber || !phoneNumber.isValid()) {
+          throw new Error('Número de telefone inválido ou incompleto');
+        }
+        
+        // Para Brasil, verificar se celular tem 11 dígitos (DDD + 9XXXXXXXX)
+        if (dadosLead.PAIS === 'BR' && phoneNumber.nationalNumber.length !== 11) {
+          throw new Error('Celular brasileiro deve ter 11 dígitos (DDD + 9XXXXXXXX)');
+        }
+        
         celularE164 = phoneNumber.format('E.164'); // Ex: +5511998457676
+        console.log('📞 Telefone formatado para E.164:', celularE164);
+        console.log('📊 Tipo:', phoneNumber.getType(), '| País:', phoneNumber.country);
       } catch (err) {
         console.error('❌ Erro ao formatar telefone para E.164:', err);
-        throw new Error('Número de telefone inválido');
+        throw new Error('Número de telefone inválido ou incompleto. Verifique se digitou corretamente.');
       }
       
       const payload = {
