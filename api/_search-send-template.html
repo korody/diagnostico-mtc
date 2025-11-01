@@ -404,7 +404,7 @@
     </div>
 
     <div class="info-box">
-      📋 <strong>Busca lead pelo telefone ou e-mail</strong> e envia o diagnóstico completo automaticamente
+      📋 <strong>Busca usuário pelo telefone ou e-mail</strong> e envia o diagnóstico completo automaticamente
     </div>
 
     <!-- Seção de Busca -->
@@ -426,12 +426,12 @@
 
         <button type="submit" class="btn" id="searchBtn">
           <span>🔍</span>
-          <span>Buscar Lead</span>
+          <span>Buscar Usuário</span>
         </button>
       </form>
     </div>
 
-    <!-- Card do Lead -->
+    <!-- Card do Usuário -->
     <div id="leadCard" class="lead-card">
       <div class="lead-header">
         <div class="lead-avatar" id="leadAvatar">🌊</div>
@@ -473,9 +473,9 @@
         </button>
 
   <!-- Botão 2: full width abaixo do botão principal -->
-  <button class="btn btn-secondary" id="triggerAutomationBtn" title="Acionar automação do Unnichat para este lead" style="grid-column:1 / -1;display:block;padding:16px 16px;font-size:1rem;margin-top:12px;box-sizing:border-box;text-align:center;">
+  <button class="btn btn-secondary" id="triggerAutomationBtn" title="Acionar automação do Unnichat para este usuário" style="grid-column:1 / -1;display:block;padding:16px 16px;font-size:1rem;margin-top:12px;box-sizing:border-box;text-align:center;">
           <span style="margin-right:10px;">🤖</span>
-          <span>Inserir Lead na Automação de Diagnóstico</span>
+          <span>Inserir Usuário na Automação de Diagnóstico</span>
         </button>
 
         <!-- Botão 3: Enviar Desafio da Vitalidade -->
@@ -714,23 +714,23 @@
           const data2 = await resp2.json();
           if (data2.success && data2.results && data2.results.length > 0) {
             displayLead(data2.results[0]);
-            showResult('✅ Lead encontrado (busca flexível)', true);
+            showResult('✅ Usuário encontrado (busca flexível)', true);
           } else {
-            showResult(`❌ Lead não encontrado com esse ${isEmailSearch ? 'e-mail' : 'telefone'}.`, false);
+            showResult(`❌ Usuário não encontrado com esse ${isEmailSearch ? 'e-mail' : 'telefone'}.`, false);
             searchBtn.disabled = false;
-            searchBtn.innerHTML = '<span>🔍</span> <span>Buscar Lead</span>';
+            searchBtn.innerHTML = '<span>🔍</span> <span>Buscar Usuário</span>';
             return;
           }
         } else {
           displayLead(data.lead);
-          showResult('✅ Lead encontrado com sucesso!', true);
+          showResult('✅ Usuário encontrado com sucesso!', true);
         }
         
       } catch (error) {
-        showResult('❌ Erro ao buscar lead: ' + error.message, false);
+        showResult('❌ Erro ao buscar usuário: ' + error.message, false);
       } finally {
         searchBtn.disabled = false;
-        searchBtn.innerHTML = '<span>🔍</span> <span>Buscar Lead</span>';
+        searchBtn.innerHTML = '<span>🔍</span> <span>Buscar Usuário</span>';
       }
     });
 
@@ -770,7 +770,7 @@
       }
     });
 
-    // Botão: Inserir Lead na Automação de Diagnóstico (gatilho Unnichat)
+    // Botão: Inserir Usuário na Automação de Diagnóstico (gatilho Unnichat)
     document.getElementById('triggerAutomationBtn').addEventListener('click', async () => {
       if (!currentLead) return;
 
@@ -789,7 +789,7 @@
         const data = await response.json();
 
         if (data.success) {
-          showResult(`✅ Lead inserido na automação: ${currentLead.nome}`, true);
+          showResult(`✅ Usuário inserido na automação: ${currentLead.nome}`, true);
           addToHistory(currentLead);
           // opcional: limpar busca
           setTimeout(() => { limparBusca(); }, 1500);
