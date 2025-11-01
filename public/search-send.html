@@ -716,6 +716,9 @@
             displayLead(data2.results[0]);
             showResult('✅ Usuário encontrado (busca flexível)', true);
           } else {
+            // Esconder card do lead anterior
+            document.getElementById('leadCard').classList.remove('show');
+            currentLead = null;
             showResult(`❌ Usuário não encontrado com esse ${isEmailSearch ? 'e-mail' : 'telefone'}.`, false);
             searchBtn.disabled = false;
             searchBtn.innerHTML = '<span>🔍</span> <span>Buscar Usuário</span>';
@@ -727,6 +730,9 @@
         }
         
       } catch (error) {
+        // Esconder card do lead anterior em caso de erro
+        document.getElementById('leadCard').classList.remove('show');
+        currentLead = null;
         showResult('❌ Erro ao buscar usuário: ' + error.message, false);
       } finally {
         searchBtn.disabled = false;
