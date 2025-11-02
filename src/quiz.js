@@ -255,8 +255,7 @@ const QuizMTC = () => {
     // Caso local brasileiro: EXIGIR DDD válido (10 ou 11 dígitos)
     const raw = texto.replace(/\D/g, '');
     
-    // CELULAR: deve ter EXATAMENTE 11 dígitos (DDD + 9 + 8 dígitos)
-    // FIXO: deve ter EXATAMENTE 10 dígitos (DDD + 8 dígitos)
+    // Deve ter 10 ou 11 dígitos
     if (raw.length !== 10 && raw.length !== 11) {
       return false;
     }
@@ -267,20 +266,14 @@ const QuizMTC = () => {
       return false;
     }
     
-    // Para CELULAR (11 dígitos), DEVE começar com 9 após o DDD
-    if (raw.length === 11) {
-      if (!raw.substring(2).startsWith('9')) {
-        return false;
-      }
+    // Para 11 dígitos, deve começar com 9 após o DDD (celular moderno)
+    if (raw.length === 11 && !raw.substring(2).startsWith('9')) {
+      return false;
     }
     
-    // Para FIXO (10 dígitos), NÃO pode começar com 9 (começa com 2,3,4,5)
-    if (raw.length === 10) {
-      const primeiroDigito = raw.substring(2, 3);
-      if (!['2', '3', '4', '5'].includes(primeiroDigito)) {
-        return false;
-      }
-    }
+    // Para 10 dígitos, aceita tanto celular antigo (começa com 6,7,8,9) 
+    // quanto fixo (começa com 2,3,4,5)
+    // Todos são válidos, sem restrição adicional
     
     return true;
   };
@@ -459,22 +452,21 @@ const QuizMTC = () => {
       try {
         const phoneNumber = parsePhoneNumber(dadosLead.CELULAR, dadosLead.PAIS || 'BR');
         
-        // Validar se o telefone é realmente válido
-        if (!phoneNumber || !phoneNumber.isValid()) {
-          throw new Error('Número de telefone inválido ou incompleto');
+        if (phoneNumber && phoneNumber.isValid()) {
+          celularE164 = phoneNumber.format('E.164'); // Ex: +5511998457676
+          console.log('✅ Telefone formatado para E.164:', celularE164);
+          console.log('📊 Tipo:', phoneNumber.getType(), '| País:', phoneNumber.country);
+        } else {
+          // Telefone inválido, mas NÃO BLOQUEAR - enviar do jeito que está
+          console.warn('⚠️ Telefone não passou na validação, mas enviando mesmo assim');
+          celularE164 = '+' + dadosLead.CELULAR.replace(/\D/g, '');
+          console.log('📞 Telefone enviado sem validação:', celularE164);
         }
-        
-        // Para Brasil, verificar se celular tem 11 dígitos (DDD + 9XXXXXXXX)
-        if (dadosLead.PAIS === 'BR' && phoneNumber.nationalNumber.length !== 11) {
-          throw new Error('Celular brasileiro deve ter 11 dígitos (DDD + 9XXXXXXXX)');
-        }
-        
-        celularE164 = phoneNumber.format('E.164'); // Ex: +5511998457676
-        console.log('📞 Telefone formatado para E.164:', celularE164);
-        console.log('📊 Tipo:', phoneNumber.getType(), '| País:', phoneNumber.country);
       } catch (err) {
-        console.error('❌ Erro ao formatar telefone para E.164:', err);
-        throw new Error('Número de telefone inválido ou incompleto. Verifique se digitou corretamente.');
+        // Erro ao parsear, mas NÃO BLOQUEAR - enviar número bruto
+        console.warn('⚠️ Erro ao formatar telefone, mas enviando mesmo assim:', err.message);
+        celularE164 = '+' + dadosLead.CELULAR.replace(/\D/g, '');
+        console.log('📞 Telefone enviado sem validação:', celularE164);
       }
       
       const payload = {
@@ -648,23 +640,23 @@ if (step === 'identificacao') {
                   className="w-36 px-3 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all cursor-pointer text-sm"
                 >
                   <option value="BR">🇧🇷 Brasil +55</option>
-                  <option value="PT">�� Portugal +351</option>
+                  <option value="PT">🇵🇹 Portugal +351</option>
                   <option value="AO">🇦🇴 Angola +244</option>
                   <option value="MZ">🇲🇿 Moçambique +258</option>
                   <option value="CV">🇨🇻 Cabo Verde +238</option>
                   <option value="GW">🇬🇼 Guiné-Bissau +245</option>
-                  <option value="ST">�🇹 São Tomé +239</option>
+                  <option value="ST">��🇹 São Tomé +239</option>
                   <option value="TL">🇹🇱 Timor-Leste +670</option>
                   <optgroup label="━━ América do Sul ━━">
                     <option value="AR">🇦🇷 Argentina +54</option>
                     <option value="BO">🇧🇴 Bolívia +591</option>
                     <option value="CL">🇨🇱 Chile +56</option>
                     <option value="CO">🇨🇴 Colômbia +57</option>
-                    <option value="EC">🇪� Equador +593</option>
+                    <option value="EC">🇪🇨 Equador +593</option>
                     <option value="GY">🇬🇾 Guiana +592</option>
                     <option value="PY">🇵🇾 Paraguai +595</option>
                     <option value="PE">🇵🇪 Peru +51</option>
-                    <option value="SR">�🇷 Suriname +597</option>
+                    <option value="SR">🇸🇷 Suriname +597</option>
                     <option value="UY">🇺🇾 Uruguai +598</option>
                     <option value="VE">🇻🇪 Venezuela +58</option>
                   </optgroup>
@@ -676,10 +668,10 @@ if (step === 'identificacao') {
                     <option value="HN">🇭🇳 Honduras +504</option>
                     <option value="NI">🇳🇮 Nicarágua +505</option>
                     <option value="CR">🇨🇷 Costa Rica +506</option>
-                    <option value="PA">�🇦 Panamá +507</option>
+                    <option value="PA">🇵🇦 Panamá +507</option>
                   </optgroup>
                   <optgroup label="━━ Caribe ━━">
-                    <option value="CU">🇨� Cuba +53</option>
+                    <option value="CU">🇨🇺 Cuba +53</option>
                     <option value="DO">🇩🇴 Rep. Dominicana +1</option>
                     <option value="PR">🇵🇷 Porto Rico +1</option>
                   </optgroup>
