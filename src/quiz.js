@@ -645,7 +645,7 @@ if (step === 'identificacao') {
                   <option value="MZ">🇲🇿 Moçambique +258</option>
                   <option value="CV">🇨🇻 Cabo Verde +238</option>
                   <option value="GW">🇬🇼 Guiné-Bissau +245</option>
-                  <option value="ST">��🇹 São Tomé +239</option>
+                  <option value="ST">🇸� São Tomé +239</option>
                   <option value="TL">🇹🇱 Timor-Leste +670</option>
                   <optgroup label="━━ América do Sul ━━">
                     <option value="AR">🇦🇷 Argentina +54</option>
