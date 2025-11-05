@@ -4,10 +4,10 @@ const supabase = require('../../lib/supabase');
 
 module.exports = async function triggerAutomationHandler(req, res) {
   try {
-    const GATILHO_URL = process.env.UNNICHAT_GATILHO_URL || process.env.UNNICHAT_GATILHO || process.env.UNNICHAT_API_URL;
+    const GATILHO_URL = process.env.DIAGNOSTICO_AUTOMACAO_UNNICHAT || process.env.UNNICHAT_GATILHO_URL || process.env.UNNICHAT_GATILHO || process.env.UNNICHAT_API_URL;
 
     if (!GATILHO_URL) {
-      return res.status(500).json({ success: false, error: 'UNNICHAT_GATILHO_URL não configurado' });
+      return res.status(500).json({ success: false, error: 'DIAGNOSTICO_AUTOMACAO_UNNICHAT não configurado' });
     }
 
     const { leadId, phone } = req.body || {};

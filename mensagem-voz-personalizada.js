@@ -30,7 +30,7 @@ const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFm
 const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL;
 const UNNICHAT_ACCESS_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
 const UNNICHAT_INSTANCE_ID = process.env.UNNICHAT_INSTANCE_ID;
-const UNNICHAT_AUTOMACAO_AUDIO_URL = 'https://unnichat.com.br/a/start/ujzdbrjxV1lpg9X2uM65';
+const UNNICHAT_AUTOMACAO_AUDIO_URL = process.env.AUDIO_DIAGNOSTICO_AUTOMACAO_UNNICHAT || 'https://unnichat.com.br/a/start/ujzdbrjxV1lpg9X2uM65';
 
 // ========================================
 // ⏱️ CONFIGURAÇÕES DE ENVIO
@@ -40,7 +40,7 @@ const MODO_TESTE = false; // MUDE PARA false PARA ENVIAR DE VERDADE
 const MODO_TESTE_SEM_UPLOAD = false; // Gerar áudio personalizado para cada lead
 const REUSAR_ULTIMO_AUDIO = false; // Usar o último áudio gerado sem gerar novo
 const LIMITE_ENVIOS = 1; // Quantos envios fazer (para teste)
-const FILTRAR_POR_TELEFONE = 'Leticia Lucena'; // ← Nome da Leticia
+const FILTRAR_POR_TELEFONE = '5511998457676'; // ← Telefone do Marcos
 const AUDIO_TESTE_URL = 'https://kfkhdfnkwhljhhjcvbqp.supabase.co/storage/v1/object/public/audio-mensagens/audio_5dcb1c17-bdfc-493e-975c-03f635198bbd_1762361159370.mp3'; // Último áudio gerado
 
 // ========================================
