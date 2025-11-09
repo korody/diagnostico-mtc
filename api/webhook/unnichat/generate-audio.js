@@ -242,27 +242,43 @@ module.exports = async function generateAudioHandler(req, res) {
     
     // Buscar lead no banco
     console.log('🔍 Buscando lead...');
+    console.log(`   lead_id: ${lead_id}`);
+    console.log(`   phoneRaw: ${phoneRaw}`);
+    console.log(`   email: ${email}`);
     let lead;
     
     if (lead_id) {
+      console.log(`   Tentando buscar por ID: ${lead_id}`);
       const { data, error } = await supabase
         .from('quiz_leads')
         .select('*')
         .eq('id', lead_id)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('   ❌ Erro ao buscar por ID:', error);
+        throw error;
+      }
       lead = data;
+      console.log(`   Resultado busca por ID: ${lead ? 'encontrado' : 'não encontrado'}`);
     }
     
     if (!lead && phoneRaw) {
+      console.log(`   Tentando buscar por telefone: ${phoneRaw}`);
       lead = await findLeadByPhone(supabase, phoneRaw, email);
+      console.log(`   Resultado busca por telefone: ${lead ? 'encontrado' : 'não encontrado'}`);
     }
     
     if (!lead) {
+      console.error('   ❌ Lead não encontrado em nenhuma busca');
       return res.status(404).json({ 
         success: false, 
-        error: 'Lead não encontrado' 
+        error: 'Lead não encontrado',
+        debug: {
+          lead_id_tentado: lead_id,
+          phone_tentado: phoneRaw,
+          email_tentado: email
+        }
       });
     }
     
