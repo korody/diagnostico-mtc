@@ -123,9 +123,15 @@ async function uploadAudio(audioBuffer, leadId) {
   const fileName = `audio_${leadId}_${Date.now()}.mp3`;
   const uploadUrl = `${process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/audio-mensagens/${fileName}`;
   
+  // Usar service_role key para ter permissão de escrita no Storage
+  const authKey = process.env.SUPABASE_SERVICE_ROLE_KEY 
+    || process.env.REACT_APP_SUPABASE_SERVICE_KEY 
+    || process.env.SUPABASE_KEY 
+    || process.env.REACT_APP_SUPABASE_KEY;
+  
   await axios.post(uploadUrl, audioBuffer, {
     headers: {
-      'Authorization': `Bearer ${process.env.SUPABASE_KEY || process.env.REACT_APP_SUPABASE_KEY}`,
+      'Authorization': `Bearer ${authKey}`,
       'Content-Type': 'audio/mpeg',
       'x-upsert': 'false'
     },
