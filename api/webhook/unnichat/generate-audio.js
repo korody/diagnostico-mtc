@@ -16,10 +16,10 @@ const fs = require('fs');
 const path = require('path');
 const { findLeadByPhone } = require('../../../lib/phone-simple');
 
-// Configuração Supabase
+// Configuração Supabase - usar service_role para ter permissões completas
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL,
-  process.env.SUPABASE_KEY || process.env.REACT_APP_SUPABASE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.REACT_APP_SUPABASE_KEY
 );
 
 // Configurações ElevenLabs
