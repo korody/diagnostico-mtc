@@ -178,6 +178,15 @@ module.exports = async function generateAudioHandler(req, res) {
   console.log('========================================');
   
   try {
+    // CORS/preflight
+    if (req.method === 'OPTIONS') {
+      return res.status(200).json({ success: true });
+    }
+
+    if (req.method !== 'POST') {
+      return res.status(405).json({ success: false, error: 'Método não permitido' });
+    }
+
     // Validar credenciais
     if (!ELEVENLABS_API_KEY) {
       throw new Error('ELEVENLABS_API_KEY não configurada');
@@ -187,11 +196,38 @@ module.exports = async function generateAudioHandler(req, res) {
     }
     
     // Extrair dados do payload
-    const { phone, email, lead_id, primeiro_nome } = req.body || {};
+    let body = req.body;
+
+    // Alguns provedores enviam body como string
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch (_) { /* ignore */ }
+    }
+
+    // Aceitar x-www-form-urlencoded
+    if (!body || Object.keys(body).length === 0) {
+      // Vercel já parseia urlencoded em req.body; mas como fallback, use query
+      body = { ...(req.query || {}) };
+    }
+
+    const phoneRaw = body.phone || body.telefone || body.from || body.contact;
+    const email = body.email || body.mail || '';
+    const lead_id = body.lead_id || body.leadId || body.id || undefined;
+    const primeiro_nome = body.primeiro_nome || body.first_name || body.nome || undefined;
     
-    console.log('📋 Payload recebido:', { phone, email, lead_id, primeiro_nome });
-    
-    if (!phone && !lead_id) {
+    console.log('📋 Payload recebido:', { phone: phoneRaw, email, lead_id, primeiro_nome });
+
+    // Log inicial para diagnóstico
+    try {
+      await supabase.from('whatsapp_logs').insert({
+        lead_id: lead_id || null,
+        phone: phoneRaw || null,
+        status: 'webhook_generate_audio_recebido',
+        metadata: { raw: body },
+        sent_at: new Date().toISOString()
+      });
+    } catch (_) { /* noop */ }
+
+    if (!phoneRaw && !lead_id) {
       return res.status(400).json({ 
         success: false, 
         error: 'phone ou lead_id é obrigatório' 
@@ -213,8 +249,8 @@ module.exports = async function generateAudioHandler(req, res) {
       lead = data;
     }
     
-    if (!lead && phone) {
-      lead = await findLeadByPhone(supabase, phone, email);
+    if (!lead && phoneRaw) {
+      lead = await findLeadByPhone(supabase, phoneRaw, email);
     }
     
     if (!lead) {
@@ -239,7 +275,7 @@ module.exports = async function generateAudioHandler(req, res) {
     const audioUrl = await uploadAudio(audioBuffer, lead.id);
     
     // Enviar via WhatsApp
-    const whatsappResponse = await enviarAudioWhatsApp(lead.celular, audioUrl, lead);
+    const whatsappResponse = await enviarAudioWhatsApp(lead.celular || phoneRaw, audioUrl, lead);
     
     // Atualizar banco
     await supabase
@@ -284,6 +320,14 @@ module.exports = async function generateAudioHandler(req, res) {
     console.error('❌ Erro:', error.message);
     console.error(error.stack);
     
+    try {
+      await supabase.from('whatsapp_logs').insert({
+        status: 'webhook_generate_audio_erro',
+        metadata: { error: error.message, stack: error.stack },
+        sent_at: new Date().toISOString()
+      });
+    } catch (_) { /* noop */ }
+
     return res.status(500).json({
       success: false,
       error: error.message,
