@@ -265,8 +265,12 @@ module.exports = async function generateAudioHandler(req, res) {
     
     if (!lead && phoneRaw) {
       console.log(`   Tentando buscar por telefone: ${phoneRaw}`);
-      lead = await findLeadByPhone(supabase, phoneRaw, email);
+      const result = await findLeadByPhone(supabase, phoneRaw, email);
+      lead = result.lead; // findLeadByPhone retorna { lead, method }
       console.log(`   Resultado busca por telefone: ${lead ? 'encontrado' : 'não encontrado'}`);
+      if (lead && result.method) {
+        console.log(`   Método de busca: ${result.method}`);
+      }
     }
     
     if (!lead) {
