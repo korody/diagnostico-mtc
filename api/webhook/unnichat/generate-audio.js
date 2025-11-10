@@ -150,41 +150,16 @@ async function uploadAudio(audioBuffer, leadId) {
 }
 
 // ========================================
-// 📤 ENVIAR ÁUDIO VIA UNNICHAT API
+// 📤 ENVIAR ÁUDIO VIA UNNICHAT API - REMOVIDO
+// Agora apenas retorna a URL para o Unnichat usar
 // ========================================
-async function enviarAudioWhatsApp(phone, audioUrl, lead) {
-  console.log('📤 Enviando áudio via Unnichat API...');
-  
-  const phoneFormatted = phone.replace(/\D/g, '');
-  
-  const payload = {
-    phone: phoneFormatted,
-    messageType: 'audio',
-    audioUrl: audioUrl
-  };
-  
-  const response = await axios.post(
-    `${UNNICHAT_API_URL}/meta/messages`,
-    payload,
-    {
-      headers: {
-        'Authorization': `Bearer ${UNNICHAT_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-        'x-instance-id': UNNICHAT_INSTANCE_ID
-      }
-    }
-  );
-  
-  console.log('✅ Áudio enviado com sucesso!');
-  return response.data;
-}
 
 // ========================================
 // 🎯 HANDLER PRINCIPAL
 // ========================================
 module.exports = async function generateAudioHandler(req, res) {
   console.log('\n🎙️ ========================================');
-  console.log('   WEBHOOK: GERAR E ENVIAR ÁUDIO');
+  console.log('   WEBHOOK: GERAR ÁUDIO (V2 - SEM ENVIO)');
   console.log('========================================');
   
   try {
@@ -200,9 +175,6 @@ module.exports = async function generateAudioHandler(req, res) {
     // Validar credenciais
     if (!ELEVENLABS_API_KEY) {
       throw new Error('ELEVENLABS_API_KEY não configurada');
-    }
-    if (!UNNICHAT_API_URL || !UNNICHAT_ACCESS_TOKEN) {
-      throw new Error('Credenciais Unnichat não configuradas');
     }
     
     // Extrair dados do payload
@@ -304,15 +276,12 @@ module.exports = async function generateAudioHandler(req, res) {
     // Upload
     const audioUrl = await uploadAudio(audioBuffer, lead.id);
     
-    // Enviar via WhatsApp
-    const whatsappResponse = await enviarAudioWhatsApp(lead.celular || phoneRaw, audioUrl, lead);
-    
-    // Atualizar banco
+    // Atualizar banco (apenas marcar como gerado, não como enviado)
     await supabase
       .from('quiz_leads')
       .update({
-        whatsapp_status: 'audio_enviado',
-        whatsapp_sent_at: new Date().toISOString()
+        whatsapp_status: 'audio_gerado_aguardando_envio',
+        updated_at: new Date().toISOString()
       })
       .eq('id', lead.id);
     
@@ -320,29 +289,32 @@ module.exports = async function generateAudioHandler(req, res) {
     await supabase.from('whatsapp_logs').insert({
       lead_id: lead.id,
       phone: lead.celular,
-      status: 'audio_enviado',
+      status: 'audio_gerado',
       metadata: {
         script_length: script.length,
         audio_url: audioUrl,
-        whatsapp_response: whatsappResponse,
-        campaign: 'black_vitalicia_audio_webhook'
+        audio_size_bytes: audioBuffer.length,
+        campaign: 'black_vitalicia_audio_webhook_v2'
       },
       sent_at: new Date().toISOString()
     });
     
     console.log('========================================');
-    console.log('✅ ÁUDIO ENVIADO COM SUCESSO!');
+    console.log('✅ ÁUDIO GERADO COM SUCESSO!');
     console.log('========================================\n');
     
+    // Retornar URL para o Unnichat usar
     return res.json({
       success: true,
-      message: 'Áudio gerado e enviado com sucesso',
+      message: 'Áudio gerado com sucesso',
       data: {
         lead_id: lead.id,
         nome: lead.nome,
+        primeiro_nome: lead.nome.split(' ')[0],
         phone: lead.celular,
         audio_url: audioUrl,
-        script_length: script.length
+        script_length: script.length,
+        audio_size_bytes: audioBuffer.length
       }
     });
     

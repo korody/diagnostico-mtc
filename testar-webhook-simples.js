@@ -8,7 +8,7 @@ async function testarWebhook() {
   console.log('   TESTE SIMPLES: WEBHOOK (SEM ÁUDIO)');
   console.log('========================================\n');
   
-  const WEBHOOK_URL = 'https://quiz.qigongbrasil.com/api/webhook/unnichat/generate-audio-v2';
+  const WEBHOOK_URL = 'https://quiz.qigongbrasil.com/api/webhook/unnichat/generate-audio';
   
   // Payload conforme o Unnichat envia
   const payload = {
