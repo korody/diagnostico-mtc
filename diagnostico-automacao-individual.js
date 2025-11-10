@@ -12,7 +12,7 @@ require('dotenv').config({ path: envFile });
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
-const GATILHO_URL = process.env.UNNICHAT_GATILHO_URL;
+const GATILHO_URL = process.env.DIAGNOSTICO_AUTOMACAO_UNNICHAT || process.env.UNNICHAT_GATILHO_URL;
 
 // Validar variáveis
 if (!supabaseUrl || !supabaseKey || !GATILHO_URL) {
@@ -27,7 +27,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // ========================================
 // 🎯 CONFIGURE O TELEFONE AQUI
 // ========================================
-const TELEFONE = '5511998457676'; // ← Envio para Jader Prado
+const TELEFONE = '62991488735'; // ← Telefone para envio
 
 // ========================================
 // FUNÇÃO PRINCIPAL

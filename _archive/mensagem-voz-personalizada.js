@@ -40,7 +40,7 @@ const MODO_TESTE = false; // MUDE PARA false PARA ENVIAR DE VERDADE
 const MODO_TESTE_SEM_UPLOAD = false; // Gerar áudio personalizado para cada lead
 const REUSAR_ULTIMO_AUDIO = false; // Usar o último áudio gerado sem gerar novo
 const LIMITE_ENVIOS = 1; // Quantos envios fazer (para teste)
-const FILTRAR_POR_TELEFONE = '5511998457676'; // ← Telefone do Marcos
+const FILTRAR_POR_TELEFONE = '5562991488735'; // Telefone específico para testar (apenas números)
 const AUDIO_TESTE_URL = 'https://kfkhdfnkwhljhhjcvbqp.supabase.co/storage/v1/object/public/audio-mensagens/audio_5dcb1c17-bdfc-493e-975c-03f635198bbd_1762361159370.mp3'; // Último áudio gerado
 
 // ========================================
@@ -271,7 +271,7 @@ async function processarLead(lead, index, total) {
     await supabase
       .from('quiz_leads')
       .update({
-        whatsapp_status: 'audio_automacao_enviado',
+        whatsapp_status: 'audio_personalizado_enviado',
         whatsapp_sent_at: new Date().toISOString(),
         whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
       })
@@ -281,12 +281,12 @@ async function processarLead(lead, index, total) {
     await supabase.from('whatsapp_logs').insert({
       lead_id: lead.id,
       phone: lead.celular,
-      status: 'audio_automacao_enviado',
+      status: 'audio_personalizado_enviado',
       metadata: {
         script_length: script.length,
         audio_url: audioUrl,
         whatsapp_response: result,
-        campaign: 'black_vitalicia_audio_automacao'
+        campaign: 'black_vitalicia_audio_personalizado'
       },
       sent_at: new Date().toISOString()
     });
@@ -307,8 +307,8 @@ async function processarLead(lead, index, total) {
     await supabase.from('whatsapp_logs').insert({
       lead_id: lead.id,
       phone: lead.celular,
-      status: 'erro_audio_automacao',
-      metadata: { error: error.message, campaign: 'black_vitalicia_audio_automacao' },
+      status: 'erro_audio_personalizado',
+      metadata: { error: error.message, campaign: 'black_vitalicia_audio_personalizado' },
       sent_at: new Date().toISOString()
     });
     
@@ -349,7 +349,8 @@ async function main() {
     .from('quiz_leads')
     .select('*')
     .not('celular', 'is', null)
-    .not('elemento_principal', 'is', null);
+    .not('elemento_principal', 'is', null)
+    .eq('is_aluno', false); // APENAS NÃO-ALUNOS
   
   // Filtrar por telefone ou nome específico (para teste)
   if (FILTRAR_POR_TELEFONE) {

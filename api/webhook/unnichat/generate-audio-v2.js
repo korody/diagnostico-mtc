@@ -1,38 +1,24 @@
 // ========================================
-// 🎙️ WEBHOOK: GERAR E ENVIAR ÁUDIO PERSONALIZADO
+// 🎙️ WEBHOOK V2: GERAR ÁUDIO SEM ENVIAR
 // ========================================
-// Este endpoint é chamado pela automação do Unnichat via POST request
-// Fluxo:
-// 1. Recebe phone/email/lead_id da automação
-// 2. Busca lead no Supabase
-// 3. Gera script personalizado
-// 4. Gera áudio com ElevenLabs
-// 5. Faz upload no Supabase Storage
-// 6. Envia áudio via Unnichat API diretamente
+// Este endpoint apenas GERA e FAZ UPLOAD do áudio
+// Retorna a URL para o Unnichat usar na automação
+// Não tenta enviar o áudio - deixa isso para o Unnichat
 
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 const { findLeadByPhone } = require('../../../lib/phone-simple');
 
-// Configuração Supabase - usar service_role para ter permissões completas
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.REACT_APP_SUPABASE_KEY
 );
 
-// Configurações ElevenLabs
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'hdFLFm20uYE7qa0TxNDq';
 
-// Configurações Unnichat
-const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL;
-const UNNICHAT_ACCESS_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
-const UNNICHAT_INSTANCE_ID = process.env.UNNICHAT_INSTANCE_ID;
-
 // ========================================
-// 📝 GERAR SCRIPT PERSONALIZADO
+// 📝 GERAR SCRIPT
 // ========================================
 function gerarScript(lead) {
   const primeiroNome = lead.nome.split(' ')[0];
@@ -55,15 +41,12 @@ function gerarScript(lead) {
   };
   
   const elementoPronuncia = {
-    'RIM': 'rim',
-    'FÍGADO': 'fígado',
-    'BAÇO': 'baço',
-    'CORAÇÃO': 'coração',
-    'PULMÃO': 'pulmão'
+    'RIM': 'rim', 'FÍGADO': 'fígado', 'BAÇO': 'baço',
+    'CORAÇÃO': 'coração', 'PULMÃO': 'pulmão'
   };
   
   const sintomas = sintomasPorElemento[elemento] || 'desconfortos e dores';
-  const solucao = solucoesPorElemento[elemento] || 'reequilibrar sua energia e recuperar sua saúde';
+  const solucao = solucoesPorElemento[elemento] || 'reequilibrar sua energia';
   const elementoFalado = elementoPronuncia[elemento] || elemento.toLowerCase();
   
   return `Olá ${primeiroNome}, aqui é o Mestre Ye.
@@ -90,11 +73,9 @@ Posso contar com você na nossa turma?`;
 }
 
 // ========================================
-// 🎙️ GERAR ÁUDIO COM ELEVENLABS
+// 🎙️ GERAR ÁUDIO
 // ========================================
-async function gerarAudio(script, leadId) {
-  console.log('🎙️ Gerando áudio com ElevenLabs...');
-  
+async function gerarAudio(script) {
   const url = `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`;
   
   const response = await axios.post(url, {
@@ -119,15 +100,12 @@ async function gerarAudio(script, leadId) {
 }
 
 // ========================================
-// 📤 UPLOAD NO SUPABASE STORAGE
+// 📤 UPLOAD NO SUPABASE
 // ========================================
 async function uploadAudio(audioBuffer, leadId) {
-  console.log('☁️ Fazendo upload no Supabase Storage...');
-  
   const fileName = `audio_${leadId}_${Date.now()}.mp3`;
   const uploadUrl = `${process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/audio-mensagens/${fileName}`;
   
-  // Usar service_role key para ter permissão de escrita no Storage
   const authKey = process.env.SUPABASE_SERVICE_ROLE_KEY 
     || process.env.REACT_APP_SUPABASE_SERVICE_KEY 
     || process.env.SUPABASE_KEY 
@@ -144,51 +122,16 @@ async function uploadAudio(audioBuffer, leadId) {
   });
   
   const publicUrl = `${process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL}/storage/v1/object/public/audio-mensagens/${fileName}`;
-  console.log('✅ Upload concluído:', publicUrl);
-  
   return publicUrl;
 }
 
 // ========================================
-// 📤 ENVIAR ÁUDIO VIA UNNICHAT API
+// 🎯 HANDLER
 // ========================================
-async function enviarAudioWhatsApp(phone, audioUrl, lead) {
-  console.log('📤 Enviando áudio via Unnichat API...');
-  
-  const phoneFormatted = phone.replace(/\D/g, '');
-  
-  const payload = {
-    phone: phoneFormatted,
-    messageType: 'audio',
-    audioUrl: audioUrl
-  };
-  
-  const response = await axios.post(
-    `${UNNICHAT_API_URL}/meta/messages`,
-    payload,
-    {
-      headers: {
-        'Authorization': `Bearer ${UNNICHAT_ACCESS_TOKEN}`,
-        'Content-Type': 'application/json',
-        'x-instance-id': UNNICHAT_INSTANCE_ID
-      }
-    }
-  );
-  
-  console.log('✅ Áudio enviado com sucesso!');
-  return response.data;
-}
-
-// ========================================
-// 🎯 HANDLER PRINCIPAL
-// ========================================
-module.exports = async function generateAudioHandler(req, res) {
-  console.log('\n🎙️ ========================================');
-  console.log('   WEBHOOK: GERAR E ENVIAR ÁUDIO');
-  console.log('========================================');
+module.exports = async function generateAudioV2(req, res) {
+  console.log('\n🎙️ [WEBHOOK V2] Gerar Áudio');
   
   try {
-    // CORS/preflight
     if (req.method === 'OPTIONS') {
       return res.status(200).json({ success: true });
     }
@@ -197,45 +140,23 @@ module.exports = async function generateAudioHandler(req, res) {
       return res.status(405).json({ success: false, error: 'Método não permitido' });
     }
 
-    // Validar credenciais
     if (!ELEVENLABS_API_KEY) {
       throw new Error('ELEVENLABS_API_KEY não configurada');
     }
-    if (!UNNICHAT_API_URL || !UNNICHAT_ACCESS_TOKEN) {
-      throw new Error('Credenciais Unnichat não configuradas');
-    }
     
-    // Extrair dados do payload
     let body = req.body;
-
-    // Alguns provedores enviam body como string
     if (typeof body === 'string') {
       try { body = JSON.parse(body); } catch (_) { /* ignore */ }
     }
-
-    // Aceitar x-www-form-urlencoded
     if (!body || Object.keys(body).length === 0) {
-      // Vercel já parseia urlencoded em req.body; mas como fallback, use query
       body = { ...(req.query || {}) };
     }
 
     const phoneRaw = body.phone || body.telefone || body.from || body.contact;
     const email = body.email || body.mail || '';
     const lead_id = body.lead_id || body.leadId || body.id || undefined;
-    const primeiro_nome = body.primeiro_nome || body.first_name || body.nome || undefined;
     
-    console.log('📋 Payload recebido:', { phone: phoneRaw, email, lead_id, primeiro_nome });
-
-    // Log inicial para diagnóstico
-    try {
-      await supabase.from('whatsapp_logs').insert({
-        lead_id: lead_id || null,
-        phone: phoneRaw || null,
-        status: 'webhook_generate_audio_recebido',
-        metadata: { raw: body },
-        sent_at: new Date().toISOString()
-      });
-    } catch (_) { /* noop */ }
+    console.log('📋 Payload:', { phone: phoneRaw, email, lead_id });
 
     if (!phoneRaw && !lead_id) {
       return res.status(400).json({ 
@@ -244,124 +165,93 @@ module.exports = async function generateAudioHandler(req, res) {
       });
     }
     
-    // Buscar lead no banco
+    // Buscar lead
     console.log('🔍 Buscando lead...');
-    console.log(`   lead_id: ${lead_id}`);
-    console.log(`   phoneRaw: ${phoneRaw}`);
-    console.log(`   email: ${email}`);
     let lead;
     
     if (lead_id) {
-      console.log(`   Tentando buscar por ID: ${lead_id}`);
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('quiz_leads')
         .select('*')
         .eq('id', lead_id)
         .maybeSingle();
-      
-      if (error) {
-        console.error('   ❌ Erro ao buscar por ID:', error);
-        throw error;
-      }
       lead = data;
-      console.log(`   Resultado busca por ID: ${lead ? 'encontrado' : 'não encontrado'}`);
     }
     
     if (!lead && phoneRaw) {
-      console.log(`   Tentando buscar por telefone: ${phoneRaw}`);
       const result = await findLeadByPhone(supabase, phoneRaw, email);
-      lead = result.lead; // findLeadByPhone retorna { lead, method }
-      console.log(`   Resultado busca por telefone: ${lead ? 'encontrado' : 'não encontrado'}`);
-      if (lead && result.method) {
-        console.log(`   Método de busca: ${result.method}`);
-      }
+      lead = result.lead;
     }
     
     if (!lead) {
-      console.error('   ❌ Lead não encontrado em nenhuma busca');
       return res.status(404).json({ 
         success: false, 
-        error: 'Lead não encontrado',
-        debug: {
-          lead_id_tentado: lead_id,
-          phone_tentado: phoneRaw,
-          email_tentado: email
-        }
+        error: 'Lead não encontrado'
       });
     }
     
-    console.log(`✅ Lead encontrado: ${lead.nome} (${lead.celular})`);
-    console.log(`🎯 Elemento: ${lead.elemento_principal}`);
+    console.log(`✅ Lead: ${lead.nome}`);
     
     // Gerar script
     const script = gerarScript(lead);
-    console.log(`📝 Script gerado: ${script.length} caracteres`);
+    console.log(`📝 Script: ${script.length} chars`);
     
     // Gerar áudio
-    const audioBuffer = await gerarAudio(script, lead.id);
-    console.log(`✅ Áudio gerado: ${audioBuffer.length} bytes`);
+    console.log('🎙️ Gerando áudio...');
+    const audioBuffer = await gerarAudio(script);
+    console.log(`✅ Áudio: ${audioBuffer.length} bytes`);
     
     // Upload
+    console.log('☁️ Upload...');
     const audioUrl = await uploadAudio(audioBuffer, lead.id);
+    console.log(`✅ URL: ${audioUrl}`);
     
-    // Enviar via WhatsApp
-    const whatsappResponse = await enviarAudioWhatsApp(lead.celular || phoneRaw, audioUrl, lead);
-    
-    // Atualizar banco
+    // Atualizar banco (sem marcar como enviado ainda)
     await supabase
       .from('quiz_leads')
       .update({
-        whatsapp_status: 'audio_enviado',
-        whatsapp_sent_at: new Date().toISOString()
+        whatsapp_status: 'audio_gerado_aguardando_envio',
+        updated_at: new Date().toISOString()
       })
       .eq('id', lead.id);
     
-    // Registrar log
+    // Log
     await supabase.from('whatsapp_logs').insert({
       lead_id: lead.id,
       phone: lead.celular,
-      status: 'audio_enviado',
+      status: 'audio_gerado',
       metadata: {
         script_length: script.length,
         audio_url: audioUrl,
-        whatsapp_response: whatsappResponse,
-        campaign: 'black_vitalicia_audio_webhook'
+        audio_size_bytes: audioBuffer.length,
+        campaign: 'webhook_v2'
       },
       sent_at: new Date().toISOString()
     });
     
-    console.log('========================================');
-    console.log('✅ ÁUDIO ENVIADO COM SUCESSO!');
-    console.log('========================================\n');
+    console.log('✅ Sucesso!\n');
     
+    // Retornar URL para o Unnichat usar
     return res.json({
       success: true,
-      message: 'Áudio gerado e enviado com sucesso',
+      message: 'Áudio gerado com sucesso',
       data: {
         lead_id: lead.id,
         nome: lead.nome,
+        primeiro_nome: lead.nome.split(' ')[0],
         phone: lead.celular,
         audio_url: audioUrl,
-        script_length: script.length
+        script_length: script.length,
+        audio_size_bytes: audioBuffer.length
       }
     });
     
   } catch (error) {
     console.error('❌ Erro:', error.message);
-    console.error(error.stack);
     
-    try {
-      await supabase.from('whatsapp_logs').insert({
-        status: 'webhook_generate_audio_erro',
-        metadata: { error: error.message, stack: error.stack },
-        sent_at: new Date().toISOString()
-      });
-    } catch (_) { /* noop */ }
-
     return res.status(500).json({
       success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message
     });
   }
 };
