@@ -191,12 +191,13 @@ module.exports = async function generateAudioHandler(req, res) {
       body = { ...(req.query || {}) };
     }
 
-    const phoneRaw = body.phone || body.telefone || body.from || body.contact;
-    const email = body.email || body.mail || '';
+    const phoneRaw = body.phone || body.telefone || body.from || body.contact || body.number || body.whatsapp || body.celular;
+    const email = body.email || body.mail || body.e_mail || '';
     const lead_id = body.lead_id || body.leadId || body.id || undefined;
     const primeiro_nome = body.primeiro_nome || body.first_name || body.nome || undefined;
     
-    console.log('📋 Payload recebido:', { phone: phoneRaw, email, lead_id, primeiro_nome });
+    console.log('📋 Payload COMPLETO recebido:', JSON.stringify(body, null, 2));
+    console.log('📋 Dados extraídos:', { phone: phoneRaw, email, lead_id, primeiro_nome });
 
     // Log inicial para diagnóstico
     try {

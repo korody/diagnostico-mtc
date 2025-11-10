@@ -25,7 +25,7 @@ const LIMITE_TESTE = process.env.LIMITE_TESTE ? parseInt(process.env.LIMITE_TEST
 const DRY_RUN = process.env.DRY_RUN === '1';
 
 // TELEFONE ESPECÍFICO - edite aqui para enviar para 1 pessoa
-const TELEFONE_ESPECIFICO = ''; // vazio = envia para todos os filtrados
+const TELEFONE_ESPECIFICO = '11998457676'; // vazio = envia para todos os filtrados
 
 console.log('\n🎙️ ========================================');
 console.log('   CAMPANHA DE ÁUDIO EM LOTES');
@@ -84,7 +84,7 @@ E é exatamente isso que você vai alcançar ao garantir o SUPER COMBO Vitalíci
 
 Essa oferta é histórica! Eu nunca fiz nada igual.
 
-${primeiroNome}, essa é a última turma. É a sua chance. Não espera a dor ou a doença aparecer pra você se arrepender.
+${primeiroNome}, essa é a última turma. É a sua chance. Não espera esses sintomas piorarem e você se arrepender.
 
 Clica no link que eu vou te mandar agora para garantir a sua vaga antes que seja tarde.
 
