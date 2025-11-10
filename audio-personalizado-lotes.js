@@ -24,8 +24,8 @@ const DELAY_ENTRE_LOTES = parseInt(process.env.DELAY_ENTRE_LOTES) || 60000; // 6
 const LIMITE_TESTE = process.env.LIMITE_TESTE ? parseInt(process.env.LIMITE_TESTE) : 50;
 const DRY_RUN = process.env.DRY_RUN === '1';
 
-// TELEFONE ESPECÍFICO - edite aqui para enviar para 1 pessoa
-const TELEFONE_ESPECIFICO = '11998457676'; // vazio = envia para todos os filtrados
+// TELEFONE ESPECÍFICO - vazio = envia para todos os filtrados
+const TELEFONE_ESPECIFICO = ''; // agora envia lista de não-alunos
 
 console.log('\n🎙️ ========================================');
 console.log('   CAMPANHA DE ÁUDIO EM LOTES');
@@ -70,7 +70,7 @@ function gerarScript(lead) {
   const solucao = solucoesPorElemento[elemento] || 'reequilibrar sua energia';
   const elementoFalado = elementoPronuncia[elemento] || elemento.toLowerCase();
   
-  return `Olá ${primeiroNome}, aqui é o Mestre Ye.
+  return `Oi ${primeiroNome}, aqui é o Mestre Ye.
 
 Eu analisei seu diagnóstico e percebi a deficiência de ${elementoFalado}.
 
@@ -84,11 +84,11 @@ E é exatamente isso que você vai alcançar ao garantir o SUPER COMBO Vitalíci
 
 Essa oferta é histórica! Eu nunca fiz nada igual.
 
-${primeiroNome}, essa é a última turma. É a sua chance. Não espera esses sintomas piorarem e você se arrepender.
+${primeiroNome}, essa é a última turma. É a sua chance. Não espera seus sintomas piorarem pra você se arrepender.
 
 Clica no link que eu vou te mandar agora para garantir a sua vaga antes que seja tarde.
 
-A minha equipe tá querendo fechar as inscrições em breve, porque estamos chegando no limite de alunos dessa turma de encerramento.
+A minha equipe tá querendo fechar as inscrições em breve, porque estamos chegando no nosso limite de alunos.
 
 Posso contar com você na nossa turma?`;
 }
@@ -185,77 +185,23 @@ async function processarLead(lead, index, total) {
       console.log('   [DRY_RUN] PULAR processamento');
       return { success: true };
     }
-    
-    // 1. Gerar script
-    const script = gerarScript(lead);
-    console.log(`   📝 Script: ${script.length} caracteres`);
-    
-    // 2. Gerar áudio
-    console.log('   🎙️ Gerando áudio...');
-    const audioPath = await gerarAudio(script, lead.id);
-    
-    // 3. Upload
-    console.log('   ☁️ Upload Supabase...');
-    const audioUrl = await uploadAudio(audioPath, lead.id);
-    
-    // 4. Disparar automação
-    console.log('   🤖 Disparando automação...');
-    const result = await dispararAutomacao(lead, audioUrl);
-    
-    // 5. Atualizar Supabase
-    await supabase
-      .from('quiz_leads')
-      .update({
-        whatsapp_status: 'audio_personalizado_enviado',
-        whatsapp_sent_at: new Date().toISOString(),
-        whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
-      })
-      .eq('id', lead.id);
-    
-    // 6. Registrar log
-    await supabase.from('whatsapp_logs').insert({
-      lead_id: lead.id,
-      phone: lead.celular,
-      status: 'audio_personalizado_enviado',
-      metadata: {
-        script_length: script.length,
-        audio_url: audioUrl,
-        unnichat_response: result,
-        campaign: 'black_vitalicia_audio_lotes'
-      },
-      sent_at: new Date().toISOString()
+
+    // Disparar automação Unnichat apenas com telefone e email
+    console.log('   🤖 Disparando automação Unnichat...');
+    const primeiroNome = lead.nome.split(' ')[0];
+    const phone = lead.celular.replace(/\D/g, '');
+    const payload = {
+      phone: phone,
+      email: lead.email || '',
+      primeiro_nome: primeiroNome
+    };
+    const response = await axios.post(UNNICHAT_AUTOMACAO_AUDIO_URL, payload, {
+      headers: { 'Content-Type': 'application/json' }
     });
-    
-    // 7. Limpar arquivo
-    if (fs.existsSync(audioPath)) {
-      fs.unlinkSync(audioPath);
-    }
-    
-    console.log('   ✅ Sucesso!');
+    console.log('   ✅ Automação disparada:', response.data);
     return { success: true };
-    
   } catch (error) {
     console.log(`   ❌ Erro: ${error.message}`);
-    
-    if (!DRY_RUN) {
-      await supabase
-        .from('quiz_leads')
-        .update({
-          whatsapp_status: 'erro_audio_personalizado',
-          whatsapp_error: error.message,
-          whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
-        })
-        .eq('id', lead.id);
-      
-      await supabase.from('whatsapp_logs').insert({
-        lead_id: lead.id,
-        phone: lead.celular,
-        status: 'erro_audio_personalizado',
-        metadata: { error: error.message, campaign: 'black_vitalicia_audio_lotes' },
-        sent_at: new Date().toISOString()
-      });
-    }
-    
     return { success: false, error: error.message };
   }
 }
@@ -273,9 +219,10 @@ async function main() {
     .from('quiz_leads')
     .select('*');
   
-  // Se tem telefone específico, buscar só ele
+  // Se tem telefone específico, buscar só ele (por celular)
   if (TELEFONE_ESPECIFICO) {
-    query = query.ilike('celular', `%${TELEFONE_ESPECIFICO}%`);
+    // Busca por celular normalizado (sem DDD, com DDD, com +55, etc)
+    query = query.or(`celular.ilike.%${TELEFONE_ESPECIFICO}%,celular.ilike.%55${TELEFONE_ESPECIFICO}%,celular.ilike.%+55${TELEFONE_ESPECIFICO}%`);
   } else {
     // Senão, buscar não-alunos elegíveis
     query = query
@@ -283,7 +230,8 @@ async function main() {
       .not('celular', 'is', null)
       .not('elemento_principal', 'is', null)
       .not('whatsapp_status', 'eq', 'audio_personalizado_enviado')
-      .order('lead_score', { ascending: false });
+      // Priorizar menores lead_score primeiro
+      .order('lead_score', { ascending: true });
   }
   
   const { data: leads, error } = await query;

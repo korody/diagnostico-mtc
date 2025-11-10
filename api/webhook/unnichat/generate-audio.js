@@ -66,7 +66,7 @@ function gerarScript(lead) {
   const solucao = solucoesPorElemento[elemento] || 'reequilibrar sua energia e recuperar sua saúde';
   const elementoFalado = elementoPronuncia[elemento] || elemento.toLowerCase();
   
-  return `Olá ${primeiroNome}, aqui é o Mestre Ye.
+  return `Oi ${primeiroNome}, aqui é o Mestre Ye.
 
 Eu analisei seu diagnóstico e percebi a deficiência de ${elementoFalado}.
 
@@ -80,11 +80,11 @@ E é exatamente isso que você vai alcançar ao garantir o SUPER COMBO Vitalíci
 
 Essa oferta é histórica! Eu nunca fiz nada igual.
 
-${primeiroNome}, essa é a última turma. É a sua chance. Não espera a dor ou a doença aparecer pra você se arrepender.
+${primeiroNome}, essa é a última turma. É a sua chance. Não espera seus sintomas piorarem pra você se arrepender.
 
 Clica no link que eu vou te mandar agora para garantir a sua vaga antes que seja tarde.
 
-A minha equipe tá querendo fechar as inscrições em breve, porque estamos chegando no limite de alunos dessa turma de encerramento.
+A minha equipe tá querendo fechar as inscrições em breve, porque estamos chegando no nosso limite de alunos.
 
 Posso contar com você na nossa turma?`;
 }
