@@ -31,63 +31,7 @@ const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL;
 const UNNICHAT_ACCESS_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
 const UNNICHAT_INSTANCE_ID = process.env.UNNICHAT_INSTANCE_ID;
 
-// ========================================
-// 📝 GERAR SCRIPT PERSONALIZADO
-// ========================================
-function gerarScript(lead) {
-  const primeiroNome = lead.nome.split(' ')[0];
-  const elemento = lead.elemento_principal || 'CORAÇÃO';
-  
-  const sintomasPorElemento = {
-    'RIM': 'dores nas costas, cansaço extremo e sensação de frio',
-    'FÍGADO': 'tensão muscular, irritabilidade e rigidez no corpo',
-    'BAÇO': 'digestão difícil, inchaço e peso nas pernas',
-    'CORAÇÃO': 'insônia, ansiedade e palpitações',
-    'PULMÃO': 'respiração curta, resfriados frequentes e cansaço'
-  };
-  
-  const solucoesPorElemento = {
-    'RIM': 'fortalecer sua energia vital e recuperar a vitalidade que você perdeu',
-    'FÍGADO': 'liberar toda essa tensão acumulada e voltar a ter leveza no corpo',
-    'BAÇO': 'reequilibrar sua digestão e ter mais disposição no dia a dia',
-    'CORAÇÃO': 'acalmar sua mente, dormir bem e recuperar sua paz interior',
-    'PULMÃO': 'fortalecer sua respiração e aumentar sua imunidade'
-  };
-  
-  const elementoPronuncia = {
-    'RIM': 'rim',
-    'FÍGADO': 'fígado',
-    'BAÇO': 'baço',
-    'CORAÇÃO': 'coração',
-    'PULMÃO': 'pulmão'
-  };
-  
-  const sintomas = sintomasPorElemento[elemento] || 'desconfortos e dores';
-  const solucao = solucoesPorElemento[elemento] || 'reequilibrar sua energia e recuperar sua saúde';
-  const elementoFalado = elementoPronuncia[elemento] || elemento.toLowerCase();
-  
-  return `Oi ${primeiroNome}, aqui é o Mestre Ye.
-
-Eu analisei seu diagnóstico e percebi a deficiência de ${elementoFalado}.
-
-Sei exatamente o que você está passando com ${sintomas}.
-
-Não deve ser fácil conviver com isso todos os dias.
-
-Mas a boa notícia é que eu sei como ${solucao}.
-
-E é exatamente isso que você vai alcançar ao garantir o SUPER COMBO Vitalício hoje.
-
-Essa oferta é histórica! Eu nunca fiz nada igual.
-
-${primeiroNome}, essa é a última turma. É a sua chance. Não espera seus sintomas piorarem pra você se arrepender.
-
-Clica no link que eu vou te mandar agora para garantir a sua vaga antes que seja tarde.
-
-A minha equipe tá querendo fechar as inscrições em breve, porque estamos chegando no nosso limite de alunos.
-
-Posso contar com você na nossa turma?`;
-}
+const { gerarScriptParaLead } = require('../../../lib/audio-copies');
 
 // ========================================
 // 🎙️ GERAR ÁUDIO COM ELEVENLABS
@@ -267,7 +211,7 @@ module.exports = async function generateAudioHandler(req, res) {
     console.log(`🎯 Elemento: ${lead.elemento_principal}`);
     
     // Gerar script
-    const script = gerarScript(lead);
+  const script = gerarScriptParaLead(lead);
     console.log(`📝 Script gerado: ${script.length} caracteres`);
     
     // Gerar áudio
