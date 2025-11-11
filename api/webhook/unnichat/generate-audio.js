@@ -277,11 +277,11 @@ module.exports = async function generateAudioHandler(req, res) {
     // Upload
     const audioUrl = await uploadAudio(audioBuffer, lead.id);
     
-    // Atualizar banco (apenas marcar como gerado, não como enviado)
+    // Atualizar banco - marcar como enviado
     await supabase
       .from('quiz_leads')
       .update({
-        whatsapp_status: 'audio_gerado_aguardando_envio',
+        whatsapp_status: 'audio_personalizado_enviado',
         updated_at: new Date().toISOString()
       })
       .eq('id', lead.id);

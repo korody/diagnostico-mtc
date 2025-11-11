@@ -199,6 +199,16 @@ async function processarLead(lead, index, total) {
       headers: { 'Content-Type': 'application/json' }
     });
     console.log('   ✅ Automação disparada:', response.data);
+    
+    // Atualizar status no banco
+    await supabase
+      .from('quiz_leads')
+      .update({
+        whatsapp_status: 'audio_personalizado_enviado',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', lead.id);
+    
     return { success: true };
   } catch (error) {
     console.log(`   ❌ Erro: ${error.message}`);
