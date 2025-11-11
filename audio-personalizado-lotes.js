@@ -18,10 +18,10 @@ const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID;
 const UNNICHAT_AUTOMACAO_AUDIO_URL = 'https://unnichat.com.br/a/start/ujzdbrjxV1lpg9X2uM65';
 
 // Configurações de lote
-const LOTE_SIZE = parseInt(process.env.LOTE_SIZE) || 5; // 5 por lote (gera áudio)
-const DELAY_ENTRE_ENVIOS = parseInt(process.env.DELAY_ENTRE_ENVIOS) || 10000; // 10s
-const DELAY_ENTRE_LOTES = parseInt(process.env.DELAY_ENTRE_LOTES) || 60000; // 60s
-const LIMITE_TESTE = process.env.LIMITE_TESTE ? parseInt(process.env.LIMITE_TESTE) : 50;
+const LOTE_SIZE = parseInt(process.env.LOTE_SIZE) || 10; // 10 por lote
+const DELAY_ENTRE_ENVIOS = parseInt(process.env.DELAY_ENTRE_ENVIOS) || 4000; // 4s
+const DELAY_ENTRE_LOTES = parseInt(process.env.DELAY_ENTRE_LOTES) || 30000; // 30s entre lotes
+const LIMITE_TESTE = process.env.LIMITE_TESTE ? parseInt(process.env.LIMITE_TESTE) : 500;
 const DRY_RUN = process.env.DRY_RUN === '1';
 
 // TELEFONE ESPECÍFICO - vazio = envia para todos os filtrados
@@ -200,11 +200,11 @@ async function processarLead(lead, index, total) {
     });
     console.log('   ✅ Automação disparada:', response.data);
     
-    // Atualizar status no banco
+    // Atualizar status no banco - marca como automação iniciada
     await supabase
       .from('quiz_leads')
       .update({
-        whatsapp_status: 'audio_personalizado_enviado',
+        whatsapp_status: 'automacao_audio_personalizado',
         updated_at: new Date().toISOString()
       })
       .eq('id', lead.id);
@@ -239,9 +239,9 @@ async function main() {
       .eq('is_aluno', false)
       .not('celular', 'is', null)
       .not('elemento_principal', 'is', null)
-      .not('whatsapp_status', 'eq', 'audio_personalizado_enviado')
-      // Priorizar menores lead_score primeiro
-      .order('lead_score', { ascending: true });
+      .not('whatsapp_status', 'in', '("audio_personalizado_enviado","automacao_audio_personalizado")')
+      // Priorizar maiores lead_score primeiro
+      .order('lead_score', { ascending: false });
   }
   
   const { data: leads, error } = await query;

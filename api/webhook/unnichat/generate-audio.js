@@ -286,6 +286,8 @@ module.exports = async function generateAudioHandler(req, res) {
       })
       .eq('id', lead.id);
     
+    console.log('✅ Status atualizado: audio_personalizado_enviado');
+    
     // Registrar log
     await supabase.from('whatsapp_logs').insert({
       lead_id: lead.id,
