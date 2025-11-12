@@ -15,7 +15,10 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 // ========================================
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID;
-const UNNICHAT_AUTOMACAO_AUDIO_URL = 'https://unnichat.com.br/a/start/ujzdbrjxV1lpg9X2uM65';
+
+// URLs de automação por segmento
+const UNNICHAT_AUTOMACAO_ALUNOS_URL = 'https://unnichat.com.br/a/start/dCVT3wSK3h6OXtVJeb7W';
+const UNNICHAT_AUTOMACAO_NAO_ALUNOS_URL = 'https://unnichat.com.br/a/start/ujzdbrjxV1lpg9X2uM65';
 
 // Configurações de lote
 const LOTE_SIZE = parseInt(process.env.LOTE_SIZE) || 10; // 10 por lote
@@ -25,11 +28,22 @@ const LIMITE_TESTE = process.env.LIMITE_TESTE ? parseInt(process.env.LIMITE_TEST
 const DRY_RUN = process.env.DRY_RUN === '1';
 
 // TELEFONE ESPECÍFICO - vazio = envia para todos os filtrados
-const TELEFONE_ESPECIFICO = ''; // agora envia lista de não-alunos
+// Suporte para --phone via CLI
+const phoneArg = process.argv.find(arg => arg.startsWith('--phone='));
+const TELEFONE_ESPECIFICO = phoneArg ? phoneArg.split('=')[1] : ''; // agora envia lista de não-alunos
+
+// Suporte para --alunos (envia para alunos ao invés de não-alunos)
+const ENVIAR_PARA_ALUNOS = process.argv.includes('--alunos');
+
+// Suporte para --top-score (ordenar por maior score ao invés de menor)
+const TOP_SCORE = process.argv.includes('--top-score');
+
+// Suporte para --excluir-bny2 (não enviar para alunos BNY2)
+const EXCLUIR_BNY2 = process.argv.includes('--excluir-bny2');
 
 console.log('\n🎙️ ========================================');
 console.log('   CAMPANHA DE ÁUDIO EM LOTES');
-console.log('   Black Vitalícia - Não-Alunos');
+console.log(`   Black Vitalícia - ${ENVIAR_PARA_ALUNOS ? 'Alunos' : 'Não-Alunos'}`);
 console.log('========================================');
 console.log('📦 Tamanho do lote:', LOTE_SIZE, 'leads');
 console.log('⏱️  Delay entre envios:', DELAY_ENTRE_ENVIOS/1000 + 's');
@@ -121,7 +135,12 @@ async function dispararAutomacao(lead, audioUrl) {
     link_cta: linkCta
   };
   
-  const response = await axios.post(UNNICHAT_AUTOMACAO_AUDIO_URL, payload, {
+  // Selecionar URL de automação baseado no segmento
+  const automacaoUrl = lead.is_aluno 
+    ? UNNICHAT_AUTOMACAO_ALUNOS_URL
+    : UNNICHAT_AUTOMACAO_NAO_ALUNOS_URL;
+  
+  const response = await axios.post(automacaoUrl, payload, {
     headers: { 'Content-Type': 'application/json' }
   });
   
@@ -147,10 +166,14 @@ async function processarLead(lead, index, total) {
     const primeiroNome = lead.nome.split(' ')[0];
     const phone = lead.celular.replace(/\D/g, '');
     
-    // Selecionar link CTA baseado no segmento
+    // Selecionar link CTA e URL de automação baseado no segmento
     const linkCta = lead.is_aluno 
       ? 'https://i.sendflow.pro/l/super-combo-vitalicio-alunos'
       : 'https://i.sendflow.pro/l/super-combo-vitalicio';
+    
+    const automacaoUrl = lead.is_aluno 
+      ? UNNICHAT_AUTOMACAO_ALUNOS_URL
+      : UNNICHAT_AUTOMACAO_NAO_ALUNOS_URL;
     
     const payload = {
       phone: phone,
@@ -158,11 +181,12 @@ async function processarLead(lead, index, total) {
       primeiro_nome: primeiroNome,
       link_cta: linkCta
     };
-    const response = await axios.post(UNNICHAT_AUTOMACAO_AUDIO_URL, payload, {
+    const response = await axios.post(automacaoUrl, payload, {
       headers: { 'Content-Type': 'application/json' }
     });
     console.log('   ✅ Automação disparada:', response.data);
     console.log(`   🔗 Link CTA: ${linkCta} (${lead.is_aluno ? 'ALUNO' : 'NÃO-ALUNO'})`);
+    console.log(`   🎯 URL Automação: ${automacaoUrl}`);
     
     // Atualizar status no banco - marca como automação iniciada
     await supabase
@@ -198,14 +222,26 @@ async function main() {
     // Busca por celular normalizado (sem DDD, com DDD, com +55, etc)
     query = query.or(`celular.ilike.%${TELEFONE_ESPECIFICO}%,celular.ilike.%55${TELEFONE_ESPECIFICO}%,celular.ilike.%+55${TELEFONE_ESPECIFICO}%`);
   } else {
-    // Senão, buscar não-alunos elegíveis
+    // Senão, buscar alunos ou não-alunos elegíveis
+    const targetIsAluno = ENVIAR_PARA_ALUNOS;
     query = query
-      .eq('is_aluno', false)
+      .eq('is_aluno', targetIsAluno)
       .not('celular', 'is', null)
       .not('elemento_principal', 'is', null)
-      .not('whatsapp_status', 'in', '("audio_personalizado_enviado","automacao_audio_personalizado")')
-      // Priorizar maiores lead_score primeiro
-      .order('lead_score', { ascending: false });
+      .not('whatsapp_status', 'in', '("audio_personalizado_enviado","automacao_audio_personalizado")');
+    
+    // Excluir BNY2 se flag ativa
+    if (EXCLUIR_BNY2) {
+      query = query.neq('is_aluno_bny2', true);
+    }
+    
+    // Alunos: menor score primeiro (reativar os mais frios) OU top score se flag ativa
+    // Não-alunos: maior score primeiro (melhor qualidade)
+    if (ENVIAR_PARA_ALUNOS) {
+      query = query.order('lead_score', { ascending: !TOP_SCORE });
+    } else {
+      query = query.order('lead_score', { ascending: false });
+    }
   }
   
   const { data: leads, error } = await query;
@@ -215,10 +251,10 @@ async function main() {
     return;
   }
   
-  console.log(`✅ ${leads.length} não-alunos encontrados\n`);
+  console.log(`✅ ${leads.length} ${ENVIAR_PARA_ALUNOS ? 'alunos' : 'não-alunos'} encontrados\n`);
   
   if (!leads || leads.length === 0) {
-    console.log('🎉 Nenhum não-aluno pendente!\n');
+    console.log(`🎉 Nenhum ${ENVIAR_PARA_ALUNOS ? 'aluno' : 'não-aluno'} pendente!\n`);
     return;
   }
   
