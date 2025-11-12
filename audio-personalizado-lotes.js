@@ -108,11 +108,17 @@ async function dispararAutomacao(lead, audioUrl) {
   const primeiroNome = lead.nome.split(' ')[0];
   const phone = lead.celular.replace(/\D/g, '');
   
+  // Selecionar link CTA baseado no segmento
+  const linkCta = lead.is_aluno 
+    ? 'https://i.sendflow.pro/l/super-combo-vitalicio-alunos'
+    : 'https://i.sendflow.pro/l/super-combo-vitalicio';
+  
   const payload = {
     primeiro_nome: primeiroNome,
     phone: phone,
     email: lead.email || '',
-    link_audio: audioUrl
+    link_audio: audioUrl,
+    link_cta: linkCta
   };
   
   const response = await axios.post(UNNICHAT_AUTOMACAO_AUDIO_URL, payload, {
@@ -140,15 +146,23 @@ async function processarLead(lead, index, total) {
     console.log('   🤖 Disparando automação Unnichat...');
     const primeiroNome = lead.nome.split(' ')[0];
     const phone = lead.celular.replace(/\D/g, '');
+    
+    // Selecionar link CTA baseado no segmento
+    const linkCta = lead.is_aluno 
+      ? 'https://i.sendflow.pro/l/super-combo-vitalicio-alunos'
+      : 'https://i.sendflow.pro/l/super-combo-vitalicio';
+    
     const payload = {
       phone: phone,
       email: lead.email || '',
-      primeiro_nome: primeiroNome
+      primeiro_nome: primeiroNome,
+      link_cta: linkCta
     };
     const response = await axios.post(UNNICHAT_AUTOMACAO_AUDIO_URL, payload, {
       headers: { 'Content-Type': 'application/json' }
     });
     console.log('   ✅ Automação disparada:', response.data);
+    console.log(`   🔗 Link CTA: ${linkCta} (${lead.is_aluno ? 'ALUNO' : 'NÃO-ALUNO'})`);
     
     // Atualizar status no banco - marca como automação iniciada
     await supabase
