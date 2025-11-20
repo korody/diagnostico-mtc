@@ -12,7 +12,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const { formatToE164, isValidE164, formatForUnnichat, formatForDisplay, findLeadByPhone } = require('./lib/phone-simple');
-const { addLeadTags } = require('./lib/tags');
+const { addLeadTags, TAGS } = require('./lib/tags');
 const fs = require('fs');
 
 // Importante: Não importe handlers que criam clients ANTES de carregar .env
@@ -590,7 +590,7 @@ app.post('/api/submit', async (req, res) => {
           metadata: { source: 'quiz_submit_local', updated: true },
           sent_at: new Date().toISOString()
         });
-        await addLeadTags(supabase, existe.id, ['diagnostico_finalizado']);
+        await addLeadTags(supabase, existe.id, [TAGS.DIAGNOSTICO_FINALIZADO]);
       } catch (e) { console.log('⚠️ Log submit local (update) falhou:', e.message); }
     } else {
       const { data: inserted, error: insertErr } = await supabase
@@ -613,7 +613,7 @@ app.post('/api/submit', async (req, res) => {
           metadata: { source: 'quiz_submit_local', created: true },
           sent_at: new Date().toISOString()
         });
-        await addLeadTags(supabase, inserted?.id, ['diagnostico_finalizado']);
+        await addLeadTags(supabase, inserted?.id, [TAGS.DIAGNOSTICO_FINALIZADO]);
       } catch (e) { console.log('⚠️ Log submit local (insert) falhou:', e.message); }
     }
     
@@ -915,7 +915,7 @@ Responda esta mensagem que o Mestre Ye te ajuda! 🙏
       })
       .eq('id', lead.id);
 
-    try { await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); } catch (e) { /* noop */ }
+    try { await addLeadTags(supabase, lead.id, [TAGS.DIAGNOSTICO_ENVIADO]); } catch (e) { /* noop */ }
 
     // Registrar log
     await supabase.from('whatsapp_logs').insert({

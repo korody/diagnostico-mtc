@@ -5,6 +5,7 @@ const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+const { addLeadTags, hasAnyTag, TAGS } = require('./lib/tags');
 
 require('dotenv').config({ path: '.env.production' });
 
@@ -197,6 +198,9 @@ async function processarLead(lead, index, total) {
       })
       .eq('id', lead.id);
     
+    // Adicionar tags (mantém histórico)
+    await addLeadTags(supabase, lead.id, [TAGS.AUDIO_AUTOMACAO, TAGS.AUDIO_ENVIADO]);
+    
     return { success: true };
   } catch (error) {
     console.log(`   ❌ Erro: ${error.message}`);
@@ -227,8 +231,14 @@ async function main() {
     query = query
       .eq('is_aluno', targetIsAluno)
       .not('celular', 'is', null)
-      .not('elemento_principal', 'is', null)
-      .not('whatsapp_status', 'in', '("audio_personalizado_enviado","automacao_audio_personalizado")');
+      .not('elemento_principal', 'is', null);
+    
+    // NOVO: Filtrar por tags ao invés de whatsapp_status
+    // Não enviar para quem já tem tag de áudio
+    // Usa operador "not" com "contains" para arrays
+    query = query
+      .not('status_tags', 'cs', `{${TAGS.AUDIO_ENVIADO}}`)
+      .not('status_tags', 'cs', `{${TAGS.AUDIO_AUTOMACAO}}`);
     
     // Excluir BNY2 se flag ativa
     if (EXCLUIR_BNY2) {

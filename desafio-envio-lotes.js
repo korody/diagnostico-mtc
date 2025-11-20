@@ -31,7 +31,7 @@ if (!supabaseUrl || !supabaseKey || !UNNICHAT_TOKEN) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
-const { addLeadTags } = require('./lib/tags');
+const { addLeadTags, TAGS } = require('./lib/tags');
 
 // ========================================
 // BUSCAR LEADS QUE JÁ RECEBERAM DIAGNÓSTICO MAS NÃO O DESAFIO
@@ -39,12 +39,13 @@ const { addLeadTags } = require('./lib/tags');
 async function buscarLeadsComDiagnostico() {
   console.log('🔍 Buscando leads que receberam diagnóstico MAS ainda não receberam desafio...\n');
   
-  // Contar quantos já receberam diagnóstico
+  // Contar quantos já receberam diagnóstico mas não desafio (usando tags)
   const { count } = await supabase
     .from('quiz_leads')
     .select('*', { count: 'exact', head: true })
     .not('celular', 'is', null)
-    .eq('whatsapp_status', 'resultados_enviados') // APENAS QUEM RECEBEU RESULTADOS E NÃO TEM DESAFIO
+    .or(`status_tags.cs.{${TAGS.DIAGNOSTICO_ENVIADO}},status_tags.cs.{${TAGS.RESULTADOS_ENVIADOS}}`)
+    .not('status_tags', 'cs', `{${TAGS.DESAFIO_ENVIADO}}`)
   
   console.log(`📊 Total com diagnóstico e sem desafio: ${count}`);
   
@@ -58,9 +59,10 @@ async function buscarLeadsComDiagnostico() {
     
     const { data, error } = await supabase
       .from('quiz_leads')
-      .select('id, nome, celular, email, lead_score, elemento_principal, created_at, whatsapp_status, whatsapp_sent_at, whatsapp_attempts')
+      .select('id, nome, celular, email, lead_score, elemento_principal, created_at, whatsapp_status, status_tags, whatsapp_sent_at, whatsapp_attempts')
       .not('celular', 'is', null)
-      .eq('whatsapp_status', 'resultados_enviados') // APENAS QUEM TEM RESULTADOS E NÃO TEM DESAFIO
+      .or(`status_tags.cs.{${TAGS.DIAGNOSTICO_ENVIADO}},status_tags.cs.{${TAGS.RESULTADOS_ENVIADOS}}`)
+      .not('status_tags', 'cs', `{${TAGS.DESAFIO_ENVIADO}}`)
       .order('lead_score', { ascending: false }) // Maior score primeiro (mais engajados)
       .range(offset, offset + PAGE_SIZE - 1);
     
@@ -255,7 +257,7 @@ Compartilhe vitalidade. Inspire transformação`;
         console.log(`   ✅ 2/2 enviada`);
         totalSent++;
         
-        // Atualizar status e tags
+        // Atualizar status e adicionar tag
         await supabase
           .from('quiz_leads')
           .update({
@@ -264,7 +266,9 @@ Compartilhe vitalidade. Inspire transformação`;
             whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
           })
           .eq('id', lead.id);
-        try { await addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
+        
+        // Adicionar tag de desafio enviado
+        await addLeadTags(supabase, lead.id, [TAGS.DESAFIO_ENVIADO]);
         
         // Registrar logs
         await supabase.from('whatsapp_logs').insert([
@@ -296,6 +300,9 @@ Compartilhe vitalidade. Inspire transformação`;
             whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
           })
           .eq('id', lead.id);
+        
+        // Adicionar tag de falha
+        await addLeadTags(supabase, lead.id, [TAGS.DESAFIO_FAILED]);
       }
       
       if (batchLeads.indexOf(lead) < batchLeads.length - 1) {

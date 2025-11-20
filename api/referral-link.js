@@ -4,6 +4,7 @@
 const { findLeadByPhone } = require('../lib/phone-simple');
 const supabase = require('../lib/supabase');
 const logger = require('../lib/logger');
+const { addLeadTags, TAGS } = require('../lib/tags');
 
 module.exports = async (req, res) => {
   // CORS
@@ -127,7 +128,7 @@ module.exports = async (req, res) => {
       ]);
 
       // Adicionar tag
-      try { await require('../lib/tags').addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
+      await addLeadTags(supabase, lead.id, [TAGS.DESAFIO_ENVIADO]);
 
   logger.info && logger.info(reqId, '🎈DESAFIO ENVIADO | Status atualizado para desafio_enviado e log registrado.');
     } catch (e) {

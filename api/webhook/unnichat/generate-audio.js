@@ -15,6 +15,7 @@ const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
 const { findLeadByPhone } = require('../../../lib/phone-simple');
+const { addLeadTags, TAGS } = require('../../../lib/tags');
 
 // Configuração Supabase - usar service_role para ter permissões completas
 const supabase = createClient(
@@ -230,7 +231,10 @@ module.exports = async function generateAudioHandler(req, res) {
       })
       .eq('id', lead.id);
     
-    console.log('✅ Status atualizado: audio_personalizado_enviado');
+    // Adicionar tags (mantém histórico)
+    await addLeadTags(supabase, lead.id, [TAGS.AUDIO_ENVIADO]);
+    
+    console.log('✅ Status atualizado: audio_personalizado_enviado + tags');
     
     // Registrar log
     await supabase.from('whatsapp_logs').insert({

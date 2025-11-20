@@ -3,7 +3,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { formatForUnnichat, findLeadByPhone } = require('./lib/phone-simple');
-const { addLeadTags } = require('./lib/tags');
+const { addLeadTags, TAGS } = require('./lib/tags');
 
 // Forçar produção
 const isProduction = true;
@@ -183,7 +183,8 @@ Compartilhe vitalidade. Inspire transformação`;
         whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
       })
       .eq('id', lead.id);
-    try { await addLeadTags(supabase, lead.id, ['desafio_enviado']); } catch (e) {}
+    
+    await addLeadTags(supabase, lead.id, [TAGS.DESAFIO_ENVIADO]);
     
     if (updateError) {
       console.log('⚠️  Aviso: Não foi possível atualizar status:', updateError.message);

@@ -1,6 +1,7 @@
 // diagnostico-automacao-lotes.js - ENVIO DIRETO DE DIAGNÓSTICO
 const { createClient } = require('@supabase/supabase-js');
 const { formatForUnnichat } = require('./lib/phone-simple');
+const { addLeadTags, hasTag, TAGS } = require('./lib/tags');
 
 // ========================================
 // CONFIGURAÇÃO DE AMBIENTE
@@ -101,10 +102,10 @@ async function enviarEmLotes() {
   // BUSCAR TODOS OS LEADS (COM PAGINAÇÃO)
   const allLeads = await buscarTodosLeads();
   
-  // Filtrar apenas leads com AGUARDANDO_CONTATO
+  // Filtrar apenas leads sem tag de RESULTADOS_ENVIADOS ou DIAGNOSTICO_ENVIADO
   const leadsElegiveis = allLeads.filter(l => 
-    l.whatsapp_status === 'AGUARDANDO_CONTATO' || 
-    !l.whatsapp_status
+    !hasTag(l, TAGS.RESULTADOS_ENVIADOS) && 
+    !hasTag(l, TAGS.DIAGNOSTICO_ENVIADO)
   );
   
   console.log(`📋 Leads elegíveis (AGUARDANDO_CONTATO): ${leadsElegiveis.length}\n`);
@@ -279,6 +280,8 @@ Fez sentido esse Diagnóstico para você? 🙏
             })
             .eq('id', lead.id);
 
+          await addLeadTags(supabase, lead.id, [TAGS.RESULTADOS_ENVIADOS]);
+
           // 4. Registrar log
           await supabase.from('whatsapp_logs').insert({
             lead_id: lead.id,
@@ -306,6 +309,8 @@ Fez sentido esse Diagnóstico para você? 🙏
               whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
             })
             .eq('id', lead.id);
+
+          await addLeadTags(supabase, lead.id, [TAGS.FAILED]);
         }
       }
       

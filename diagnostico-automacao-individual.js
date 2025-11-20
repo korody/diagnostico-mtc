@@ -3,6 +3,7 @@
 
 const { createClient } = require('@supabase/supabase-js');
 const { formatToE164, formatForUnnichat, findLeadByPhone } = require('./lib/phone-simple');
+const { addLeadTags, TAGS } = require('./lib/tags');
 
 // Forçar produção para evitar confusão
 const isProduction = true; // <- FORCE TRUE
@@ -144,6 +145,8 @@ async function main() {
           whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
         })
         .eq('id', lead.id);
+      
+      await addLeadTags(supabase, lead.id, [TAGS.TEMPLATE_ENVIADO]);
       
       if (updateError) {
         console.log('⚠️  Aviso: Não foi possível atualizar status:', updateError.message);

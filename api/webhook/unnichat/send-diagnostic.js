@@ -5,7 +5,7 @@
 
 const { findLeadByPhone, formatForUnnichat } = require('../../../lib/phone-simple');
 const supabase = require('../../../lib/supabase');
-const { addLeadTags } = require('../../../lib/tags');
+const { addLeadTags, TAGS } = require('../../../lib/tags');
 
 const UNNICHAT_API_URL = process.env.UNNICHAT_API_URL || 'https://unnichat.com.br/api';
 const UNNICHAT_TOKEN = process.env.UNNICHAT_ACCESS_TOKEN;
@@ -173,7 +173,7 @@ Fez sentido esse Diagnóstico para você? 🙏
           .eq('id', lead.id);
         
         try { 
-          await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); 
+          await addLeadTags(supabase, lead.id, [TAGS.DIAGNOSTICO_ENVIADO]); 
         } catch (e) {
           logger.error && logger.error(reqId, '⚠️ Falha ao adicionar tag', e.message);
         }
@@ -271,7 +271,7 @@ Fez sentido esse Diagnóstico para você? 🙏
         .eq('id', lead.id);
       
       try { 
-        await addLeadTags(supabase, lead.id, ['diagnostico_enviado']); 
+        await addLeadTags(supabase, lead.id, [TAGS.DIAGNOSTICO_ENVIADO]); 
       } catch (e) { 
         logger.error && logger.error(reqId, '⚠️ Falha ao adicionar tag', e.message); 
       }

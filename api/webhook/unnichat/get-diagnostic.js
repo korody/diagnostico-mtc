@@ -2,7 +2,7 @@
 // Endpoint para retornar diagnóstico do lead para Unnichat, sem envio direto ao lead
 
 const { findLeadByPhone } = require('../../../lib/phone-simple');
-const { addLeadTags } = require('../../../lib/tags');
+const { addLeadTags, TAGS } = require('../../../lib/tags');
 const logger = require('../../../lib/logger');
 const supabase = require('../../../lib/supabase');
 
@@ -82,7 +82,7 @@ module.exports = async (req, res) => {
       
       // Adicionar tag
       try {
-        await addLeadTags(supabase, lead.id, ['diagnostico_enviado']);
+        await addLeadTags(supabase, lead.id, [TAGS.DIAGNOSTICO_ENVIADO]);
         logger.info && logger.info(reqId, '✅ Tag adicionada', { leadId: lead.id, tag: 'diagnostico_enviado' });
       } catch (tagErr) {
         logger.error && logger.error(reqId, '⚠️ Falha ao adicionar tag', tagErr.message);

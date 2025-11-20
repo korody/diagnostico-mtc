@@ -4,7 +4,7 @@
 // ========================================
 
 let supabase, formatToE164, isValidE164, getDiagnosticos;
-let addLeadTags;
+let addLeadTags, TAGS;
 let contarElementos, determinarElementoPrincipal, calcularIntensidade;
 let calcularUrgencia, determinarQuadrante, calcularLeadScore;
 let diagnosticosData;
@@ -13,7 +13,7 @@ try {
   supabase = require('../lib/supabase');
   ({ formatToE164, isValidE164 } = require('../lib/phone-simple'));
   ({ getDiagnosticos } = require('../lib/diagnosticos'));
-  ({ addLeadTags } = require('../lib/tags'));
+  ({ addLeadTags, TAGS } = require('../lib/tags'));
   ({
     contarElementos,
     determinarElementoPrincipal,
@@ -165,7 +165,7 @@ module.exports = async (req, res) => {
           sent_at: new Date().toISOString()
         });
         // Adicionar tag de diagnóstico finalizado
-        await addLeadTags(supabase, existe.id, ['diagnostico_finalizado']);
+        await addLeadTags(supabase, existe.id, [TAGS.DIAGNOSTICO_FINALIZADO]);
   } catch (e) { logger && logger.error && logger.error(reqId, '⚠️ Log submit (update) falhou', e.message); }
       
     } else {
@@ -192,7 +192,7 @@ module.exports = async (req, res) => {
           sent_at: new Date().toISOString()
         });
         // Adicionar tag de diagnóstico finalizado
-        await addLeadTags(supabase, inserted?.id, ['diagnostico_finalizado']);
+        await addLeadTags(supabase, inserted?.id, [TAGS.DIAGNOSTICO_FINALIZADO]);
   } catch (e) { logger && logger.error && logger.error(reqId, '⚠️ Log submit (insert) falhou', e.message); }
     }
     
