@@ -134,7 +134,11 @@ module.exports = async (req, res) => {
       script_abertura: scriptAbertura,
       lead_score: leadScore,
       prioridade: prioridade,
-      is_hot_lead_vip: isHotLeadVIP
+      is_hot_lead_vip: isHotLeadVIP,
+      // Campos calculados adicionais
+      contagem_elementos: contagem,
+      intensidade_calculada: intensidade,
+      urgencia_calculada: urgencia
     };
     
     // Verificar se lead já existe (usando telefone E.164)
