@@ -519,14 +519,26 @@ const QuizMTC = () => {
       
       if (result.success) {
         console.log('✅ QUIZ SALVO COM SUCESSO!');
-        console.log('  Lead ID:', result.lead_id);
+        console.log('  User ID:', result.user_id);
+        console.log('  Novo usuário?', result.is_new_user);
         console.log('  Diagnóstico:', result.diagnostico);
+        console.log('  Redirect URL:', result.redirect_url);
         
         setStep('resultado');
         
+        // Aguardar 2 segundos e redirecionar JÁ AUTENTICADO
         setTimeout(() => {
-          console.log('🔄 Redirecionando...');
-          window.top.location.href = 'https://black.qigongbrasil.com/diagnostico';
+          console.log('🔄 Redirecionando para:', result.redirect_url);
+          
+          // Se tem token (auto-signup), usar redirect_url com token
+          // Senão, redirecionar para diagnostico
+          if (result.redirect_url && result.redirect_url.includes('token_hash')) {
+            console.log('✅ Redirecionando com autenticação (magic link)');
+            window.location.href = result.redirect_url; // Com token
+          } else {
+            console.log('⚠️ Redirecionando sem autenticação (fallback)');
+            window.location.href = result.redirect_url || 'https://black.qigongbrasil.com/diagnostico';
+          }
         }, 2000);
       } else {
         throw new Error(result.message || 'Erro desconhecido');

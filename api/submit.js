@@ -141,6 +141,99 @@ module.exports = async (req, res) => {
       urgencia_calculada: urgencia
     };
     
+    // ============================================
+    // 1️⃣ VERIFICAR SE USUÁRIO JÁ EXISTE (Auto-Signup)
+    // ============================================
+    
+    let userId = null;
+    let isNewUser = false;
+    const supabaseAdmin = supabase.admin;
+    
+    if (!supabaseAdmin) {
+      logger && logger.warn && logger.warn(reqId, '⚠️ Cliente admin não disponível - ignorando auto-signup');
+    } else {
+      try {
+        console.log('🔐 Verificando se usuário existe:', lead.EMAIL);
+        
+        const { data: { users: allUsers }, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (listErr) {
+          logger && logger.warn && logger.warn(reqId, '⚠️ Erro ao listar usuários:', listErr.message);
+        } else {
+          const userExists = allUsers?.find(u => u.email === lead.EMAIL);
+          
+          if (userExists) {
+            // ✅ Usuário já existe
+            userId = userExists.id;
+            isNewUser = false;
+            logger && logger.info && logger.info(reqId, '✅ Usuário já existe', { userId });
+          } else {
+            // ============================================
+            // 2️⃣ CRIAR NOVO USUÁRIO (Magic Link Auth)
+            // ============================================
+            
+            console.log('🆕 Criando novo usuário...');
+            
+            const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+              email: lead.EMAIL,
+              email_confirm: true, // Confirmar automaticamente
+              user_metadata: {
+                full_name: lead.NOME,
+                phone: celularE164 // E.164 format
+              }
+            });
+            
+            if (createErr) {
+              logger && logger.error && logger.error(reqId, '❌ Erro ao criar usuário:', createErr.message);
+              // Não bloquear o quiz - continuar sem user_id
+            } else {
+              userId = newUser.user.id;
+              isNewUser = true;
+              logger && logger.info && logger.info(reqId, '✅ Usuário criado', { userId, email: lead.EMAIL });
+            }
+          }
+          
+          // ============================================
+          // 3️⃣ GERAR MAGIC LINK (se user_id disponível)
+          // ============================================
+          
+          if (userId) {
+            try {
+              const personaAiUrl = process.env.PERSONA_AI_URL || 'https://persona-ai.vercel.app';
+              
+              const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+                type: 'magiclink',
+                email: lead.EMAIL,
+                options: {
+                  redirectTo: `${personaAiUrl}/auth/callback?next=/chat`
+                }
+              });
+              
+              if (linkErr) {
+                logger && logger.warn && logger.warn(reqId, '⚠️ Erro ao gerar magic link:', linkErr.message);
+              } else if (linkData?.properties?.action_link) {
+                const magicUrl = new URL(linkData.properties.action_link);
+                const tokenHash = magicUrl.searchParams.get('token_hash');
+                
+                if (tokenHash) {
+                  dadosParaSalvar.redirect_url = `${personaAiUrl}/auth/callback?token_hash=${tokenHash}&type=magiclink&next=/chat`;
+                  logger && logger.info && logger.info(reqId, '✅ Magic link gerado');
+                }
+              }
+            } catch (e) {
+              logger && logger.error && logger.error(reqId, '⚠️ Erro ao gerar magic link:', e.message);
+            }
+          }
+        }
+      } catch (e) {
+        logger && logger.error && logger.error(reqId, '⚠️ Erro no fluxo de auto-signup:', e.message);
+      }
+    }
+    
+    // ============================================
+    // 4️⃣ SALVAR QUIZ_LEADS (com user_id se criou)
+    // ============================================
+    
     // Verificar se lead já existe (usando telefone E.164)
     const { data: existe } = await supabase
       .from('quiz_leads')
@@ -150,16 +243,19 @@ module.exports = async (req, res) => {
     
     if (existe) {
       // Atualizar lead existente
+      const updateData = {
+        ...dadosParaSalvar,
+        updated_at: new Date().toISOString()
+      };
+      if (userId) updateData.user_id = userId;
+      
       await supabase
         .from('quiz_leads')
-        .update({ 
-          ...dadosParaSalvar, 
-          updated_at: new Date().toISOString() 
-        })
+        .update(updateData)
         .eq('celular', celularE164);
         
-  logger && logger.info && logger.info(reqId, '✅ Lead ATUALIZADO', { id: existe.id });
-      // Registrar evento de linha do tempo (diagnóstico solicitado)
+      logger && logger.info && logger.info(reqId, '✅ Lead ATUALIZADO', { id: existe.id, userId });
+      // Registrar evento
       try {
         await supabase.from('whatsapp_logs').insert({
           lead_id: existe.id,
@@ -168,42 +264,60 @@ module.exports = async (req, res) => {
           metadata: { source: 'quiz_submit', updated: true },
           sent_at: new Date().toISOString()
         });
-        // Adicionar tag de diagnóstico finalizado
         await addLeadTags(supabase, existe.id, [TAGS.DIAGNOSTICO_FINALIZADO]);
-  } catch (e) { logger && logger.error && logger.error(reqId, '⚠️ Log submit (update) falhou', e.message); }
+      } catch (e) { 
+        logger && logger.error && logger.error(reqId, '⚠️ Log submit (update) falhou', e.message); 
+      }
       
     } else {
       // Inserir novo lead
+      const insertData = {
+        ...dadosParaSalvar,
+        celular: celularE164,
+        whatsapp_status: 'AGUARDANDO_CONTATO'
+      };
+      if (userId) insertData.user_id = userId;
+      
       const { data: inserted, error: insertErr } = await supabase
         .from('quiz_leads')
-        .insert({
-          ...dadosParaSalvar,
-          celular: celularE164,
-          whatsapp_status: 'AGUARDANDO_CONTATO'
-        })
+        .insert(insertData)
         .select('id')
         .maybeSingle();
+      
       if (insertErr) throw insertErr;
         
-  logger && logger.info && logger.info(reqId, '✅ DIAGNÓSTICO RECEBIDO | Lead INSERIDO', { id: inserted?.id });
-      // Registrar evento de linha do tempo (diagnóstico solicitado)
+      logger && logger.info && logger.info(reqId, '✅ DIAGNÓSTICO RECEBIDO | Lead INSERIDO', { id: inserted?.id, userId });
+      // Registrar evento
       try {
         await supabase.from('whatsapp_logs').insert({
           lead_id: inserted?.id,
           phone: celularE164,
           status: 'diagnostico_solicitado',
-          metadata: { source: 'quiz_submit', created: true },
+          metadata: { source: 'quiz_submit', created: true, isNewUser },
           sent_at: new Date().toISOString()
         });
-        // Adicionar tag de diagnóstico finalizado
         await addLeadTags(supabase, inserted?.id, [TAGS.DIAGNOSTICO_FINALIZADO]);
-  } catch (e) { logger && logger.error && logger.error(reqId, '⚠️ Log submit (insert) falhou', e.message); }
+      } catch (e) { 
+        logger && logger.error && logger.error(reqId, '⚠️ Log submit (insert) falhou', e.message); 
+      }
     }
     
-    // Resposta de sucesso
+    // ============================================
+    // 5️⃣ RETORNAR RESPOSTA COM REDIRECT
+    // ============================================
+    
+    const redirectUrl = dadosParaSalvar.redirect_url 
+      ? dadosParaSalvar.redirect_url
+      : 'https://black.qigongbrasil.com/diagnostico'; // Fallback
+    
     return res.json({ 
       success: true,
-      message: 'Quiz salvo com sucesso!',
+      message: isNewUser 
+        ? 'Usuário criado! Redirecionando para o chat...'
+        : 'Quiz salvo! Redirecionando...',
+      user_id: userId,
+      is_new_user: isNewUser,
+      redirect_url: redirectUrl,
       diagnostico: { 
         elemento: elementoPrincipal,
         perfil: config.nome,
