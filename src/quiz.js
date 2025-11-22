@@ -586,14 +586,17 @@ if (step === 'identificacao') {
           
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="mb-4 text-cyan-500">
-              <Sparkles className="w-12 h-12 mx-auto" />
+            <div className="mb-6">
+              <img 
+                src="/images/mestre-ye-logo.svg" 
+                alt="Mestre Ye" 
+                className="w-28 h-28 mx-auto object-contain drop-shadow-sm"
+              />
             </div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-1">BLACK NOVEMBER</h1>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent mb-3">
-              DA SAÚDE VITALÍCIA
+            <h1 className="text-2xl font-bold text-slate-900 mb-3">COM MESTRE YE</h1>
+            <h2 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent mb-4">
+              Anamnese Express da Medicina Tradicional Chinesa
             </h2>
-            <p className="text-slate-600 text-sm">COM MESTRE YE</p>
           </div>
 
           {/* Título da Seção */}

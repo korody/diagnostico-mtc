@@ -1,0 +1,61 @@
+<svg viewBox="0 0 400 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Caracteres TCM (青 - Qing/Cyan) -->
+  <g id="tcm-chars">
+    <!-- Esquerda superior -->
+    <path d="M 80 120 Q 100 100 120 110 L 100 180 Q 90 170 80 180 Z" fill="#5DD9C1" opacity="0.8"/>
+    <path d="M 100 140 L 140 130 L 130 190 L 100 185 Z" fill="#5DD9C1" opacity="0.7"/>
+    
+    <!-- Centro -->
+    <path d="M 80 240 Q 90 220 110 230 L 120 280 Q 100 290 80 280 Z" fill="#5DD9C1" opacity="0.75"/>
+    <path d="M 110 210 L 150 200 L 140 270 L 110 280 Z" fill="#5DD9C1" opacity="0.8"/>
+    <path d="M 70 280 L 130 270 L 125 310 L 75 320 Z" fill="#5DD9C1" opacity="0.7"/>
+  </g>
+
+  <!-- Silhueta do Mestre Ye -->
+  <g id="master-silhouette">
+    <!-- Cabeça -->
+    <circle cx="200" cy="100" r="35" fill="black"/>
+    
+    <!-- Corpo -->
+    <path d="M 200 135 Q 180 150 170 200 L 230 200 Q 220 150 200 135 Z" fill="black"/>
+    
+    <!-- Braço direito (levantado) -->
+    <path d="M 210 160 Q 250 140 280 120" stroke="black" stroke-width="25" stroke-linecap="round" fill="none"/>
+    <!-- Mão direita -->
+    <circle cx="285" cy="115" r="18" fill="black"/>
+    
+    <!-- Braço esquerdo -->
+    <path d="M 190 165 Q 160 180 140 220" stroke="black" stroke-width="22" stroke-linecap="round" fill="none"/>
+    <!-- Mão esquerda -->
+    <circle cx="135" cy="225" r="16" fill="black"/>
+    
+    <!-- Perna direita -->
+    <path d="M 215 200 L 240 330" stroke="black" stroke-width="28" stroke-linecap="round" fill="none"/>
+    <!-- Pé direito -->
+    <ellipse cx="250" cy="340" rx="20" ry="15" fill="black"/>
+    
+    <!-- Perna esquerda -->
+    <path d="M 185 200 L 160 330" stroke="black" stroke-width="28" stroke-linecap="round" fill="none"/>
+    <!-- Pé esquerdo -->
+    <ellipse cx="150" cy="340" rx="20" ry="15" fill="black"/>
+  </g>
+
+  <!-- Caracteres TCM na frente (direita) -->
+  <g id="tcm-chars-right">
+    <!-- Superior -->
+    <path d="M 280 100 Q 300 90 320 100 L 310 160 Q 295 155 280 160 Z" fill="#5DD9C1" opacity="0.8"/>
+    <path d="M 310 115 L 350 105 L 340 170 L 310 175 Z" fill="#5DD9C1" opacity="0.7"/>
+    
+    <!-- Meio -->
+    <path d="M 290 220 Q 305 200 325 210 L 330 270 Q 310 280 290 275 Z" fill="#5DD9C1" opacity="0.75"/>
+    <path d="M 320 190 L 360 180 L 350 260 L 320 270 Z" fill="#5DD9C1" opacity="0.8"/>
+  </g>
+
+  <!-- Texto "MESTRE YE" -->
+  <text x="200" y="420" font-family="Arial, sans-serif" font-size="72" font-weight="bold" text-anchor="middle" fill="black" letter-spacing="8">
+    MESTRE YE
+  </text>
+  
+  <!-- Linha decorativa -->
+  <line x1="80" y1="450" x2="320" y2="450" stroke="#5DD9C1" stroke-width="3" opacity="0.6"/>
+</svg>
