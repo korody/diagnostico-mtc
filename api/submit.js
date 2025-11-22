@@ -273,8 +273,7 @@ module.exports = async (req, res) => {
       // Inserir novo lead
       const insertData = {
         ...dadosParaSalvar,
-        celular: celularE164,
-        whatsapp_status: 'AGUARDANDO_CONTATO'
+        celular: celularE164
       };
       if (userId) insertData.user_id = userId;
       
