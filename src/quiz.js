@@ -593,9 +593,9 @@ if (step === 'identificacao') {
                 className="w-32 h-32 mx-auto object-contain drop-shadow-md"
               />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 mb-3">COM MESTRE YE</h1>
+            <h1 className="text-2xl font-bold text-slate-900 mb-3">Anamnese Express da Medicina Tradicional Chinesa</h1>
             <h2 className="text-lg font-semibold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent mb-4">
-              Anamnese Express da Medicina Tradicional Chinesa
+              com Mestre Ye
             </h2>
           </div>
 
