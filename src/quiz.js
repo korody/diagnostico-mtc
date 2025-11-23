@@ -588,9 +588,9 @@ if (step === 'identificacao') {
           <div className="text-center mb-8">
             <div className="mb-6">
               <img 
-                src="/images/mestre-ye-logo.svg" 
+                src="/images/Logo-Mestre-Ye-Oficial.png" 
                 alt="Mestre Ye" 
-                className="w-28 h-28 mx-auto object-contain drop-shadow-sm"
+                className="w-32 h-32 mx-auto object-contain drop-shadow-md"
               />
             </div>
             <h1 className="text-2xl font-bold text-slate-900 mb-3">COM MESTRE YE</h1>
