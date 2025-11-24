@@ -572,7 +572,7 @@ if (step === 'identificacao') {
           
           {/* Botão de Suporte - Discreto no canto */}
           <a
-            href="https://wa.me/5511963982121?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
+            href="https://wa.me/5511998457676?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-3 right-3 flex items-center gap-1.5 text-slate-400 hover:text-green-500 transition-colors duration-200 group"
@@ -804,7 +804,7 @@ if (step === 'quiz') {
           
           {/* Botão de Suporte - Discreto no canto */}
           <a
-            href="https://wa.me/5511963982121?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
+            href="https://wa.me/5511998457676?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-3 right-3 flex items-center gap-1.5 text-slate-400 hover:text-green-500 transition-colors duration-200 group"
