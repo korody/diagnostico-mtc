@@ -142,84 +142,39 @@ module.exports = async (req, res) => {
     };
     
     // ============================================
-    // 1️⃣ VERIFICAR SE USUÁRIO JÁ EXISTE (Auto-Signup)
+    // AUTO-SIGNUP: Gerar Magic Link (cria usuário automaticamente)
     // ============================================
     
     let userId = null;
-    let isNewUser = false;
+    let redirectUrl = null;
     const supabaseAdmin = supabase.admin;
     
     if (!supabaseAdmin) {
       logger && logger.warn && logger.warn(reqId, '⚠️ Cliente admin não disponível - ignorando auto-signup');
     } else {
       try {
-        console.log('🔐 Verificando se usuário existe:', lead.EMAIL);
+        const personaAiUrl = process.env.PERSONA_AI_URL || 'https://digital.mestreye.com';
         
-        const { data: { users: allUsers }, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
+        logger && logger.info && logger.info(reqId, '🔗 Gerando magic link para:', lead.EMAIL);
         
-        if (listErr) {
-          logger && logger.warn && logger.warn(reqId, '⚠️ Erro ao listar usuários:', listErr.message);
-        } else {
-          const userExists = allUsers?.find(u => u.email === lead.EMAIL);
-          
-          if (userExists) {
-            // ✅ Usuário já existe
-            userId = userExists.id;
-            isNewUser = false;
-            logger && logger.info && logger.info(reqId, '✅ Usuário já existe', { userId });
-          } else {
-            // ============================================
-            // 2️⃣ CRIAR NOVO USUÁRIO (Magic Link Auth)
-            // ============================================
-            
-            console.log('🆕 Criando novo usuário...');
-            
-            const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
-              email: lead.EMAIL,
-              email_confirm: true, // Confirmar automaticamente
-              user_metadata: {
-                full_name: lead.NOME,
-                phone: celularE164 // E.164 format
-              }
-            });
-            
-            if (createErr) {
-              logger && logger.error && logger.error(reqId, '❌ Erro ao criar usuário:', createErr.message);
-              // Não bloquear o quiz - continuar sem user_id
-            } else {
-              userId = newUser.user.id;
-              isNewUser = true;
-              logger && logger.info && logger.info(reqId, '✅ Usuário criado', { userId, email: lead.EMAIL });
+        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+          type: 'magiclink',
+          email: lead.EMAIL,
+          options: {
+            redirectTo: `${personaAiUrl}/auth/callback?redirect=/chat`,
+            data: {
+              full_name: lead.NOME,
+              phone: celularE164
             }
           }
-          
-          // ============================================
-          // 3️⃣ GERAR MAGIC LINK (se user_id disponível)
-          // ============================================
-          
-          if (userId) {
-            try {
-              const personaAiUrl = process.env.PERSONA_AI_URL || 'https://persona-ai.vercel.app';
-              
-              const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
-                type: 'magiclink',
-                email: lead.EMAIL,
-                options: {
-                  redirectTo: `${personaAiUrl}/chat`
-                }
-              });
-              
-              if (linkErr) {
-                logger && logger.warn && logger.warn(reqId, '⚠️ Erro ao gerar magic link:', linkErr.message);
-              } else if (linkData?.properties?.action_link) {
-                // Usar o action_link direto do Supabase (ele já redireciona corretamente)
-                dadosParaSalvar.redirect_url = linkData.properties.action_link;
-                logger && logger.info && logger.info(reqId, '✅ Magic link gerado');
-              }
-            } catch (e) {
-              logger && logger.error && logger.error(reqId, '⚠️ Erro ao gerar magic link:', e.message);
-            }
-          }
+        });
+        
+        if (error) {
+          logger && logger.error && logger.error(reqId, '❌ Erro ao gerar magic link:', error.message);
+        } else if (data?.properties?.action_link) {
+          redirectUrl = data.properties.action_link;
+          dadosParaSalvar.redirect_url = redirectUrl;
+          logger && logger.info && logger.info(reqId, '✅ Magic link gerado com sucesso');
         }
       } catch (e) {
         logger && logger.error && logger.error(reqId, '⚠️ Erro no fluxo de auto-signup:', e.message);
@@ -301,18 +256,14 @@ module.exports = async (req, res) => {
     // 5️⃣ RETORNAR RESPOSTA COM REDIRECT
     // ============================================
     
-    const redirectUrl = dadosParaSalvar.redirect_url 
-      ? dadosParaSalvar.redirect_url
+    const finalRedirectUrl = redirectUrl 
+      ? redirectUrl
       : 'https://black.qigongbrasil.com/diagnostico'; // Fallback
     
     return res.json({ 
       success: true,
-      message: isNewUser 
-        ? 'Usuário criado! Redirecionando para o chat...'
-        : 'Quiz salvo! Redirecionando...',
-      user_id: userId,
-      is_new_user: isNewUser,
-      redirect_url: redirectUrl,
+      message: 'Quiz enviado com sucesso!',
+      redirect_url: finalRedirectUrl,
       diagnostico: { 
         elemento: elementoPrincipal,
         perfil: config.nome,
