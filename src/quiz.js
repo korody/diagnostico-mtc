@@ -1,27 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkles } from 'lucide-react';
 
 // Importar validador de telefone E.164
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
 
 const QuizMTC = () => {
-  // 🔐 DETECTAR AUTO-LOGIN E REDIRECIONAR
-  useEffect(() => {
-    const hash = window.location.hash;
-    
-    // Se veio do Supabase com token de autenticação
-    if (hash && hash.includes('access_token=')) {
-      console.log('🔐 Token de autenticação detectado - redirecionando para digital.mestreye.com/chat');
-      
-      // Redirecionar para o chat com o token
-      const targetUrl = `https://digital.mestreye.com/chat${hash}`;
-      console.log('🚀 Redirecionando para:', targetUrl);
-      
-      window.location.href = targetUrl;
-      return;
-    }
-  }, []);
-  
   // Função para ler parâmetros da URL
   const getUrlParams = () => {
     const params = new URLSearchParams(window.location.search);
@@ -543,19 +526,10 @@ const QuizMTC = () => {
         
         setStep('resultado');
         
-        // Aguardar 2 segundos e redirecionar JÁ AUTENTICADO
+        // Aguardar 2 segundos e redirecionar (já autenticado via endpoint integrado)
         setTimeout(() => {
           console.log('🔄 Redirecionando para:', result.redirect_url);
-          
-          // Se tem token (auto-signup), usar redirect_url com token
-          // Senão, redirecionar para diagnostico
-          if (result.redirect_url && result.redirect_url.includes('token_hash')) {
-            console.log('✅ Redirecionando com autenticação (magic link)');
-            window.location.href = result.redirect_url; // Com token
-          } else {
-            console.log('⚠️ Redirecionando sem autenticação (fallback)');
-            window.location.href = result.redirect_url || 'https://black.qigongbrasil.com/diagnostico';
-          }
+          window.location.href = result.redirect_url || 'https://black.qigongbrasil.com/diagnostico';
         }, 2000);
       } else {
         throw new Error(result.message || 'Erro desconhecido');

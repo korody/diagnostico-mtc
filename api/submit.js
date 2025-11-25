@@ -142,43 +142,48 @@ module.exports = async (req, res) => {
     };
     
     // ============================================
-    // AUTO-SIGNUP: Gerar Magic Link (cria usuário automaticamente)
+    // AUTENTICAÇÃO INTEGRADA: Enviar para Persona AI
     // ============================================
     
-    let userId = null;
-    let redirectUrl = null;
-    const supabaseAdmin = supabase.admin;
+    let redirectUrl = 'https://black.qigongbrasil.com/diagnostico'; // Fallback
     
-    if (!supabaseAdmin) {
-      logger && logger.warn && logger.warn(reqId, '⚠️ Cliente admin não disponível - ignorando auto-signup');
-    } else {
-      try {
-        const personaAiUrl = process.env.PERSONA_AI_URL || 'https://digital.mestreye.com';
-        
-        logger && logger.info && logger.info(reqId, '🔗 Gerando magic link para:', lead.EMAIL);
-        
-        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-          type: 'magiclink',
-          email: lead.EMAIL,
-          options: {
-            redirectTo: `${personaAiUrl}/auth/callback?redirect=/chat`,
-            data: {
-              full_name: lead.NOME,
-              phone: celularE164
-            }
-          }
-        });
-        
-        if (error) {
-          logger && logger.error && logger.error(reqId, '❌ Erro ao gerar magic link:', error.message);
-        } else if (data?.properties?.action_link) {
-          redirectUrl = data.properties.action_link;
-          dadosParaSalvar.redirect_url = redirectUrl;
-          logger && logger.info && logger.info(reqId, '✅ Magic link gerado com sucesso');
+    try {
+      const personaAiUrl = process.env.PERSONA_AI_URL || 'https://digital.mestreye.com';
+      
+      logger && logger.info && logger.info(reqId, '🔗 Enviando para endpoint integrado:', lead.EMAIL);
+      
+      // Preparar payload para o novo endpoint
+      const payload = {
+        email: lead.EMAIL,
+        fullName: lead.NOME,
+        phone: celularE164,
+        quizData: {
+          ...dadosParaSalvar,
+          celular: celularE164
         }
-      } catch (e) {
-        logger && logger.error && logger.error(reqId, '⚠️ Erro no fluxo de auto-signup:', e.message);
+      };
+      
+      // Chamar endpoint integrado de autenticação
+      const response = await fetch(`${personaAiUrl}/api/quiz/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        logger && logger.info && logger.info(reqId, '✅ Autenticação integrada concluída', { userId: result.userId });
+        redirectUrl = `${personaAiUrl}${result.redirectUrl || '/chat'}`;
+      } else {
+        logger && logger.error && logger.error(reqId, '❌ Erro na autenticação integrada:', result.message || 'Erro desconhecido');
+        // Continua com fallback
       }
+    } catch (e) {
+      logger && logger.error && logger.error(reqId, '⚠️ Erro ao chamar endpoint integrado:', e.message);
+      // Continua com fallback
     }
     
     // ============================================
@@ -253,17 +258,13 @@ module.exports = async (req, res) => {
     }
     
     // ============================================
-    // 5️⃣ RETORNAR RESPOSTA COM REDIRECT
+    // RETORNAR RESPOSTA COM REDIRECT
     // ============================================
-    
-    const finalRedirectUrl = redirectUrl 
-      ? redirectUrl
-      : 'https://black.qigongbrasil.com/diagnostico'; // Fallback
     
     return res.json({ 
       success: true,
       message: 'Quiz enviado com sucesso!',
-      redirect_url: finalRedirectUrl,
+      redirect_url: redirectUrl,
       diagnostico: { 
         elemento: elementoPrincipal,
         perfil: config.nome,
