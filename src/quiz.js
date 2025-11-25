@@ -588,7 +588,7 @@ if (step === 'identificacao') {
           <div className="text-center mb-8">
             <div className="mb-6">
               <img 
-                src="/images/Logo-Mestre-Ye-Oficial png.png" 
+                src="/images/Logo-Mestre-Ye-Oficial.png" 
                 alt="Mestre Ye" 
                 className="w-32 h-32 mx-auto object-contain drop-shadow-md"
               />
