@@ -145,6 +145,7 @@ module.exports = async (req, res) => {
     // AUTENTICAÇÃO INTEGRADA: Enviar para Persona AI
     // ============================================
     
+    let userId = null; // ID do usuário criado no endpoint integrado
     let redirectUrl = 'https://black.qigongbrasil.com/diagnostico'; // Fallback
     
     try {
@@ -172,11 +173,21 @@ module.exports = async (req, res) => {
         body: JSON.stringify(payload)
       });
       
-      const result = await response.json();
+      // Parse JSON com tratamento de erro
+      let result;
+      const responseText = await response.text();
+      
+      try {
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        logger && logger.error && logger.error(reqId, '❌ Resposta não é JSON válido:', { status: response.status, body: responseText.substring(0, 200) });
+        throw new Error(`Endpoint retornou resposta inválida (status ${response.status})`);
+      }
       
       if (response.ok && result.success) {
-        logger && logger.info && logger.info(reqId, '✅ Autenticação integrada concluída', { userId: result.userId });
+        userId = result.userId;
         redirectUrl = `${personaAiUrl}${result.redirectUrl || '/chat'}`;
+        logger && logger.info && logger.info(reqId, '✅ Autenticação integrada concluída', { userId, redirectUrl });
       } else {
         logger && logger.error && logger.error(reqId, '❌ Erro na autenticação integrada:', result.message || 'Erro desconhecido');
         // Continua com fallback
@@ -248,7 +259,7 @@ module.exports = async (req, res) => {
           lead_id: inserted?.id,
           phone: celularE164,
           status: 'diagnostico_solicitado',
-          metadata: { source: 'quiz_submit', created: true, isNewUser },
+          metadata: { source: 'quiz_submit', created: true, userId },
           sent_at: new Date().toISOString()
         });
         await addLeadTags(supabase, inserted?.id, [TAGS.DIAGNOSTICO_FINALIZADO]);

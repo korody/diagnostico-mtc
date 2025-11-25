@@ -588,13 +588,11 @@ app.post('/api/submit', async (req, res) => {
         nome: lead.NOME,
         email: emailNormalizado,
         celular: celularE164,
-        respostas: lead.RESPOSTAS,
-        diagnostico: lead.DIAGNOSTICO,
-        quadrante: lead.QUADRANTE,
-        elemento_predominante: lead.ELEMENTO_PREDOMINANTE,
-        lead_score: lead.LEAD_SCORE,
-        status: lead.STATUS,
-        tags: lead.TAGS
+        respostas: respostas,
+        diagnostico_completo: dadosParaSalvar.diagnostico_completo,
+        elemento_principal: dadosParaSalvar.elemento_principal,
+        quadrante: dadosParaSalvar.quadrante,
+        lead_score: dadosParaSalvar.lead_score
       };
       
       const payload = {
@@ -610,14 +608,21 @@ app.post('/api/submit', async (req, res) => {
         body: JSON.stringify(payload)
       });
       
-      const result = await response.json();
+      // Parse JSON com tratamento de erro
+      let result;
+      const responseText = await response.text();
+      
+      try {
+        result = JSON.parse(responseText);
+      } catch (jsonError) {
+        console.error('❌ Resposta não é JSON válido:', responseText.substring(0, 200));
+        throw new Error(`Endpoint retornou resposta inválida (status ${response.status})`);
+      }
       
       if (result.success && result.redirectUrl) {
         userId = result.userId;
         redirectUrl = `${personaAiUrl}${result.redirectUrl}`;
-        dadosParaSalvar.user_id = userId;
-        dadosParaSalvar.redirect_url = redirectUrl;
-        console.log('✅ Usuário autenticado com sucesso via endpoint integrado');
+        console.log('✅ Usuário autenticado com sucesso via endpoint integrado', { userId });
       } else {
         console.error('❌ Erro na autenticação integrada:', result.message || 'Resposta inválida');
       }
