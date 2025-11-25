@@ -38,7 +38,7 @@ module.exports = async (req, res) => {
     // Query base: seleciona campos principais e limita resultados
     let query = supabase
       .from('quiz_leads')
-      .select('id, nome, celular, email, elemento_principal, lead_score, whatsapp_status, created_at')
+      .select('id, nome, celular, email, elemento_principal, lead_score, created_at')
       .limit(10)
       .order('created_at', { ascending: false });
 

@@ -601,8 +601,7 @@ app.post('/api/submit', async (req, res) => {
         .from('quiz_leads')
         .insert({
           ...dadosParaSalvar,
-          celular: celularE164,
-          whatsapp_status: 'AGUARDANDO_CONTATO'
+          celular: celularE164
         })
         .select('id')
         .maybeSingle();
