@@ -101,14 +101,12 @@ module.exports = async (req, res) => {
     // e em seguida envia a 2ª mensagem com o link. Consideramos o desafio "enviado" neste ponto.
     try {
       const nowIso = new Date().toISOString();
-      const shouldBumpAttempts = lead.whatsapp_status !== 'desafio_enviado';
 
       await supabase
         .from('quiz_leads')
         .update({
-          whatsapp_status: 'desafio_enviado',
           whatsapp_sent_at: nowIso,
-          whatsapp_attempts: (lead.whatsapp_attempts || 0) + (shouldBumpAttempts ? 1 : 0)
+          whatsapp_attempts: (lead.whatsapp_attempts || 0) + 1
         })
         .eq('id', lead.id);
 
