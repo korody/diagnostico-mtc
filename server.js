@@ -572,6 +572,95 @@ app.post('/api/submit', async (req, res) => {
       urgencia_calculada: urgencia
     };
     
+    // ============================================
+    // AUTO-SIGNUP: Criar usuário automaticamente
+    // ============================================
+    
+    let userId = null;
+    let isNewUser = false;
+    const supabaseAdmin = supabase.admin;
+    
+    if (!supabaseAdmin) {
+      console.warn('⚠️ Cliente admin não disponível - ignorando auto-signup');
+    } else {
+      try {
+        console.log('🔐 Verificando se usuário existe:', emailNormalizado);
+        
+        const { data: { users: allUsers }, error: listErr } = await supabaseAdmin.auth.admin.listUsers();
+        
+        if (listErr) {
+          console.warn('⚠️ Erro ao listar usuários:', listErr.message);
+        } else {
+          const userExists = allUsers?.find(u => u.email === emailNormalizado);
+          
+          if (userExists) {
+            userId = userExists.id;
+            isNewUser = false;
+            console.log('✅ Usuário já existe:', userId);
+          } else {
+            console.log('🆕 Criando novo usuário...');
+            
+            const { data: newUser, error: createErr } = await supabaseAdmin.auth.admin.createUser({
+              email: emailNormalizado,
+              email_confirm: true,
+              user_metadata: {
+                full_name: lead.NOME,
+                phone: celularE164
+              }
+            });
+            
+            if (createErr) {
+              console.error('❌ Erro ao criar usuário:', createErr.message);
+            } else {
+              userId = newUser.user.id;
+              isNewUser = true;
+              console.log('✅ Usuário criado:', userId);
+            }
+          }
+          
+          // Gerar magic link se user_id disponível
+          if (userId) {
+            try {
+              const personaAiUrl = process.env.PERSONA_AI_URL || 'https://digital.mestreye.com/chat';
+              
+              const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
+                type: 'magiclink',
+                email: emailNormalizado,
+                options: {
+                  redirectTo: `${personaAiUrl}/auth/callback?next=/chat`
+                }
+              });
+              
+              if (linkErr) {
+                console.warn('⚠️ Erro ao gerar magic link:', linkErr.message);
+              } else if (linkData?.properties?.action_link) {
+                const magicUrl = new URL(linkData.properties.action_link);
+                const tokenHash = magicUrl.searchParams.get('token_hash');
+                
+                if (tokenHash) {
+                  dadosParaSalvar.redirect_url = `${personaAiUrl}/auth/callback?token_hash=${tokenHash}&type=magiclink&next=/chat`;
+                  console.log('✅ Magic link gerado');
+                }
+              }
+            } catch (e) {
+              console.error('⚠️ Erro ao gerar magic link:', e.message);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('⚠️ Erro no fluxo de auto-signup:', e.message);
+      }
+    }
+    
+    // Adicionar user_id aos dadosParaSalvar
+    if (userId) {
+      dadosParaSalvar.user_id = userId;
+    }
+    
+    // ============================================
+    // Salvar quiz_leads
+    // ============================================
+    
     // Verificar se lead já existe (usando telefone E.164)
     const { data: existe } = await supabase
       .from('quiz_leads')
@@ -620,9 +709,18 @@ app.post('/api/submit', async (req, res) => {
       } catch (e) { console.log('⚠️ Log submit local (insert) falhou:', e.message); }
     }
     
+    const redirectUrl = dadosParaSalvar.redirect_url 
+      ? dadosParaSalvar.redirect_url
+      : 'https://black.qigongbrasil.com/diagnostico'; // Fallback
+    
     return res.json({ 
       success: true,
-      message: 'Quiz salvo com sucesso!',
+      message: isNewUser 
+        ? 'Usuário criado! Redirecionando para o chat...'
+        : 'Quiz salvo! Redirecionando...',
+      user_id: userId,
+      is_new_user: isNewUser,
+      redirect_url: redirectUrl,
       diagnostico: { 
         elemento: elementoPrincipal,
         perfil: config.nome,
