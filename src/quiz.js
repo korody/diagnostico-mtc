@@ -1,10 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkles } from 'lucide-react';
 
 // Importar validador de telefone E.164
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
 
 const QuizMTC = () => {
+  // 🔐 DETECTAR AUTO-LOGIN E REDIRECIONAR
+  useEffect(() => {
+    const hash = window.location.hash;
+    
+    // Se veio do Supabase com token de autenticação
+    if (hash && hash.includes('access_token=')) {
+      console.log('🔐 Token de autenticação detectado - redirecionando para digital.mestreye.com/chat');
+      
+      // Redirecionar para o chat com o token
+      const targetUrl = `https://digital.mestreye.com/chat${hash}`;
+      console.log('🚀 Redirecionando para:', targetUrl);
+      
+      window.location.href = targetUrl;
+      return;
+    }
+  }, []);
+  
   // Função para ler parâmetros da URL
   const getUrlParams = () => {
     const params = new URLSearchParams(window.location.search);

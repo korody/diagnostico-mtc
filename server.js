@@ -623,28 +623,35 @@ app.post('/api/submit', async (req, res) => {
             try {
               const personaAiUrl = process.env.PERSONA_AI_URL || 'https://digital.mestreye.com/chat';
               
+              console.log('🔗 Gerando magic link para:', emailNormalizado);
+              
               const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
                 type: 'magiclink',
                 email: emailNormalizado,
                 options: {
-                  redirectTo: `${personaAiUrl}/auth/callback?next=/chat`
+                  redirectTo: `${personaAiUrl}/chat`
                 }
               });
+              
+              console.log('📦 linkData:', linkData ? 'recebido' : 'null', '| linkErr:', linkErr?.message || 'nenhum');
               
               if (linkErr) {
                 console.warn('⚠️ Erro ao gerar magic link:', linkErr.message);
               } else if (linkData?.properties?.action_link) {
-                const magicUrl = new URL(linkData.properties.action_link);
-                const tokenHash = magicUrl.searchParams.get('token_hash');
+                console.log('🔍 action_link encontrado:', linkData.properties.action_link.substring(0, 80) + '...');
                 
-                if (tokenHash) {
-                  dadosParaSalvar.redirect_url = `${personaAiUrl}/auth/callback?token_hash=${tokenHash}&type=magiclink&next=/chat`;
-                  console.log('✅ Magic link gerado');
-                }
+                // Usar o action_link direto do Supabase (ele já redireciona corretamente)
+                dadosParaSalvar.redirect_url = linkData.properties.action_link;
+                console.log('✅ Magic link gerado e redirect_url definido');
+              } else {
+                console.warn('⚠️ linkData.properties.action_link não disponível. linkData:', JSON.stringify(linkData, null, 2));
               }
             } catch (e) {
               console.error('⚠️ Erro ao gerar magic link:', e.message);
+              console.error('Stack:', e.stack);
             }
+          } else {
+            console.warn('⚠️ userId null - não gerando magic link');
           }
         }
       } catch (e) {

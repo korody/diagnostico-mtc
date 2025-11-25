@@ -205,20 +205,16 @@ module.exports = async (req, res) => {
                 type: 'magiclink',
                 email: lead.EMAIL,
                 options: {
-                  redirectTo: `${personaAiUrl}/auth/callback?next=/chat`
+                  redirectTo: `${personaAiUrl}/chat`
                 }
               });
               
               if (linkErr) {
                 logger && logger.warn && logger.warn(reqId, '⚠️ Erro ao gerar magic link:', linkErr.message);
               } else if (linkData?.properties?.action_link) {
-                const magicUrl = new URL(linkData.properties.action_link);
-                const tokenHash = magicUrl.searchParams.get('token_hash');
-                
-                if (tokenHash) {
-                  dadosParaSalvar.redirect_url = `${personaAiUrl}/auth/callback?token_hash=${tokenHash}&type=magiclink&next=/chat`;
-                  logger && logger.info && logger.info(reqId, '✅ Magic link gerado');
-                }
+                // Usar o action_link direto do Supabase (ele já redireciona corretamente)
+                dadosParaSalvar.redirect_url = linkData.properties.action_link;
+                logger && logger.info && logger.info(reqId, '✅ Magic link gerado');
               }
             } catch (e) {
               logger && logger.error && logger.error(reqId, '⚠️ Erro ao gerar magic link:', e.message);
