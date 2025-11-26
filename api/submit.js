@@ -184,12 +184,20 @@ module.exports = async (req, res) => {
         throw new Error(`Endpoint retornou resposta inválida (status ${response.status})`);
       }
       
+      // Log detalhado da resposta para debug
+      logger && logger.info && logger.info(reqId, '📥 Resposta completa do endpoint:', JSON.stringify(result, null, 2));
+      
       if (response.ok && result.success) {
         userId = result.userId;
         redirectUrl = `${personaAiUrl}${result.redirectUrl || '/chat'}`;
         logger && logger.info && logger.info(reqId, '✅ Autenticação integrada concluída', { userId, redirectUrl });
       } else {
-        logger && logger.error && logger.error(reqId, '❌ Erro na autenticação integrada:', result.message || 'Erro desconhecido');
+        logger && logger.error && logger.error(reqId, '❌ Erro na autenticação integrada:', { 
+          success: result.success,
+          message: result.message,
+          redirectUrl: result.redirectUrl,
+          fullResponse: result
+        });
         // Continua com fallback
       }
     } catch (e) {
