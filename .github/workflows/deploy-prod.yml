@@ -39,7 +39,7 @@ jobs:
 
       - name: Smoke check /api/status on production alias
         env:
-          PROD_ALIAS: https://quiz.qigongbrasil.com
+          PROD_ALIAS: https://anamnese.mestreye.com
         run: |
           echo "Checking $PROD_ALIAS/api/status"
           curl -fsSL "$PROD_ALIAS/api/status" | tee status.json
@@ -48,7 +48,7 @@ jobs:
       - name: Optional E2E: submit + webhook
         if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
-          PROD_ALIAS: https://quiz.qigongbrasil.com
+          PROD_ALIAS: https://anamnese.mestreye.com
           TEST_PHONE: "11998457676"
         run: |
           echo 'Triggering submit...'
