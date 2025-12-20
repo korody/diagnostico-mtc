@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkles } from 'lucide-react';
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // Importar validador de telefone E.164
 import { parsePhoneNumber, isValidPhoneNumber } from 'libphonenumber-js';
@@ -47,6 +48,7 @@ const QuizMTC = () => {
   const [respostas, setRespostas] = useState({});
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState('');
+  const [resultadoDiagnostico, setResultadoDiagnostico] = useState(null);
 
   // Perguntas do quiz
   const perguntas = [
@@ -217,6 +219,136 @@ const QuizMTC = () => {
         { valor: 'C', texto: 'Há pouco tempo (1-3 meses)' },
         { valor: 'D', texto: 'Há cerca de 6 meses' },
         { valor: 'E', texto: 'Há bastante tempo (mais de 1 ano)' }
+      ]
+    },
+    {
+      id: 'P14',
+      texto: 'Quando você sente dor ou um problema de saúde, qual dessas situações mais acontece com você?',
+      tipo: 'single',
+      opcoes: [
+        { 
+          valor: 'A', 
+          texto: 'Eu aguento sozinha o máximo que consigo, não gosto de incomodar ninguém'
+        },
+        { 
+          valor: 'B', 
+          texto: 'Primeiro pesquiso muito, leio tudo que posso, preciso entender antes de agir'
+        },
+        { 
+          valor: 'C', 
+          texto: 'Resolvo o problema dos outros primeiro, só cuido de mim quando sobra tempo'
+        },
+        { 
+          valor: 'D', 
+          texto: 'Vejo como um sinal de que preciso mudar algo maior na minha vida'
+        }
+      ]
+    },
+    {
+      id: 'P15',
+      texto: 'Qual dessas frases você mais já disse (ou pensou) sobre sua saúde?',
+      tipo: 'single',
+      opcoes: [
+        { 
+          valor: 'A', 
+          texto: '"Não quero dar trabalho para meus filhos, preciso me virar sozinha"'
+        },
+        { 
+          valor: 'B', 
+          texto: '"Já tentei TANTA coisa que não funcionou... será que ISSO vai funcionar?"'
+        },
+        { 
+          valor: 'C', 
+          texto: '"Todo mundo precisa de mim, como vou arrumar tempo para cuidar de MIM?"'
+        },
+        { 
+          valor: 'D', 
+          texto: '"Sinto que essa dor está me chamando para uma transformação maior"'
+        }
+      ]
+    },
+    {
+      id: 'P16',
+      texto: 'Se você encontrasse uma solução PERFEITA para sua saúde hoje, o que te faria DUVIDAR e não começar?',
+      subtexto: 'Seja completamente sincera, queremos entender sua maior preocupação',
+      tipo: 'single',
+      opcoes: [
+        { 
+          valor: 'A', 
+          texto: 'Medo de falhar mais uma vez, de gastar e não funcionar como as outras coisas'
+        },
+        { 
+          valor: 'B', 
+          texto: 'Não ter tempo/disciplina porque preciso cuidar da casa, família, trabalho...'
+        },
+        { 
+          valor: 'C', 
+          texto: 'Preocupação de depender de alguém ou precisar de ajuda para seguir'
+        },
+        { 
+          valor: 'D', 
+          texto: 'Medo de que seja "mais do mesmo" e não uma transformação de verdade'
+        },
+        { 
+          valor: 'E', 
+          texto: 'Não tenho grandes dúvidas, estou pronta para começar'
+        }
+      ]
+    },
+    {
+      id: 'P19',
+      texto: 'Quando você decide investir em algo importante (como sua saúde), você:',
+      tipo: 'single',
+      opcoes: [
+        { 
+          valor: 'A', 
+          texto: 'Decido sozinha, não preciso consultar ninguém'
+        },
+        { 
+          valor: 'B', 
+          texto: 'Gosto de ouvir opinião do marido/filhos mas a decisão final é minha'
+        },
+        { 
+          valor: 'C', 
+          texto: 'Preciso conversar com a família antes de decidir'
+        },
+        { 
+          valor: 'D', 
+          texto: 'Depende da aprovação/ajuda financeira da família'
+        }
+      ]
+    },
+    {
+      id: 'P20',
+      texto: 'Atualmente, você já investe em cuidados com sua saúde além do plano de saúde?',
+      subtexto: 'Ex: academia, terapias, suplementos, consultas particulares',
+      tipo: 'multiple',
+      max: 3,
+      opcoes: [
+        { 
+          valor: 'A', 
+          texto: 'Fisioterapia ou quiropraxia'
+        },
+        { 
+          valor: 'B', 
+          texto: 'Academia, pilates ou personal'
+        },
+        { 
+          valor: 'C', 
+          texto: 'Terapias alternativas (acupuntura, massagem)'
+        },
+        { 
+          valor: 'D', 
+          texto: 'Suplementos, vitaminas'
+        },
+        { 
+          valor: 'E', 
+          texto: 'Consultas médicas/exames particulares'
+        },
+        { 
+          valor: 'F', 
+          texto: 'Não invisto em nada além do plano de saúde'
+        }
       ]
     }
   ];
@@ -524,13 +656,16 @@ const QuizMTC = () => {
         console.log('  Diagnóstico:', result.diagnostico);
         console.log('  Redirect URL:', result.redirect_url);
         
+        // Salvar diagnóstico completo no state
+        setResultadoDiagnostico(result.diagnostico);
+        
         setStep('resultado');
         
-        // Aguardar 2 segundos e redirecionar (já autenticado via endpoint integrado)
-        setTimeout(() => {
-          console.log('🔄 Redirecionando para:', result.redirect_url);
-          window.location.href = result.redirect_url || 'https://black.qigongbrasil.com/diagnostico';
-        }, 2000);
+        // REMOVER redirect automático - deixar usuário ver resultado
+        // setTimeout(() => {
+        //   console.log('🔄 Redirecionando para:', result.redirect_url);
+        //   window.location.href = result.redirect_url || 'https://black.qigongbrasil.com/diagnostico';
+        // }, 2000);
       } else {
         throw new Error(result.message || 'Erro desconhecido');
       }
@@ -918,54 +1053,259 @@ if (step === 'quiz') {
 
   // Render da tela de resultado
 if (step === 'resultado') {
+  // Se não tem diagnóstico ainda, mostrar loading
+  if (!resultadoDiagnostico) {
+    return (
+      <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+        <div className="w-full max-w-lg mx-auto">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-fade-in">
+            <div className="mb-6">
+              <div className="w-20 h-20 mx-auto mb-4 relative">
+                <div className="absolute inset-0 border-4 border-cyan-200 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin"></div>
+                <CheckCircle className="absolute inset-0 m-auto w-10 h-10 text-cyan-500" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-slate-900 mb-4">✅ Diagnóstico Concluído!</h2>
+            <p className="text-xl text-slate-600 mb-6">Processando seus resultados...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Dados do diagnóstico
+  const diag = resultadoDiagnostico;
+  const score = diag.lead_score || 0;
+  
+  // Mapear arquétipos para emojis e cores
+  const arquetiposInfo = {
+    'SILENT_WARRIOR': { emoji: '🛡️', nome: 'Guerreira Silenciosa', cor: 'bg-purple-100', corTexto: 'text-purple-700' },
+    'SKEPTICAL_SCIENTIST': { emoji: '🔬', nome: 'Cientista Cética', cor: 'bg-blue-100', corTexto: 'text-blue-700' },
+    'ETERNAL_MOTHER': { emoji: '💚', nome: 'Mãe Eterna', cor: 'bg-green-100', corTexto: 'text-green-700' },
+    'RISING_PHOENIX': { emoji: '🔥', nome: 'Fênix Renascente', cor: 'bg-orange-100', corTexto: 'text-orange-700' }
+  };
+  
+  const arquetipoAtual = arquetiposInfo[diag.arquetipo_principal] || arquetiposInfo['ETERNAL_MOTHER'];
+  
+  // Dados para radar chart (5 elementos)
+  const radarData = [
+    { elemento: 'Rim', value: diag.contagem_elementos?.RIM || 0 },
+    { elemento: 'Fígado', value: diag.contagem_elementos?.FÍGADO || 0 },
+    { elemento: 'Baço', value: diag.contagem_elementos?.BAÇO || 0 },
+    { elemento: 'Coração', value: diag.contagem_elementos?.CORAÇÃO || 0 },
+    { elemento: 'Pulmão', value: diag.contagem_elementos?.PULMÃO || 0 }
+  ];
+  
+  // Dados para bar chart
+  const barData = [
+    { name: 'Intensidade', value: diag.intensidade_calculada || 0 },
+    { name: 'Urgência', value: diag.urgencia_calculada || 0 },
+    { name: 'Prontidão', value: Math.round(score / 20) }
+  ];
+
   return (
     <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
-      <div className="w-full max-w-lg mx-auto">
+      <div className="w-full max-w-4xl mx-auto space-y-6">
         
-        {/* Popup Branco de Sucesso */}
-        <div className="bg-white rounded-3xl shadow-2xl p-8 text-center animate-fade-in">
+        {/* Header com Score */}
+        <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl shadow-2xl p-8 text-white text-center">
+          <h1 className="text-4xl font-bold mb-2">Seu Diagnóstico MTC</h1>
+          <p className="text-xl opacity-90 mb-6">Análise completa baseada na Medicina Tradicional Chinesa</p>
           
-          {/* Ícone de Loading */}
-          <div className="mb-6">
-            <div className="w-20 h-20 mx-auto mb-4 relative">
-              <div className="absolute inset-0 border-4 border-cyan-200 rounded-full"></div>
-              <div className="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin"></div>
-              <CheckCircle className="absolute inset-0 m-auto w-10 h-10 text-cyan-500" />
+          <div className="bg-white/20 backdrop-blur rounded-2xl p-6">
+            <div className="text-sm uppercase tracking-wider opacity-90 mb-2">Score de Prontidão</div>
+            <div className="text-6xl font-bold mb-3">{score}</div>
+            <div className="w-full h-3 bg-white/30 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-white transition-all duration-1000" 
+                style={{ width: `${score}%` }}
+              ></div>
             </div>
           </div>
-          
-          {/* Título */}
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">
-            ✅ Diagnóstico Concluído!
-          </h2>
-          
-          {/* Descrição */}
-          <p className="text-xl text-slate-600 mb-6">
-            Suas respostas foram salvas com sucesso!
-          </p>
-          
-          {/* Box de Status */}
-          <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-2xl p-6 mb-6">
-            <p className="text-cyan-700 text-lg font-semibold mb-2">
-              📤 Enviando seus dados...
-            </p>
-            <p className="text-slate-600 text-sm">
-              Você será redirecionado automaticamente em instantes
-            </p>
+        </div>
+
+        {/* Cards de Dor + Elemento + Arquétipo */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card 1: Intensidade */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Activity className="w-8 h-8 text-red-500" />
+              <h3 className="text-lg font-bold text-slate-900">Intensidade</h3>
+            </div>
+            <div className="text-3xl font-bold text-red-500 mb-1">{diag.intensidade_calculada || 0}/5</div>
+            <p className="text-sm text-slate-600">Nível de dor física</p>
           </div>
+
+          {/* Card 2: Elemento MTC */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Sparkles className="w-8 h-8 text-cyan-500" />
+              <h3 className="text-lg font-bold text-slate-900">Elemento</h3>
+            </div>
+            <div className="text-2xl font-bold text-cyan-500 mb-1">{diag.elemento_principal}</div>
+            <p className="text-sm text-slate-600">{diag.nome_perfil}</p>
+          </div>
+
+          {/* Card 3: Urgência */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="flex items-center gap-3 mb-3">
+              <Heart className="w-8 h-8 text-orange-500" />
+              <h3 className="text-lg font-bold text-slate-900">Urgência</h3>
+            </div>
+            <div className="text-3xl font-bold text-orange-500 mb-1">{diag.urgencia_calculada || 0}/5</div>
+            <p className="text-sm text-slate-600">Necessidade de ação</p>
+          </div>
+        </div>
+
+        {/* Card Arquétipo */}
+        <div className={`${arquetipoAtual.cor} rounded-2xl shadow-lg p-8`}>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="text-6xl">{arquetipoAtual.emoji}</div>
+            <div>
+              <h3 className={`text-2xl font-bold ${arquetipoAtual.corTexto}`}>
+                Arquétipo: {arquetipoAtual.nome}
+              </h3>
+              <p className="text-slate-700 mt-1">
+                Seu perfil comportamental identificado
+              </p>
+            </div>
+          </div>
+          {diag.objecao_principal && (
+            <div className="mt-4 p-4 bg-white/50 rounded-lg">
+              <p className="text-sm font-semibold text-slate-700">Principal Objeção:</p>
+              <p className="text-slate-600">{diag.objecao_principal}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Gráficos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Radar Chart - 5 Elementos */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h3 className="text-xl font-bold text-slate-900 mb-4 text-center">Equilíbrio dos 5 Elementos</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="#cbd5e1" />
+                <PolarAngleAxis dataKey="elemento" tick={{ fill: '#475569', fontSize: 12 }} />
+                <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fill: '#94a3b8' }} />
+                <Radar name="Elementos" dataKey="value" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.6} />
+                <Tooltip />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Bar Chart - Intensidade/Urgência/Prontidão */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h3 className="text-xl font-bold text-slate-900 mb-4 text-center">Análise de Prontidão</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 12 }} />
+                <YAxis domain={[0, 5]} tick={{ fill: '#94a3b8' }} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#06b6d4" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Recomendações Condicionais */}
+        <div className="bg-white rounded-2xl shadow-lg p-8">
+          <h3 className="text-2xl font-bold text-slate-900 mb-6 text-center">
+            Próximos Passos Recomendados
+          </h3>
           
-          {/* Link Manual */}
+          {score >= 80 ? (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <Sparkles className="w-8 h-8 text-purple-600" />
+                  <h4 className="text-xl font-bold text-purple-900">Programa PREVENTIVA Premium</h4>
+                </div>
+                <p className="text-slate-700 mb-4">
+                  Baseado no seu score, você é candidata ideal para nosso programa completo de 12 meses.
+                </p>
+                <div className="text-3xl font-bold text-purple-600 mb-2">R$ 497/mês</div>
+                <ul className="space-y-2 text-sm text-slate-600">
+                  <li>✅ Acompanhamento individualizado</li>
+                  <li>✅ Sessões semanais ao vivo</li>
+                  <li>✅ Grupo VIP exclusivo</li>
+                  <li>✅ Resultados garantidos em 90 dias</li>
+                </ul>
+              </div>
+            </div>
+          ) : score >= 50 ? (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-xl p-6">
+                <h4 className="text-xl font-bold text-cyan-900 mb-3">Programa Semestral + Produtos Focados</h4>
+                <p className="text-slate-700 mb-4">
+                  Recomendamos começar com nosso programa de 6 meses combinado com produtos específicos para seu elemento.
+                </p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="bg-white rounded-lg p-3">
+                    <div className="font-bold text-cyan-700">Programa Semestral</div>
+                    <div className="text-2xl font-bold text-cyan-600">R$ 297/mês</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3">
+                    <div className="font-bold text-cyan-700">+ Produtos MTC</div>
+                    <div className="text-2xl font-bold text-cyan-600">R$ 197/mês</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
+                <h4 className="text-xl font-bold text-green-900 mb-3">Workshop Intensivo de 3 Dias</h4>
+                <p className="text-slate-700 mb-4">
+                  Ideal para você começar sua jornada! Aprenda as bases do Qi Gong e técnicas essenciais.
+                </p>
+                <div className="text-3xl font-bold text-green-600 mb-2">R$ 497 (pagamento único)</div>
+                <p className="text-sm text-slate-600">
+                  Após o workshop, você pode migrar para programas mais avançados com desconto especial.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CTAs Finais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <a
+            href="https://digital.mestreye.com/chat"
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-5 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-3 transform hover:scale-[1.02]"
+          >
+            <Brain className="w-6 h-6" />
+            <div className="text-left">
+              <div className="text-sm opacity-90">Continuar com</div>
+              <div className="text-lg">Mestre Ye Digital (IA)</div>
+            </div>
+          </a>
+
+          <a
+            href="https://wa.me/5511998457676?text=Olá!%20Finalizei%20meu%20diagnóstico%20e%20gostaria%20de%20falar%20com%20um%20especialista"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-5 px-8 rounded-xl transition-all duration-200 border-2 border-slate-300 hover:border-slate-400 shadow-lg flex items-center justify-center gap-3 transform hover:scale-[1.02]"
+          >
+            <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            <div className="text-left">
+              <div className="text-sm opacity-70">Falar com</div>
+              <div className="text-lg">Especialista Humano</div>
+            </div>
+          </a>
+        </div>
+
+        {/* Footer */}
+        <div className="text-center py-6">
           <p className="text-slate-500 text-sm">
-            Se não for redirecionado automaticamente,{' '}
-            <a 
-              href="https://black.qigongbrasil.com/diagnostico"
-              className="text-cyan-500 hover:text-cyan-600 underline font-semibold transition-colors"
-            >
-              clique aqui
-            </a>
+            💚 Seus dados foram salvos com segurança • Você pode acessar este diagnóstico a qualquer momento
           </p>
         </div>
-        
+
       </div>
     </div>
   );
