@@ -7,6 +7,7 @@ let supabase, formatToE164, isValidE164, getDiagnosticos;
 let addLeadTags, TAGS;
 let contarElementos, determinarElementoPrincipal, calcularIntensidade;
 let calcularUrgencia, determinarQuadrante, calcularLeadScore;
+let calcularArquetipo;
 let diagnosticosData;
 
 try {
@@ -22,6 +23,7 @@ try {
     determinarQuadrante,
     calcularLeadScore
   } = require('../lib/tcm'));
+  ({ calcularArquetipo } = require('../lib/calcularArquetipo'));
 
   // Carregar diagnósticos uma vez por cold start
   diagnosticosData = getDiagnosticos();
@@ -106,7 +108,22 @@ module.exports = async (req, res) => {
     const prioridade = leadScore >= 70 ? 'ALTA' : leadScore >= 40 ? 'MÉDIA' : 'BAIXA';
     const isHotLeadVIP = leadScore >= 80 || quadrante === 1 || respostas.P8 === 'A';
     
-  logger && logger.info && logger.info(reqId, '🎯 Diagnóstico calculado', { elemento: elementoPrincipal, leadScore, isHotLeadVIP });
+    // Calcular arquétipo comportamental
+    const dadosArquetipo = calcularArquetipo ? calcularArquetipo(respostas) : {
+      arquetipo_principal: null,
+      scores_arquetipos: null,
+      confianca: null,
+      objecao_principal: null,
+      autonomia_decisao: null,
+      investimento_mensal_atual: null
+    };
+    
+  logger && logger.info && logger.info(reqId, '🎯 Diagnóstico calculado', { 
+    elemento: elementoPrincipal, 
+    leadScore, 
+    isHotLeadVIP,
+    arquetipo: dadosArquetipo.arquetipo_principal
+  });
     
     // Buscar configuração do elemento com fallback
     const config = diagnosticosData[elementoPrincipal] || diagnosticosData['BAÇO'];
@@ -138,7 +155,14 @@ module.exports = async (req, res) => {
       // Campos calculados adicionais
       contagem_elementos: contagem,
       intensidade_calculada: intensidade,
-      urgencia_calculada: urgencia
+      urgencia_calculada: urgencia,
+      // Novos campos de arquétipos comportamentais
+      arquetipo_principal: dadosArquetipo.arquetipo_principal,
+      scores_arquetipos: dadosArquetipo.scores_arquetipos,
+      confianca_arquetipo: dadosArquetipo.confianca,
+      objecao_principal: dadosArquetipo.objecao_principal,
+      autonomia_decisao: dadosArquetipo.autonomia_decisao,
+      investimento_mensal_atual: dadosArquetipo.investimento_mensal_atual
     };
     
     // ============================================
