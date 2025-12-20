@@ -1088,6 +1088,30 @@ if (step === 'resultado') {
   
   const arquetipoAtual = arquetiposInfo[diag.arquetipo_principal] || arquetiposInfo['ETERNAL_MOTHER'];
   
+  // Calcular scores individuais
+  const intensidadeScore = Math.round((diag.intensidade_calculada / 5) * 100);
+  const urgenciaScore = Math.round((diag.urgencia_calculada / 5) * 100);
+  const prontidaoScore = score;
+  
+  // Calcular score de equilíbrio energético (baseado na distribuição dos elementos)
+  const totalElementos = Object.values(diag.contagem_elementos || {}).reduce((a, b) => a + b, 0);
+  const elementoMax = Math.max(...Object.values(diag.contagem_elementos || {}));
+  const equilibrioScore = totalElementos > 0 ? Math.round((1 - (elementoMax / totalElementos)) * 100) : 50;
+  
+  // Score de investimento em saúde (baseado em P20)
+  const investimentoScore = diag.investimento_mensal_atual ? Math.min(Math.round((diag.investimento_mensal_atual / 600) * 100), 100) : 0;
+  
+  // Score de autonomia
+  const autonomiaMap = { 'TOTAL': 100, 'ALTA': 75, 'MEDIA': 50, 'BAIXA': 25 };
+  const autonomiaScore = autonomiaMap[diag.autonomia_decisao] || 50;
+  
+  // Função para determinar badge
+  const getBadge = (score) => {
+    if (score >= 70) return { text: 'Ponto Forte', color: 'bg-green-100 text-green-700 border-green-300' };
+    if (score >= 40) return { text: 'Atenção', color: 'bg-yellow-100 text-yellow-700 border-yellow-300' };
+    return { text: 'Prioridade', color: 'bg-red-100 text-red-700 border-red-300' };
+  };
+  
   // Dados para radar chart (5 elementos)
   const radarData = [
     { elemento: 'Rim', value: diag.contagem_elementos?.RIM || 0 },
@@ -1105,115 +1129,326 @@ if (step === 'resultado') {
   ];
 
   return (
-    <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
-      <div className="w-full max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen p-4 pt-8" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+      <div className="w-full max-w-6xl mx-auto space-y-6">
         
-        {/* Header com Score */}
-        <div className="bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl shadow-2xl p-8 text-white text-center">
-          <h1 className="text-4xl font-bold mb-2">Seu Diagnóstico MTC</h1>
-          <p className="text-xl opacity-90 mb-6">Análise completa baseada na Medicina Tradicional Chinesa</p>
-          
-          <div className="bg-white/20 backdrop-blur rounded-2xl p-6">
-            <div className="text-sm uppercase tracking-wider opacity-90 mb-2">Score de Prontidão</div>
-            <div className="text-6xl font-bold mb-3">{score}</div>
-            <div className="w-full h-3 bg-white/30 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-white transition-all duration-1000" 
-                style={{ width: `${score}%` }}
-              ></div>
-            </div>
-          </div>
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+            Resultados do Diagnóstico MTC
+          </h1>
+          <p className="text-white/90 text-lg">
+            Análise completa baseada na Medicina Tradicional Chinesa
+          </p>
         </div>
 
-        {/* Cards de Dor + Elemento + Arquétipo */}
+        {/* Grid de Cards de Scores */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Card 1: Intensidade */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Activity className="w-8 h-8 text-red-500" />
-              <h3 className="text-lg font-bold text-slate-900">Intensidade</h3>
+          {/* Card 1: Score Geral */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center border-2 border-slate-200">
+            <div className="text-5xl font-bold text-slate-800 mb-2">{prontidaoScore}%</div>
+            <div className="text-slate-600 font-semibold mb-3">Score Geral de Prontidão</div>
+            <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border ${getBadge(prontidaoScore).color}`}>
+              {getBadge(prontidaoScore).text}
             </div>
-            <div className="text-3xl font-bold text-red-500 mb-1">{diag.intensidade_calculada || 0}/5</div>
-            <p className="text-sm text-slate-600">Nível de dor física</p>
           </div>
 
-          {/* Card 2: Elemento MTC */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Sparkles className="w-8 h-8 text-cyan-500" />
-              <h3 className="text-lg font-bold text-slate-900">Elemento</h3>
+          {/* Card 2: Intensidade da Dor */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center border-2 border-slate-200">
+            <div className="text-5xl font-bold text-slate-800 mb-2">{intensidadeScore}%</div>
+            <div className="text-slate-600 font-semibold mb-3">Intensidade da Dor</div>
+            <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border ${getBadge(intensidadeScore).color}`}>
+              {getBadge(intensidadeScore).text}
             </div>
-            <div className="text-2xl font-bold text-cyan-500 mb-1">{diag.elemento_principal}</div>
-            <p className="text-sm text-slate-600">{diag.nome_perfil}</p>
           </div>
 
           {/* Card 3: Urgência */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <Heart className="w-8 h-8 text-orange-500" />
-              <h3 className="text-lg font-bold text-slate-900">Urgência</h3>
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center border-2 border-slate-200">
+            <div className="text-5xl font-bold text-slate-800 mb-2">{urgenciaScore}%</div>
+            <div className="text-slate-600 font-semibold mb-3">Urgência de Tratamento</div>
+            <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border ${getBadge(urgenciaScore).color}`}>
+              {getBadge(urgenciaScore).text}
             </div>
-            <div className="text-3xl font-bold text-orange-500 mb-1">{diag.urgencia_calculada || 0}/5</div>
-            <p className="text-sm text-slate-600">Necessidade de ação</p>
+          </div>
+
+          {/* Card 4: Equilíbrio Energético */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center border-2 border-slate-200">
+            <div className="text-5xl font-bold text-slate-800 mb-2">{equilibrioScore}%</div>
+            <div className="text-slate-600 font-semibold mb-3">Equilíbrio Energético</div>
+            <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border ${getBadge(equilibrioScore).color}`}>
+              {getBadge(equilibrioScore).text}
+            </div>
+          </div>
+
+          {/* Card 5: Autonomia */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center border-2 border-slate-200">
+            <div className="text-5xl font-bold text-slate-800 mb-2">{autonomiaScore}%</div>
+            <div className="text-slate-600 font-semibold mb-3">Autonomia de Decisão</div>
+            <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border ${getBadge(autonomiaScore).color}`}>
+              {getBadge(autonomiaScore).text}
+            </div>
+          </div>
+
+          {/* Card 6: Investimento Atual */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 text-center border-2 border-slate-200">
+            <div className="text-5xl font-bold text-slate-800 mb-2">{investimentoScore}%</div>
+            <div className="text-slate-600 font-semibold mb-3">Investimento em Saúde</div>
+            <div className={`inline-block px-4 py-1.5 rounded-full text-sm font-semibold border ${getBadge(investimentoScore).color}`}>
+              {getBadge(investimentoScore).text}
+            </div>
           </div>
         </div>
 
-        {/* Card Arquétipo */}
-        <div className={`${arquetipoAtual.cor} rounded-2xl shadow-lg p-8`}>
-          <div className="flex items-center gap-4 mb-4">
-            <div className="text-6xl">{arquetipoAtual.emoji}</div>
+        {/* Seção de Gráficos */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Comparação por Áreas</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Bar Chart - Comparação */}
             <div>
-              <h3 className={`text-2xl font-bold ${arquetipoAtual.corTexto}`}>
-                Arquétipo: {arquetipoAtual.nome}
-              </h3>
-              <p className="text-slate-700 mt-1">
-                Seu perfil comportamental identificado
-              </p>
+              <h3 className="text-lg font-bold text-slate-700 mb-4 text-center">Análise Comparativa</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={[
+                  { name: 'Prontidão', value: prontidaoScore },
+                  { name: 'Intensidade', value: intensidadeScore },
+                  { name: 'Urgência', value: urgenciaScore },
+                  { name: 'Equilíbrio', value: equilibrioScore },
+                  { name: 'Autonomia', value: autonomiaScore },
+                  { name: 'Investimento', value: investimentoScore }
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 11 }} angle={-15} textAnchor="end" height={80} />
+                  <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8' }} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#5b7c99" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Radar Chart - Visão 360° */}
+            <div>
+              <h3 className="text-lg font-bold text-slate-700 mb-4 text-center">Visão 360° - Elementos MTC</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <RadarChart data={radarData}>
+                  <PolarGrid stroke="#cbd5e1" />
+                  <PolarAngleAxis dataKey="elemento" tick={{ fill: '#475569', fontSize: 12 }} />
+                  <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fill: '#94a3b8' }} />
+                  <Radar name="Elementos" dataKey="value" stroke="#5b7c99" fill="#5b7c99" fillOpacity={0.6} />
+                  <Tooltip />
+                </RadarChart>
+              </ResponsiveContainer>
             </div>
           </div>
-          {diag.objecao_principal && (
-            <div className="mt-4 p-4 bg-white/50 rounded-lg">
-              <p className="text-sm font-semibold text-slate-700">Principal Objeção:</p>
-              <p className="text-slate-600">{diag.objecao_principal}</p>
+        </div>
+
+        {/* Análise Detalhada */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Brain className="w-6 h-6 text-purple-600" />
+            <h2 className="text-2xl font-bold text-slate-900">Análise Detalhada e Recomendações</h2>
+          </div>
+
+          {/* Pontos Fortes */}
+          {(prontidaoScore >= 70 || intensidadeScore >= 70 || urgenciaScore >= 70 || autonomiaScore >= 70) && (
+            <div className="bg-green-50 border-2 border-green-200 rounded-xl p-5 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-green-500 text-white rounded-full p-2 flex-shrink-0">
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-green-900 mb-2">✅ Pontos Fortes (70%+)</h3>
+                  <p className="text-green-800 font-medium mb-2">Áreas:</p>
+                  <ul className="text-green-700 space-y-1 text-sm">
+                    {prontidaoScore >= 70 && <li>• <strong>Alta prontidão</strong> para mudança - você está motivada e pronta para agir</li>}
+                    {intensidadeScore >= 70 && <li>• <strong>Consciência elevada</strong> sobre os sintomas - sabe exatamente o que precisa resolver</li>}
+                    {urgenciaScore >= 70 && <li>• <strong>Senso de urgência</strong> saudável - entende a importância de agir agora</li>}
+                    {autonomiaScore >= 70 && <li>• <strong>Autonomia de decisão</strong> - pode tomar decisões sobre sua saúde</li>}
+                  </ul>
+                  <p className="text-green-800 mt-3 text-sm">
+                    <strong>Recomendação:</strong> Use essas vantagens como base para construir sua jornada de transformação!
+                  </p>
+                </div>
+              </div>
             </div>
           )}
+
+          {/* Prioridades Críticas */}
+          {(prontidaoScore < 40 || intensidadeScore < 40 || urgenciaScore < 40 || equilibrioScore < 40) && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-5 mb-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-red-500 text-white rounded-full p-2 flex-shrink-0">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-red-900 mb-2">⚠️ Prioridades Críticas (Abaixo de 40%)</h3>
+                  <p className="text-red-800 font-medium mb-2">Áreas que precisam de atenção imediata:</p>
+                  <ul className="text-red-700 space-y-1 text-sm">
+                    {urgenciaScore < 40 && <li>• <strong>Urgência baixa:</strong> O problema pode estar sendo subestimado. Dores crônicas tendem a piorar com o tempo.</li>}
+                    {equilibrioScore < 40 && <li>• <strong>Desequilíbrio energético:</strong> Há concentração excessiva em um elemento. Risco de agravamento.</li>}
+                    {intensidadeScore < 40 && <li>• <strong>Sintomas iniciais:</strong> Momento ideal para prevenção antes que se tornem crônicos.</li>}
+                  </ul>
+                  <p className="text-red-800 mt-3 text-sm font-semibold">
+                    <strong>Recomendação:</strong> ATENÇÃO! Invista IMEDIATAMENTE em capacitação e mentoria para essas áreas específicas.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Card do Arquétipo */}
+          <div className={`${arquetipoAtual.cor} border-2 border-opacity-30 rounded-xl p-5`}>
+            <div className="flex items-start gap-4">
+              <div className="text-6xl">{arquetipoAtual.emoji}</div>
+              <div className="flex-1">
+                <h3 className={`text-xl font-bold ${arquetipoAtual.corTexto} mb-2`}>
+                  Arquétipo Comportamental: {arquetipoAtual.nome}
+                </h3>
+                <p className="text-slate-700 mb-3">
+                  Seu perfil foi identificado com base nas suas respostas sobre como você lida com a saúde e toma decisões.
+                </p>
+                {diag.objecao_principal && (
+                  <div className="bg-white/60 rounded-lg p-3 text-sm">
+                    <p className="font-semibold text-slate-800 mb-1">Principal Objeção Identificada:</p>
+                    <p className="text-slate-700">{diag.objecao_principal}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Gráficos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Radar Chart - 5 Elementos */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-4 text-center">Equilíbrio dos 5 Elementos</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="#cbd5e1" />
-                <PolarAngleAxis dataKey="elemento" tick={{ fill: '#475569', fontSize: 12 }} />
-                <PolarRadiusAxis angle={90} domain={[0, 10]} tick={{ fill: '#94a3b8' }} />
-                <Radar name="Elementos" dataKey="value" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.6} />
-                <Tooltip />
-              </RadarChart>
-            </ResponsiveContainer>
+        {/* Plano de Ação Personalizado */}
+        <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <Sparkles className="w-6 h-6 text-cyan-600" />
+            <h2 className="text-2xl font-bold text-slate-900">🎯 Plano de Ação Personalizado</h2>
           </div>
 
-          {/* Bar Chart - Intensidade/Urgência/Prontidão */}
-          <div className="bg-white rounded-2xl shadow-lg p-6">
-            <h3 className="text-xl font-bold text-slate-900 mb-4 text-center">Análise de Prontidão</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={barData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fill: '#475569', fontSize: 12 }} />
-                <YAxis domain={[0, 5]} tick={{ fill: '#94a3b8' }} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#06b6d4" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="space-y-4">
+            {/* 30 dias */}
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0 w-32 text-center">
+                <div className="bg-cyan-500 text-white rounded-lg px-4 py-2 font-bold text-sm">
+                  Próximos 30 dias
+                </div>
+              </div>
+              <div className="flex-1 bg-cyan-50 border-2 border-cyan-200 rounded-xl p-4">
+                <p className="text-cyan-900 font-semibold mb-2">
+                  {urgenciaScore >= 70 
+                    ? "🚨 Ação Imediata: Iniciar tratamento agora"
+                    : "📋 Avaliação inicial e diagnóstico presencial"}
+                </p>
+                <p className="text-cyan-800 text-sm">
+                  {urgenciaScore >= 70
+                    ? "Sua urgência está alta. Recomendamos começar imediatamente com sessões intensivas para aliviar os sintomas mais graves."
+                    : "Agende uma consulta presencial com especialista para diagnóstico detalhado e plano personalizado."}
+                </p>
+              </div>
+            </div>
+
+            {/* 90 dias */}
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0 w-32 text-center">
+                <div className="bg-blue-500 text-white rounded-lg px-4 py-2 font-bold text-sm">
+                  Próximos 90 dias
+                </div>
+              </div>
+              <div className="flex-1 bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                <p className="text-blue-900 font-semibold mb-2">
+                  🎯 Implementar sistema completo de práticas diárias
+                </p>
+                <p className="text-blue-800 text-sm">
+                  Estabelecer rotina de Qi Gong, acupuntura e fitoterapia. Meta: {intensidadeScore >= 70 ? "reduzir dor em 50%" : "fortalecer energia vital e prevenir agravamento"}.
+                </p>
+              </div>
+            </div>
+
+            {/* 6 meses */}
+            <div className="flex gap-4 items-start">
+              <div className="flex-shrink-0 w-32 text-center">
+                <div className="bg-purple-500 text-white rounded-lg px-4 py-2 font-bold text-sm">
+                  Meta 6 meses
+                </div>
+              </div>
+              <div className="flex-1 bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
+                <p className="text-purple-900 font-semibold mb-2">
+                  🌟 Transformação completa e consolidação
+                </p>
+                <p className="text-purple-800 text-sm">
+                  {prontidaoScore >= 80 
+                    ? "Consolidar resultados e tornar-se referência. Preparar-se para ensinar outros."
+                    : "Estabelecer equilíbrio energético sustentável e autonomia nos cuidados diários."}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Recomendações Condicionais */}
+        {/* Próximos Passos Estratégicos */}
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl p-8 text-white">
+          <div className="text-center mb-6">
+            <h2 className="text-3xl font-bold mb-3">🎯 Próximos Passos Estratégicos</h2>
+            <p className="text-white/80 text-lg">Por que agir AGORA é crucial para seu sucesso:</p>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🔥</div>
+                <div>
+                  <p className="font-bold mb-1">Janela de Oportunidade LIMITADA:</p>
+                  <p className="text-white/90 text-sm">
+                    Problemas crônicos não tratados tendem a se agravar. Quem age primeiro, previne complicações futuras e economiza em tratamentos mais caros.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">💰</div>
+                <div>
+                  <p className="font-bold mb-1">Custo da Inação:</p>
+                  <p className="text-white/90 text-sm">
+                    Cada mês sem tratamento adequado pode significar agravamento dos sintomas e R$ 30k a R$ 100k deixados na mesa em qualidade de vida perdida.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🎁</div>
+                <div>
+                  <p className="font-bold mb-1">Momento Ideal:</p>
+                  <p className="text-white/90 text-sm">
+                    Seus {prontidaoScore}% de prontidão indicam que você está no momento perfeito para começar. Aproveite essa motivação!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">🏆</div>
+                <div>
+                  <p className="font-bold mb-1">Vantagem Competitiva:</p>
+                  <p className="text-white/90 text-sm">
+                    Mulheres que dominam a Medicina Tradicional Chinesa vivem com mais qualidade, energia e vitalidade. Os 5% que agem vivem de resultado, não de esforço.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-center text-white text-lg font-semibold italic mb-6">
+            A pergunta não é SE vai dar certo... é QUANTO você vai deixar de ganhar esperando o "momento perfeito".
+          </p>
+        </div>
+
+        {/* Ofertas Personalizadas */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <h3 className="text-2xl font-bold text-slate-900 mb-6 text-center">
-            Próximos Passos Recomendados
+            Soluções Recomendadas para Você
           </h3>
           
           {score >= 80 ? (
@@ -1224,11 +1459,11 @@ if (step === 'resultado') {
                   <h4 className="text-xl font-bold text-purple-900">Programa PREVENTIVA Premium</h4>
                 </div>
                 <p className="text-slate-700 mb-4">
-                  Baseado no seu score, você é candidata ideal para nosso programa completo de 12 meses.
+                  Baseado no seu score de {score}%, você é candidata ideal para nosso programa completo de transformação.
                 </p>
                 <div className="text-3xl font-bold text-purple-600 mb-2">R$ 497/mês</div>
-                <ul className="space-y-2 text-sm text-slate-600">
-                  <li>✅ Acompanhamento individualizado</li>
+                <ul className="space-y-2 text-sm text-slate-600 mb-4">
+                  <li>✅ Acompanhamento individualizado com Mestre Ye</li>
                   <li>✅ Sessões semanais ao vivo</li>
                   <li>✅ Grupo VIP exclusivo</li>
                   <li>✅ Resultados garantidos em 90 dias</li>
@@ -1240,14 +1475,14 @@ if (step === 'resultado') {
               <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-xl p-6">
                 <h4 className="text-xl font-bold text-cyan-900 mb-3">Programa Semestral + Produtos Focados</h4>
                 <p className="text-slate-700 mb-4">
-                  Recomendamos começar com nosso programa de 6 meses combinado com produtos específicos para seu elemento.
+                  Para seu perfil (score {score}%), recomendamos o programa de 6 meses com produtos específicos para {diag.elemento_principal}.
                 </p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="bg-white rounded-lg p-3">
+                  <div className="bg-white rounded-lg p-3 border-2 border-cyan-200">
                     <div className="font-bold text-cyan-700">Programa Semestral</div>
                     <div className="text-2xl font-bold text-cyan-600">R$ 297/mês</div>
                   </div>
-                  <div className="bg-white rounded-lg p-3">
+                  <div className="bg-white rounded-lg p-3 border-2 border-cyan-200">
                     <div className="font-bold text-cyan-700">+ Produtos MTC</div>
                     <div className="text-2xl font-bold text-cyan-600">R$ 197/mês</div>
                   </div>
@@ -1259,9 +1494,9 @@ if (step === 'resultado') {
               <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-6">
                 <h4 className="text-xl font-bold text-green-900 mb-3">Workshop Intensivo de 3 Dias</h4>
                 <p className="text-slate-700 mb-4">
-                  Ideal para você começar sua jornada! Aprenda as bases do Qi Gong e técnicas essenciais.
+                  Perfeito para começar sua jornada! Aprenda as bases do Qi Gong e técnicas essenciais.
                 </p>
-                <div className="text-3xl font-bold text-green-600 mb-2">R$ 497 (pagamento único)</div>
+                <div className="text-3xl font-bold text-green-600 mb-2">R$ 497 <span className="text-lg text-slate-600">(pagamento único)</span></div>
                 <p className="text-sm text-slate-600">
                   Após o workshop, você pode migrar para programas mais avançados com desconto especial.
                 </p>
@@ -1274,12 +1509,12 @@ if (step === 'resultado') {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <a
             href="https://digital.mestreye.com/chat"
-            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-5 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-3 transform hover:scale-[1.02]"
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-6 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-3 transform hover:scale-[1.02]"
           >
-            <Brain className="w-6 h-6" />
+            <Brain className="w-7 h-7" />
             <div className="text-left">
               <div className="text-sm opacity-90">Continuar com</div>
-              <div className="text-lg">Mestre Ye Digital (IA)</div>
+              <div className="text-xl">Mestre Ye Digital (IA)</div>
             </div>
           </a>
 
@@ -1287,21 +1522,21 @@ if (step === 'resultado') {
             href="https://wa.me/5511998457676?text=Olá!%20Finalizei%20meu%20diagnóstico%20e%20gostaria%20de%20falar%20com%20um%20especialista"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-5 px-8 rounded-xl transition-all duration-200 border-2 border-slate-300 hover:border-slate-400 shadow-lg flex items-center justify-center gap-3 transform hover:scale-[1.02]"
+            className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-6 px-8 rounded-xl transition-all duration-200 border-2 border-slate-300 hover:border-slate-400 shadow-lg flex items-center justify-center gap-3 transform hover:scale-[1.02]"
           >
-            <svg className="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-7 h-7 text-green-500" fill="currentColor" viewBox="0 0 24 24">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
             </svg>
             <div className="text-left">
               <div className="text-sm opacity-70">Falar com</div>
-              <div className="text-lg">Especialista Humano</div>
+              <div className="text-xl">Especialista Humano</div>
             </div>
           </a>
         </div>
 
         {/* Footer */}
         <div className="text-center py-6">
-          <p className="text-slate-500 text-sm">
+          <p className="text-white/90 text-sm">
             💚 Seus dados foram salvos com segurança • Você pode acessar este diagnóstico a qualquer momento
           </p>
         </div>
