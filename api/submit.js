@@ -157,7 +157,7 @@ module.exports = async (req, res) => {
       intensidade_calculada: intensidade,
       urgencia_calculada: urgencia,
       // Novos campos de arquétipos comportamentais
-      arquetipo_principal: dadosArquetipo.arquetipo_principal,
+      perfil_comercial: dadosArquetipo.arquetipo_principal,
       scores_arquetipos: dadosArquetipo.scores_arquetipos,
       confianca_arquetipo: dadosArquetipo.confianca,
       objecao_principal: dadosArquetipo.objecao_principal,

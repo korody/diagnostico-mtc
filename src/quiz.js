@@ -1086,7 +1086,7 @@ if (step === 'resultado') {
     'RISING_PHOENIX': { emoji: '🔥', nome: 'Fênix Renascente', cor: 'bg-orange-100', corTexto: 'text-orange-700' }
   };
   
-  const arquetipoAtual = arquetiposInfo[diag.arquetipo_principal] || arquetiposInfo['ETERNAL_MOTHER'];
+  const arquetipoAtual = arquetiposInfo[diag.perfil_comercial] || arquetiposInfo['ETERNAL_MOTHER'];
   
   // Calcular scores individuais
   const intensidadeScore = Math.round((diag.intensidade_calculada / 5) * 100);
