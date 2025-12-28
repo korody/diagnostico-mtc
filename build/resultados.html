@@ -917,10 +917,10 @@
             <li>O desequilíbrio no seu ${elementoNome} pode desencadear problemas mais sérios</li>
           </div>
 
-          ${lead.custo_mensal_problema ? `
+          ${(lead.custo_mensal_problema || lead.CUSTO_MENSAL_PROBLEMA) ? `
           <div class="urgency-box">
-            <p style="margin: 0; color: #8b6f47;"><strong>💸 Você está gastando R$ ${lead.custo_mensal_problema}/mês</strong> em soluções paliativas que não resolvem a raiz do problema.</p>
-            <p style="margin-top: 14px; margin-bottom: 0; font-size: 18px; color: #5a5a5a;">Isso é <strong>R$ ${lead.custo_mensal_problema * 12}/ano</strong> jogados fora sem resultados duradouros.</p>
+            <p style="margin: 0; color: #8b6f47;"><strong>💸 Você está gastando R$ ${lead.custo_mensal_problema || lead.CUSTO_MENSAL_PROBLEMA}/mês</strong> em soluções paliativas que não resolvem a raiz do problema.</p>
+            <p style="margin-top: 14px; margin-bottom: 0; font-size: 18px; color: #5a5a5a;">Isso é <strong>R$ ${(lead.custo_mensal_problema || lead.CUSTO_MENSAL_PROBLEMA) * 12}/ano</strong> jogados fora sem resultados duradouros.</p>
           </div>
           ` : ''}
 
