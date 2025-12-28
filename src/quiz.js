@@ -118,18 +118,6 @@ const QuizMTC = () => {
       ]
     },
     {
-      id: 'P6',
-      texto: 'Você já tentou outros tratamentos antes?',
-      tipo: 'single',
-      opcoes: [
-        { valor: 'A', texto: 'Sim, muitas coisas, mas nada resolveu de verdade', peso: 5 },
-        { valor: 'B', texto: 'Sim, algumas coisas (2-3), mas sem resultado duradouro', peso: 4 },
-        { valor: 'C', texto: 'Sim, poucas coisas, mais remédios', peso: 3 },
-        { valor: 'D', texto: 'Não, nada específico ainda', peso: 2 },
-        { valor: 'E', texto: 'Não preciso de tratamento no momento', peso: 1 }
-      ]
-    },
-    {
       id: 'P7',
       texto: 'Qual é a sua maior preocupação em relação à sua saúde?',
       subtexto: 'Queremos focar no que mais importa para você',
@@ -152,18 +140,6 @@ const QuizMTC = () => {
         { valor: 'C', texto: 'Quero melhorar e estou aberta a soluções', peso: 3 },
         { valor: 'D', texto: 'Estou buscando alternativas e pesquisando', peso: 2 },
         { valor: 'E', texto: 'Só estou curiosa, sem urgência real', peso: 1 }
-      ]
-    },
-    {
-      id: 'P9',
-      texto: 'Sobre participar do nosso evento ao vivo exclusivo:',
-      tipo: 'single',
-      opcoes: [
-        { valor: 'A', texto: 'Vou participar COM CERTEZA, estou pronta pra mudar', peso: 5 },
-        { valor: 'B', texto: 'Vou participar e estou bem interessada', peso: 4 },
-        { valor: 'C', texto: 'Pretendo participar se conseguir', peso: 3 },
-        { valor: 'D', texto: 'Ainda não sei se vou conseguir', peso: 2 },
-        { valor: 'E', texto: 'Só me cadastrei para conhecer', peso: 1 }
       ]
     },
     {
@@ -201,12 +177,12 @@ const QuizMTC = () => {
     },
     {
       id: 'P12',
-      texto: 'Você já é ou foi aluno(a) do Mestre Ye?',
-      subtexto: 'Isso nos ajuda a personalizar melhor sua experiência no evento',
+      texto: 'Você já é ou foi aluno(a) de algum curso ou evento pago do Mestre Ye?',
+      subtexto: 'Cursos online, eventos presenciais, mentorias, etc.',
       tipo: 'single',
       opcoes: [
         { valor: 'A', texto: 'Ainda não sou aluno(a)' },
-        { valor: 'B', texto: 'Sim, sou ou já fui aluno(a)' }
+        { valor: 'B', texto: 'Sim, já fiz curso ou evento pago' }
       ]
     },
     {
@@ -222,76 +198,89 @@ const QuizMTC = () => {
       ]
     },
     {
-      id: 'P14',
-      texto: 'Quando você sente dor ou um problema de saúde, qual dessas situações mais acontece com você?',
+      id: 'P17',
+      texto: 'Em qual região você mora?',
+      subtexto: 'Isso nos ajuda a personalizar eventos e conteúdos regionais',
       tipo: 'single',
       opcoes: [
-        { 
-          valor: 'A', 
-          texto: 'Eu aguento sozinha o máximo que consigo, não gosto de incomodar ninguém'
-        },
-        { 
-          valor: 'B', 
-          texto: 'Primeiro pesquiso muito, leio tudo que posso, preciso entender antes de agir'
-        },
-        { 
-          valor: 'C', 
-          texto: 'Resolvo o problema dos outros primeiro, só cuido de mim quando sobra tempo'
-        },
-        { 
-          valor: 'D', 
-          texto: 'Vejo como um sinal de que preciso mudar algo maior na minha vida'
-        }
+        { valor: 'SP', texto: 'São Paulo' },
+        { valor: 'RJ', texto: 'Rio de Janeiro' },
+        { valor: 'MG', texto: 'Minas Gerais' },
+        { valor: 'RS', texto: 'Rio Grande do Sul' },
+        { valor: 'PR', texto: 'Paraná' },
+        { valor: 'SC', texto: 'Santa Catarina' },
+        { valor: 'BA', texto: 'Bahia' },
+        { valor: 'PE', texto: 'Pernambuco' },
+        { valor: 'CE', texto: 'Ceará' },
+        { valor: 'DF', texto: 'Distrito Federal' },
+        { valor: 'GO', texto: 'Goiás' },
+        { valor: 'ES', texto: 'Espírito Santo' },
+        { valor: 'PA', texto: 'Pará' },
+        { valor: 'AM', texto: 'Amazonas' },
+        { valor: 'MA', texto: 'Maranhão' },
+        { valor: 'MT', texto: 'Mato Grosso' },
+        { valor: 'MS', texto: 'Mato Grosso do Sul' },
+        { valor: 'PB', texto: 'Paraíba' },
+        { valor: 'RN', texto: 'Rio Grande do Norte' },
+        { valor: 'AL', texto: 'Alagoas' },
+        { valor: 'PI', texto: 'Piauí' },
+        { valor: 'SE', texto: 'Sergipe' },
+        { valor: 'RO', texto: 'Rondônia' },
+        { valor: 'AC', texto: 'Acre' },
+        { valor: 'AP', texto: 'Amapá' },
+        { valor: 'RR', texto: 'Roraima' },
+        { valor: 'TO', texto: 'Tocantins' },
+        { valor: 'OUTRO', texto: 'Outro país' }
       ]
     },
     {
-      id: 'P15',
-      texto: 'Qual dessas frases você mais já disse (ou pensou) sobre sua saúde?',
+      id: 'P14',
+      texto: 'Quando você tem um problema de saúde, geralmente o que você FAZ primeiro?',
       tipo: 'single',
       opcoes: [
         { 
           valor: 'A', 
-          texto: '"Não quero dar trabalho para meus filhos, preciso me virar sozinha"'
+          texto: 'Espero alguns dias para ver se melhora naturalmente'
         },
         { 
           valor: 'B', 
-          texto: '"Já tentei TANTA coisa que não funcionou... será que ISSO vai funcionar?"'
+          texto: 'Procuro informações online e leio sobre o assunto'
         },
         { 
           valor: 'C', 
-          texto: '"Todo mundo precisa de mim, como vou arrumar tempo para cuidar de MIM?"'
+          texto: 'Continuo com minha rotina normal e deixo para depois'
         },
         { 
           valor: 'D', 
-          texto: '"Sinto que essa dor está me chamando para uma transformação maior"'
+          texto: 'Paro para refletir sobre o que pode estar causando'
         }
       ]
     },
     {
       id: 'P16',
-      texto: 'Se você encontrasse uma solução PERFEITA para sua saúde hoje, o que te faria DUVIDAR e não começar?',
-      subtexto: 'Seja completamente sincera, queremos entender sua maior preocupação',
+      texto: 'Ao considerar um novo cuidado com sua saúde, o que mais pesa na sua decisão?',
+      subtexto: 'Queremos entender o que é mais importante para você',
       tipo: 'single',
       opcoes: [
         { 
           valor: 'A', 
-          texto: 'Medo de falhar mais uma vez, de gastar e não funcionar como as outras coisas'
+          texto: 'Ver resultados comprovados e experiências de outras pessoas'
         },
         { 
           valor: 'B', 
-          texto: 'Não ter tempo/disciplina porque preciso cuidar da casa, família, trabalho...'
+          texto: 'Conseguir encaixar na rotina sem prejuízo das outras atividades'
         },
         { 
           valor: 'C', 
-          texto: 'Preocupação de depender de alguém ou precisar de ajuda para seguir'
+          texto: 'Ter flexibilidade para fazer no meu tempo e do meu jeito'
         },
         { 
           valor: 'D', 
-          texto: 'Medo de que seja "mais do mesmo" e não uma transformação de verdade'
+          texto: 'Sentir que vai realmente fazer diferença duradoura'
         },
         { 
           valor: 'E', 
-          texto: 'Não tenho grandes dúvidas, estou pronta para começar'
+          texto: 'Estar alinhado com o momento que estou vivendo'
         }
       ]
     },
@@ -348,6 +337,44 @@ const QuizMTC = () => {
         { 
           valor: 'F', 
           texto: 'Não invisto em nada além do plano de saúde'
+        }
+      ]
+    },
+    {
+      id: 'P21',
+      texto: 'Quanto você gasta POR MÊS para lidar com esse problema de saúde?',
+      subtexto: 'Considere remédios, consultas, exames, tratamentos, etc.',
+      tipo: 'single',
+      opcoes: [
+        { 
+          valor: 'A', 
+          texto: 'Menos de R$ 100',
+          custo: 50
+        },
+        { 
+          valor: 'B', 
+          texto: 'Entre R$ 100 e R$ 300',
+          custo: 200
+        },
+        { 
+          valor: 'C', 
+          texto: 'Entre R$ 300 e R$ 500',
+          custo: 400
+        },
+        { 
+          valor: 'D', 
+          texto: 'Entre R$ 500 e R$ 1.000',
+          custo: 750
+        },
+        { 
+          valor: 'E', 
+          texto: 'Mais de R$ 1.000',
+          custo: 1200
+        },
+        { 
+          valor: 'F', 
+          texto: 'Não gasto nada (só uso o plano de saúde)',
+          custo: 0
         }
       ]
     }
@@ -658,14 +685,18 @@ const QuizMTC = () => {
         
         // Salvar diagnóstico completo no state
         setResultadoDiagnostico(result.diagnostico);
-        
+
         setStep('resultado');
-        
-        // REMOVER redirect automático - deixar usuário ver resultado
-        // setTimeout(() => {
-        //   console.log('🔄 Redirecionando para:', result.redirect_url);
-        //   window.location.href = result.redirect_url || 'https://black.qigongbrasil.com/diagnostico';
-        // }, 2000);
+
+        // Redirect automático para página de resultados
+        setTimeout(() => {
+          const baseUrl = window.location.hostname === 'localhost'
+            ? 'http://localhost:3001'
+            : '';
+          const redirectUrl = `${baseUrl}/resultados.html?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+          console.log('🔄 Redirecionando para:', redirectUrl);
+          window.location.href = redirectUrl;
+        }, 2000);
       } else {
         throw new Error(result.message || 'Erro desconhecido');
       }
@@ -970,7 +1001,7 @@ if (step === 'quiz') {
 
           {/* Opções de Resposta */}
           <div className={
-            pergunta.id === 'P10' || pergunta.id === 'P11' 
+            pergunta.id === 'P10' || pergunta.id === 'P11' || pergunta.id === 'P17'
               ? 'grid grid-cols-2 gap-3' 
               : 'space-y-3'
           }>
@@ -1080,17 +1111,24 @@ if (step === 'resultado') {
   
   // Mapear arquétipos para emojis e cores
   const arquetiposInfo = {
-    'SILENT_WARRIOR': { emoji: '🛡️', nome: 'Guerreira Silenciosa', cor: 'bg-purple-100', corTexto: 'text-purple-700' },
-    'SKEPTICAL_SCIENTIST': { emoji: '🔬', nome: 'Cientista Cética', cor: 'bg-blue-100', corTexto: 'text-blue-700' },
-    'ETERNAL_MOTHER': { emoji: '💚', nome: 'Mãe Eterna', cor: 'bg-green-100', corTexto: 'text-green-700' },
-    'RISING_PHOENIX': { emoji: '🔥', nome: 'Fênix Renascente', cor: 'bg-orange-100', corTexto: 'text-orange-700' }
+    'GUERREIRA_SILENCIOSA': { emoji: '🛡️', nome: 'Guerreira Silenciosa', cor: 'bg-purple-100', corTexto: 'text-purple-700' },
+    'CIENTISTA_CETICA': { emoji: '🔬', nome: 'Cientista Cética', cor: 'bg-blue-100', corTexto: 'text-blue-700' },
+    'MAE_ETERNA': { emoji: '💚', nome: 'Mãe Eterna', cor: 'bg-green-100', corTexto: 'text-green-700' },
+    'FENIX_RENASCENTE': { emoji: '🔥', nome: 'Fênix Renascente', cor: 'bg-orange-100', corTexto: 'text-orange-700' }
   };
   
-  const arquetipoAtual = arquetiposInfo[diag.perfil_comercial] || arquetiposInfo['ETERNAL_MOTHER'];
+  const arquetipoAtual = arquetiposInfo[diag.perfil_comercial] || arquetiposInfo['MAE_ETERNA'];
   
-  // Calcular scores individuais
-  const intensidadeScore = Math.round((diag.intensidade_calculada / 5) * 100);
-  const urgenciaScore = Math.round((diag.urgencia_calculada / 5) * 100);
+  // Debug: ver o que está vindo no diagnóstico
+  console.log('🔍 Diagnóstico recebido:', {
+    intensidade_calculada: diag.intensidade_calculada,
+    urgencia_calculada: diag.urgencia_calculada,
+    lead_score: diag.lead_score
+  });
+  
+  // Calcular scores individuais (com proteção contra NaN)
+  const intensidadeScore = diag.intensidade_calculada ? Math.round((diag.intensidade_calculada / 5) * 100) : 0;
+  const urgenciaScore = diag.urgencia_calculada ? Math.round((diag.urgencia_calculada / 5) * 100) : 0;
   const prontidaoScore = score;
   
   // Calcular score de equilíbrio energético (baseado na distribuição dos elementos)

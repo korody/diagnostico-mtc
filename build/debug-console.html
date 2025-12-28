@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Console - Resultados</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    h1 { color: #4ec9b0; }
+    .console-output {
+      background: #252526;
+      border: 1px solid #3e3e42;
+      border-radius: 5px;
+      padding: 15px;
+      margin: 10px 0;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .log { color: #d4d4d4; }
+    .error { color: #f48771; }
+    .warn { color: #dcdcaa; }
+    .info { color: #4ec9b0; }
+    pre { margin: 5px 0; }
+    button {
+      background: #0e639c;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover { background: #1177bb; }
+    .iframe-container {
+      margin-top: 20px;
+      border: 2px solid #3e3e42;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    iframe {
+      width: 100%;
+      height: 600px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Debug Console - Página Resultados</h1>
+
+  <div>
+    <button onclick="loadPage()">▶️ Carregar Página de Resultados</button>
+    <button onclick="checkCharts()">📊 Verificar Gráficos</button>
+    <button onclick="clearConsole()">🗑️ Limpar Console</button>
+  </div>
+
+  <h2>Console Output:</h2>
+  <div class="console-output" id="console"></div>
+
+  <h2>Preview da Página:</h2>
+  <div class="iframe-container">
+    <iframe id="resultFrame"></iframe>
+  </div>
+
+  <script>
+    const consoleEl = document.getElementById('console');
+    const iframe = document.getElementById('resultFrame');
+
+    function addLog(type, ...args) {
+      const timestamp = new Date().toLocaleTimeString();
+      const message = args.map(arg =>
+        typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+      ).join(' ');
+
+      const log = document.createElement('pre');
+      log.className = type;
+      log.textContent = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+      consoleEl.appendChild(log);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function clearConsole() {
+      consoleEl.innerHTML = '';
+    }
+
+    function loadPage() {
+      clearConsole();
+      addLog('info', 'Carregando página de resultados...');
+
+      // Pegar parâmetros da URL atual ou usar um email de teste
+      const urlParams = new URLSearchParams(window.location.search);
+      const email = urlParams.get('email') || 'teste@exemplo.com';
+
+      iframe.src = `/resultados.html?email=${encodeURIComponent(email)}`;
+
+      iframe.onload = function() {
+        addLog('info', 'Página carregada!');
+        captureIframeConsole();
+        checkCharts();
+      };
+
+      iframe.onerror = function(e) {
+        addLog('error', 'Erro ao carregar iframe:', e);
+      };
+    }
+
+    function captureIframeConsole() {
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const iframeDoc = iframe.contentDocument;
+
+        // Interceptar console do iframe
+        const originalConsole = {
+          log: iframeWindow.console.log,
+          error: iframeWindow.console.error,
+          warn: iframeWindow.console.warn,
+          info: iframeWindow.console.info
+        };
+
+        iframeWindow.console.log = function(...args) {
+          addLog('log', ...args);
+          originalConsole.log.apply(iframeWindow.console, args);
+        };
+
+        iframeWindow.console.error = function(...args) {
+          addLog('error', ...args);
+          originalConsole.error.apply(iframeWindow.console, args);
+        };
+
+        iframeWindow.console.warn = function(...args) {
+          addLog('warn', ...args);
+          originalConsole.warn.apply(iframeWindow.console, args);
+        };
+
+        iframeWindow.console.info = function(...args) {
+          addLog('info', ...args);
+          originalConsole.info.apply(iframeWindow.console, args);
+        };
+
+        // Capturar erros não tratados
+        iframeWindow.addEventListener('error', function(e) {
+          addLog('error', 'Uncaught Error:', e.message, 'at', e.filename, 'line', e.lineno);
+        });
+
+        addLog('info', 'Console interceptor instalado!');
+      } catch (e) {
+        addLog('error', 'Erro ao interceptar console:', e.message);
+      }
+    }
+
+    function checkCharts() {
+      try {
+        const iframeWindow = iframe.contentWindow;
+        const iframeDoc = iframe.contentDocument;
+
+        if (!iframeDoc) {
+          addLog('warn', 'Iframe ainda não carregou');
+          return;
+        }
+
+        addLog('info', '=== VERIFICANDO GRÁFICOS ===');
+
+        // Verificar Chart.js
+        const chartDefined = typeof iframeWindow.Chart !== 'undefined';
+        addLog(chartDefined ? 'info' : 'error',
+          `Chart.js carregado: ${chartDefined}`);
+
+        if (chartDefined) {
+          addLog('info', `Chart.js versão: ${iframeWindow.Chart.version || 'desconhecida'}`);
+        }
+
+        // Verificar elementos canvas
+        const barChart = iframeDoc.getElementById('barChart');
+        const radarChart = iframeDoc.getElementById('radarChart');
+
+        addLog(barChart ? 'info' : 'error',
+          `Canvas barChart encontrado: ${barChart !== null}`);
+        addLog(radarChart ? 'info' : 'error',
+          `Canvas radarChart encontrado: ${radarChart !== null}`);
+
+        if (barChart) {
+          addLog('info', `barChart width: ${barChart.width}, height: ${barChart.height}`);
+          addLog('info', `barChart clientWidth: ${barChart.clientWidth}, clientHeight: ${barChart.clientHeight}`);
+        }
+
+        if (radarChart) {
+          addLog('info', `radarChart width: ${radarChart.width}, height: ${radarChart.height}`);
+          addLog('info', `radarChart clientWidth: ${radarChart.clientWidth}, clientHeight: ${radarChart.clientHeight}`);
+        }
+
+        // Verificar se há instâncias Chart criadas
+        if (chartDefined && iframeWindow.Chart.instances) {
+          addLog('info', `Chart instances ativas: ${Object.keys(iframeWindow.Chart.instances).length}`);
+        }
+
+        // Verificar visibilidade dos containers
+        const chartsSection = iframeDoc.querySelector('.charts-section');
+        if (chartsSection) {
+          const styles = iframeWindow.getComputedStyle(chartsSection);
+          addLog('info', `charts-section display: ${styles.display}, visibility: ${styles.visibility}`);
+        } else {
+          addLog('warn', 'charts-section não encontrada no DOM');
+        }
+
+        // Verificar se o conteúdo foi renderizado
+        const content = iframeDoc.getElementById('content');
+        const loading = iframeDoc.getElementById('loading');
+        const error = iframeDoc.getElementById('error');
+
+        addLog('info', `content display: ${content ? iframeWindow.getComputedStyle(content).display : 'N/A'}`);
+        addLog('info', `loading display: ${loading ? iframeWindow.getComputedStyle(loading).display : 'N/A'}`);
+        addLog('info', `error display: ${error ? iframeWindow.getComputedStyle(error).display : 'N/A'}`);
+
+        addLog('info', '=== FIM DA VERIFICAÇÃO ===');
+
+      } catch (e) {
+        addLog('error', 'Erro ao verificar gráficos:', e.message);
+        addLog('error', 'Stack:', e.stack);
+      }
+    }
+
+    // Auto-carregar se houver email na URL
+    window.addEventListener('load', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.has('email') || urlParams.has('id')) {
+        loadPage();
+      } else {
+        addLog('info', 'Aguardando... Clique em "Carregar Página" ou adicione ?email=seu@email.com na URL');
+      }
+    });
+  </script>
+</body>
+</html>

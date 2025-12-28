@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Seu Diagnóstico Está Pronto - Quiz MTC</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f9fafb;
+      line-height: 1.6;
+      color: #1f2937;
+    }
+
+    /* VSL Container - Single Column Flow */
+    .vsl-container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    /* Sections with Clear Visual Hierarchy */
+    .section {
+      background: white;
+      margin-bottom: 2px;
+      padding: 48px 32px;
+    }
+
+    .section-hero {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      text-align: center;
+      padding: 60px 32px;
+    }
+
+    .section-problem {
+      background: #fef3c7;
+      border-left: 4px solid #f59e0b;
+    }
+
+    .section-agitation {
+      background: #fee2e2;
+      border-left: 4px solid #ef4444;
+    }
+
+    .section-solution {
+      background: #d1fae5;
+      border-left: 4px solid #10b981;
+    }
+
+    .section-cta {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      text-align: center;
+      padding: 60px 32px;
+    }
+
+    /* Typography */
+    h1 {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 20px;
+      color: #111827;
+    }
+
+    h3 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #374151;
+    }
+
+    p {
+      font-size: 18px;
+      line-height: 1.8;
+      margin-bottom: 16px;
+      color: #4b5563;
+    }
+
+    .lead-text {
+      font-size: 20px;
+      font-weight: 500;
+      line-height: 1.6;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      opacity: 0.9;
+      font-weight: 400;
+    }
+
+    /* Score Display */
+    .score-hero {
+      display: inline-block;
+      background: white;
+      color: #667eea;
+      font-size: 72px;
+      font-weight: 900;
+      padding: 20px 40px;
+      border-radius: 16px;
+      margin: 24px 0;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .element-badge-large {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-size: 24px;
+      font-weight: 600;
+      margin-top: 16px;
+    }
+
+    /* Mini Scores Grid */
+    .mini-scores {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 32px 0;
+    }
+
+    .mini-score-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .mini-score-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #667eea;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .mini-score-label {
+      font-size: 14px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Problem/Agitation Lists */
+    .symptom-list {
+      list-style: none;
+      margin: 24px 0;
+    }
+
+    .symptom-list li {
+      padding: 12px 0;
+      font-size: 18px;
+      line-height: 1.6;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .symptom-list li:last-child {
+      border-bottom: none;
+    }
+
+    .symptom-list li::before {
+      content: "⚠️ ";
+      margin-right: 8px;
+    }
+
+    /* Diagnosis Box */
+    .diagnosis-box {
+      background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%);
+      border: 2px solid #f59e0b;
+      border-radius: 12px;
+      padding: 32px;
+      margin: 32px 0;
+      box-shadow: 0 4px 16px rgba(245, 158, 11, 0.2);
+    }
+
+    .diagnosis-box h3 {
+      color: #92400e;
+      margin-bottom: 20px;
+    }
+
+    .diagnosis-box p {
+      color: #78350f;
+      white-space: pre-line;
+    }
+
+    /* CTA Button */
+    .cta-button {
+      display: inline-block;
+      background: white;
+      color: #f5576c;
+      font-size: 24px;
+      font-weight: 700;
+      padding: 20px 48px;
+      border-radius: 50px;
+      text-decoration: none;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      margin-top: 24px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 14px 50px rgba(0,0,0,0.4);
+    }
+
+    .cta-secondary {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      backdrop-filter: blur(10px);
+      font-size: 18px;
+      padding: 14px 32px;
+      margin-top: 16px;
+    }
+
+    /* Urgency Timer */
+    .urgency-box {
+      background: #fef3c7;
+      border: 2px dashed #f59e0b;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+      text-align: center;
+    }
+
+    .urgency-box strong {
+      color: #dc2626;
+      font-size: 20px;
+    }
+
+    /* Social Proof */
+    .social-proof {
+      background: #f3f4f6;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 32px 0;
+      font-style: italic;
+    }
+
+    .social-proof::before {
+      content: '"';
+      font-size: 48px;
+      color: #667eea;
+      line-height: 0;
+    }
+
+    /* Charts - Simplified */
+    .chart-container {
+      margin: 32px 0;
+      padding: 24px;
+      background: #f9fafb;
+      border-radius: 12px;
+    }
+
+    .chart-container canvas {
+      max-width: 100%;
+      height: auto !important;
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 100px 20px;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 20px;
+      border: 5px solid #f3f4f6;
+      border-top: 5px solid #667eea;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 { font-size: 28px; }
+      h2 { font-size: 24px; }
+      .score-hero { font-size: 56px; padding: 16px 32px; }
+      .section { padding: 32px 20px; }
+      .section-hero, .section-cta { padding: 48px 20px; }
+      .mini-scores { grid-template-columns: 1fr; }
+    }
+
+    /* Highlight Box */
+    .highlight-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 32px;
+      border-radius: 12px;
+      margin: 32px 0;
+      box-shadow: 0 8px 24px rgba(102, 126, 234, 0.3);
+    }
+
+    .highlight-box h3 {
+      color: white;
+    }
+
+    .highlight-box p {
+      color: rgba(255,255,255,0.95);
+    }
+
+    /* Benefit List */
+    .benefit-list {
+      list-style: none;
+      margin: 24px 0;
+    }
+
+    .benefit-list li {
+      padding: 12px 0;
+      font-size: 18px;
+      line-height: 1.7;
+    }
+
+    .benefit-list li::before {
+      content: "✅ ";
+      margin-right: 8px;
+    }
+
+    /* Scarcity Badge */
+    .scarcity-badge {
+      display: inline-block;
+      background: #dc2626;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">
+    <div class="loading-spinner"></div>
+    <div>Carregando seu diagnóstico personalizado...</div>
+  </div>
+
+  <div id="content" class="vsl-container" style="display: none;">
+    <!-- Content will be inserted here by JavaScript -->
+  </div>
+
+  <script>
+    const API_URL = window.location.hostname === 'localhost'
+      ? 'http://localhost:3001'
+      : 'https://quiz-mtc.vercel.app';
+
+    const ELEMENTO_EMOJIS = {
+      'RIM': '🌊',
+      'FIGADO': '🌳',
+      'FÍGADO': '🌳',
+      'BACO': '🌍',
+      'BAÇO': '🌍',
+      'CORACAO': '🔥',
+      'CORAÇÃO': '🔥',
+      'PULMAO': '💨',
+      'PULMÃO': '💨'
+    };
+
+    const ELEMENTO_NAMES = {
+      'RIM': 'Elemento ÁGUA (Rim)',
+      'FIGADO': 'Elemento MADEIRA (Fígado)',
+      'FÍGADO': 'Elemento MADEIRA (Fígado)',
+      'BACO': 'Elemento TERRA (Baço)',
+      'BAÇO': 'Elemento TERRA (Baço)',
+      'CORACAO': 'Elemento FOGO (Coração)',
+      'CORAÇÃO': 'Elemento FOGO (Coração)',
+      'PULMAO': 'Elemento METAL (Pulmão)',
+      'PULMÃO': 'Elemento METAL (Pulmão)'
+    };
+
+    async function carregarResultados() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const email = urlParams.get('email');
+      const leadId = urlParams.get('id');
+
+      if (!email && !leadId) {
+        document.getElementById('loading').innerHTML = '<p style="color: #dc2626;">❌ Nenhum email ou ID fornecido.</p>';
+        return;
+      }
+
+      try {
+        let url = `${API_URL}/api/lead/find?`;
+        if (email) url += `email=${encodeURIComponent(email)}`;
+        if (leadId) url += `leadId=${leadId}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!data.success) {
+          document.getElementById('loading').innerHTML = `<p style="color: #dc2626;">❌ ${data.error || 'Lead não encontrado'}</p>`;
+          return;
+        }
+
+        renderizarVSL(data.lead);
+      } catch (error) {
+        console.error('Erro:', error);
+        document.getElementById('loading').innerHTML = '<p style="color: #dc2626;">❌ Erro ao carregar resultados.</p>';
+      }
+    }
+
+    function renderizarVSL(lead) {
+      const primeiroNome = lead.nome.split(' ')[0];
+      const elemento = lead.elemento_principal || 'RIM';
+      const emoji = ELEMENTO_EMOJIS[elemento.toUpperCase()] || '🧘';
+      const elementoNome = ELEMENTO_NAMES[elemento.toUpperCase()] || elemento;
+
+      // Calcular scores
+      const intensidadeScore = lead.intensidade_calculada
+        ? Math.round((lead.intensidade_calculada / 5) * 100)
+        : 0;
+      const urgenciaScore = lead.urgencia_calculada
+        ? Math.round((lead.urgencia_calculada / 5) * 100)
+        : 0;
+      const prontidaoScore = Math.round((intensidadeScore + urgenciaScore) / 2);
+
+      const contagemElementos = lead.contagem_elementos || {};
+      const valoresElementos = Object.values(contagemElementos);
+      const totalElementos = valoresElementos.length > 0 ? valoresElementos.reduce((a, b) => a + b, 0) : 0;
+      const elementoMax = valoresElementos.length > 0 ? Math.max(...valoresElementos) : 0;
+      const equilibrioScore = totalElementos > 0 ? Math.round((1 - (elementoMax / totalElementos)) * 100) : 50;
+
+      const diagnostico = (lead.diagnostico_completo || lead.script_abertura || '')
+        .replace(/{NOME}/g, primeiroNome);
+
+      // ESTRUTURA VSL: HOOK → PROBLEM → AGITATE → SOLUTION → CTA
+
+      const html = `
+        <!-- 1. HERO/HOOK: Capturar Atenção Imediata -->
+        <div class="section section-hero">
+          <div class="scarcity-badge">⏰ DIAGNÓSTICO PERSONALIZADO GERADO</div>
+          <h1>${primeiroNome}, Seus Resultados Estão Prontos!</h1>
+          <p class="subtitle">Baseado nas suas respostas, identificamos exatamente o que está acontecendo com sua saúde...</p>
+
+          <div class="score-hero">${lead.lead_score || prontidaoScore}</div>
+          <p style="color: rgba(255,255,255,0.9); font-size: 16px; margin-top: -12px;">Seu Score de Prontidão para Transformação</p>
+
+          <div class="element-badge-large">
+            <span style="font-size: 32px;">${emoji}</span>
+            <span>${elementoNome}</span>
+          </div>
+        </div>
+
+        <!-- 2. PROBLEM: Identificar o Problema com Dados Reais -->
+        <div class="section section-problem">
+          <h2>❗ Aqui está o que descobrimos sobre você, ${primeiroNome}...</h2>
+
+          <p class="lead-text">Baseado no seu diagnóstico personalizado de Medicina Tradicional Chinesa, identificamos que seu <strong>${elementoNome}</strong> está em desequilíbrio.</p>
+
+          <div class="mini-scores">
+            <div class="mini-score-card">
+              <span class="mini-score-value">${intensidadeScore}%</span>
+              <span class="mini-score-label">Intensidade dos Sintomas</span>
+            </div>
+            <div class="mini-score-card">
+              <span class="mini-score-value">${urgenciaScore}%</span>
+              <span class="mini-score-label">Urgência de Tratamento</span>
+            </div>
+          </div>
+
+          <p>E aqui está a verdade que você precisa ouvir:</p>
+
+          <p><strong>Esses números não mentem.</strong> Eles revelam exatamente o nível de atenção que sua saúde está pedindo AGORA.</p>
+        </div>
+
+        <!-- 3. AGITATION: Amplificar a Dor e o Custo de Não Agir -->
+        <div class="section section-agitation">
+          <h2>⚠️ O que acontece se você ignorar isso?</h2>
+
+          <p>Veja bem, ${primeiroNome}...</p>
+
+          <p>Você já sabe que algo não está certo. Você sentiu isso quando respondeu ao questionário. Os sintomas que você mencionou não apareceram da noite para o dia.</p>
+
+          <p><strong>Eles são sinais do seu corpo GRITANDO por ajuda.</strong></p>
+
+          <div class="symptom-list">
+            <li>A tensão que você sente não vai desaparecer sozinha</li>
+            <li>A fadiga que te acompanha todos os dias só vai piorar</li>
+            <li>Os sintomas emocionais vão começar a afetar seus relacionamentos</li>
+            <li>O desequilíbrio no seu ${elementoNome} pode desencadear problemas mais sérios</li>
+          </div>
+
+          ${lead.custo_mensal_problema ? `
+          <div class="urgency-box">
+            <p style="margin: 0; color: #92400e;"><strong>💸 Você está gastando R$ ${lead.custo_mensal_problema}/mês</strong> em soluções paliativas que não resolvem a raiz do problema.</p>
+            <p style="margin-top: 12px; margin-bottom: 0; font-size: 16px; color: #78350f;">Isso é <strong>R$ ${lead.custo_mensal_problema * 12}/ano</strong> jogados fora sem resultados duradouros.</p>
+          </div>
+          ` : ''}
+
+          <p style="font-size: 20px; font-weight: 600; color: #dc2626;">A pergunta é: Quanto tempo mais você vai esperar antes de fazer algo REAL sobre isso?</p>
+        </div>
+
+        <!-- 4. SOLUTION: Apresentar a Solução com Diagnóstico Personalizado -->
+        <div class="section section-solution">
+          <h2>✅ Mas tem uma boa notícia, ${primeiroNome}...</h2>
+
+          <p class="lead-text">Você acabou de dar o passo mais importante: <strong>RECONHECER que precisa de mudança.</strong></p>
+
+          <p>E não só isso - você tem em mãos um diagnóstico preciso baseado em 5.000 anos de Medicina Tradicional Chinesa.</p>
+
+          <div class="diagnosis-box">
+            <h3>📋 Seu Diagnóstico Personalizado:</h3>
+            <p>${diagnostico}</p>
+          </div>
+
+          <p>Agora você sabe <em>exatamente</em> o que está acontecendo. Mas conhecimento sem ação é apenas informação...</p>
+
+          <div class="highlight-box">
+            <h3>🎯 O Que Você Pode Alcançar com o Tratamento Correto:</h3>
+            <ul class="benefit-list">
+              <li>Eliminar os sintomas físicos que te incomodam diariamente</li>
+              <li>Recuperar sua energia e vitalidade naturais</li>
+              <li>Restaurar o equilíbrio emocional e mental</li>
+              <li>Prevenir problemas de saúde mais graves no futuro</li>
+              <li>Economizar milhares em tratamentos paliativos ineficazes</li>
+              <li>Viver com mais qualidade, presença e bem-estar</li>
+            </ul>
+          </div>
+
+          <p>E a melhor parte? <strong>Você não precisa fazer isso sozinho(a).</strong></p>
+        </div>
+
+        <!-- 5. CREDIBILIDADE: Autoridade e Prova Social -->
+        <div class="section" style="background: #f9fafb;">
+          <h2>👨‍⚕️ Apresentando: Mestre Ye e o Método Saúde Vitalícia</h2>
+
+          <p>O Mestre Ye é um dos maiores especialistas em Medicina Tradicional Chinesa e Qi Gong terapêutico do Brasil.</p>
+
+          <p>Com mais de 20 anos de experiência, ele já transformou a vida de <strong>milhares de pessoas</strong> que, assim como você, sofriam com sintomas crônicos e desequilíbrios energéticos.</p>
+
+          <div class="social-proof">
+            <p style="color: #4b5563; margin-bottom: 12px;">"Depois de anos tentando tratamentos convencionais sem resultado, encontrei o Qi Gong com Mestre Ye. Em 3 meses, minha enxaqueca crônica desapareceu. Foi transformador!"</p>
+            <p style="font-size: 14px; color: #6b7280; margin: 0; text-align: right;">— Maria Silva, 42 anos</p>
+          </div>
+
+          <div class="social-proof">
+            <p style="color: #4b5563; margin-bottom: 12px;">"Eu estava cético no início, mas os resultados falam por si. Minha ansiedade diminuiu drasticamente e finalmente consigo dormir bem. Recomendo de olhos fechados!"</p>
+            <p style="font-size: 14px; color: #6b7280; margin: 0; text-align: right;">— João Santos, 38 anos</p>
+          </div>
+        </div>
+
+        <!-- 6. OFERTA: Apresentar a Solução Concreta -->
+        <div class="section" style="background: white;">
+          <h2>🎁 Evento Especial: Black November da Saúde Vitalícia</h2>
+
+          <p>Normalmente, uma consulta personalizada com diagnóstico MTC completo custa mais de R$ 500.</p>
+
+          <p>Mas durante o <strong>Black November da Saúde Vitalícia</strong>, o Mestre Ye vai revelar:</p>
+
+          <ul class="benefit-list">
+            <li>O método completo para desbloquear seu ${elementoNome}</li>
+            <li>Práticas de Qi Gong específicas para seu diagnóstico</li>
+            <li>Como implementar isso na sua rotina (mesmo se você tem apenas 15 minutos por dia)</li>
+            <li>Acesso ao programa completo de transformação</li>
+            <li>Bônus exclusivos para quem participar do evento</li>
+          </ul>
+
+          <div class="urgency-box">
+            <p style="margin: 0;"><strong>⏰ Vagas Limitadas!</strong></p>
+            <p style="margin-top: 8px; margin-bottom: 0; font-size: 16px;">Apenas 100 pessoas terão acesso a essa oferta especial.</p>
+          </div>
+        </div>
+
+        <!-- 7. CTA: Chamada Para Ação Clara e Direta -->
+        <div class="section section-cta">
+          <h1 style="color: white; margin-bottom: 24px;">Está Pronto Para Transformar Sua Saúde, ${primeiroNome}?</h1>
+
+          <p style="color: rgba(255,255,255,0.95); font-size: 20px; margin-bottom: 32px;">Você tem duas opções:</p>
+
+          <p style="color: rgba(255,255,255,0.95); font-size: 18px; margin-bottom: 8px;"><strong>Opção 1:</strong> Ignorar isso e continuar gastando dinheiro em soluções que não funcionam...</p>
+
+          <p style="color: rgba(255,255,255,0.95); font-size: 18px; margin-bottom: 32px;"><strong>Opção 2:</strong> Dar o próximo passo e descobrir como o Mestre Ye pode te ajudar a resolver isso de uma vez por todas.</p>
+
+          <button class="cta-button" onclick="window.location.href='https://saudevitalicia.com.br/black-november'">
+            🔥 QUERO PARTICIPAR DO EVENTO
+          </button>
+
+          <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin-top: 16px;">Clique no botão acima para garantir sua vaga</p>
+
+          <button class="cta-button cta-secondary" onclick="window.location.href='mailto:contato@saudevitalicia.com.br?subject=Dúvidas sobre meu diagnóstico - ${primeiroNome}'">
+            💬 Tenho Dúvidas - Quero Falar com um Especialista
+          </button>
+        </div>
+
+        <!-- 8. RISK REVERSAL: Garantia e Redução de Risco -->
+        <div class="section" style="background: #f9fafb;">
+          <h2 style="text-align: center;">🛡️ Garantia de 30 Dias ou Seu Dinheiro de Volta</h2>
+
+          <p style="text-align: center;">Experimente o método por 30 dias. Se você não sentir melhorias reais na sua saúde e bem-estar, devolvemos 100% do seu investimento. Sem perguntas, sem complicação.</p>
+
+          <p style="text-align: center; color: #6b7280; font-size: 16px; margin-top: 24px;">Você não tem nada a perder. Apenas saúde a ganhar.</p>
+        </div>
+
+        <!-- 9. FINAL URGENCY: Último Empurrão -->
+        <div class="section" style="background: white; text-align: center;">
+          <h2>⏰ Não Deixe Para Depois, ${primeiroNome}</h2>
+
+          <p>Seu corpo já esperou tempo demais.</p>
+
+          <p>Cada dia que passa sem tomar uma atitude é mais um dia vivendo com sintomas desnecessários.</p>
+
+          <p style="font-size: 20px; font-weight: 600; color: #667eea; margin-top: 32px;">A transformação começa com UMA decisão.</p>
+
+          <p style="font-size: 20px; font-weight: 600; color: #667eea;">Essa decisão é AGORA.</p>
+
+          <button class="cta-button" style="margin-top: 32px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;" onclick="window.location.href='https://saudevitalicia.com.br/black-november'">
+            ✨ SIM, QUERO TRANSFORMAR MINHA SAÚDE AGORA
+          </button>
+        </div>
+      `;
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+      document.getElementById('content').innerHTML = html;
+    }
+
+    // Iniciar
+    carregarResultados();
+  </script>
+</body>
+</html>
