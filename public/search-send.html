@@ -391,6 +391,177 @@
       font-size: 48px;
       margin-bottom: 15px;
     }
+
+    /* Playbook Comercial Styles */
+    .playbook-section {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f0fdf4;
+      border-radius: 12px;
+      border: 2px solid #86efac;
+      display: none;
+    }
+
+    .playbook-section.show {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+
+    .playbook-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #86efac;
+    }
+
+    .playbook-header h3 {
+      font-size: 18px;
+      color: #166534;
+      flex: 1;
+    }
+
+    .playbook-badge {
+      background: #16a34a;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .playbook-profile {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      border-left: 4px solid #16a34a;
+    }
+
+    .playbook-profile h4 {
+      color: #166534;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .playbook-profile p {
+      color: #15803d;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .playbook-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #166534;
+      margin: 15px 0 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .playbook-list {
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .playbook-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #dcfce7;
+      font-size: 13px;
+      color: #15803d;
+      line-height: 1.5;
+    }
+
+    .playbook-item:last-child {
+      border-bottom: none;
+    }
+
+    .playbook-item strong {
+      color: #166534;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .playbook-objection {
+      background: #fef3c7;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border-left: 3px solid #f59e0b;
+    }
+
+    .playbook-objection-title {
+      font-weight: 600;
+      color: #92400e;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .playbook-objection-response {
+      color: #78350f;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .playbook-script {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #d1fae5;
+      font-size: 13px;
+      color: #15803d;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+    }
+
+    .playbook-probability {
+      background: #dbeafe;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      margin-top: 15px;
+      border: 2px solid #60a5fa;
+    }
+
+    .playbook-probability-value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #1e40af;
+    }
+
+    .playbook-probability-label {
+      font-size: 12px;
+      color: #1e3a8a;
+      margin-top: 5px;
+    }
+
+    .btn-playbook {
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .btn-playbook:hover:not(:disabled) {
+      box-shadow: 0 10px 25px rgba(22, 163, 74, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .btn-playbook:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -495,6 +666,15 @@
     </div>
 
     <div id="result" class="result"></div>
+
+    <!-- Playbook Comercial -->
+    <div id="playbookSection" class="playbook-section">
+      <div class="playbook-header">
+        <h3>💼 Playbook Comercial</h3>
+        <span class="playbook-badge" id="playbookBadge">Carregando...</span>
+      </div>
+      <div id="playbookContent"></div>
+    </div>
 
     <!-- Histórico de Envios -->
     <div class="history-section">
@@ -631,13 +811,111 @@
       
       // Mostrar card
       document.getElementById('leadCard').classList.add('show');
+      
+      // Carregar playbook comercial se houver perfil_comercial
+      if (lead.id && lead.perfil_comercial) {
+        carregarPlaybook(lead.id);
+      }
     }
 
     function limparBusca() {
       currentLead = null;
       document.getElementById('leadCard').classList.remove('show');
+      document.getElementById('playbookSection').classList.remove('show');
       document.getElementById('searchInput').value = '';
       document.getElementById('searchInput').focus();
+    }
+
+    // Carregar Playbook Comercial
+    async function carregarPlaybook(leadId) {
+      const playbookSection = document.getElementById('playbookSection');
+      const playbookContent = document.getElementById('playbookContent');
+      const playbookBadge = document.getElementById('playbookBadge');
+      
+      playbookBadge.textContent = 'Carregando...';
+      playbookContent.innerHTML = '<p style="text-align: center; color: #15803d;">🔄 Carregando estratégia comercial...</p>';
+      playbookSection.classList.add('show');
+
+      try {
+        const response = await fetch(`${API_URL}/api/lead/playbook?leadId=${leadId}`);
+        const data = await response.json();
+
+        if (!data.success) {
+          playbookContent.innerHTML = `<p style="text-align: center; color: #92400e;">⚠️ ${data.error}</p>`;
+          playbookBadge.textContent = 'Indisponível';
+          return;
+        }
+
+        const { lead, relatorio } = data;
+        playbookBadge.textContent = lead.perfil_comercial.replace(/_/g, ' ');
+
+        // Montar HTML do playbook
+        let html = `
+          <div class="playbook-profile">
+            <h4>🎯 Perfil: ${lead.perfil_comercial.replace(/_/g, ' ')}</h4>
+            <p><strong>Características:</strong> ${relatorio.caracteristicas}</p>
+          </div>
+
+          <div class="playbook-section-title">⚠️ Objeções Prováveis</div>
+          <div class="playbook-list">
+        `;
+
+        relatorio.objecoes.forEach(obj => {
+          html += `
+            <div class="playbook-objection">
+              <div class="playbook-objection-title">${obj.objecao}</div>
+              <div class="playbook-objection-response">💬 ${obj.resposta}</div>
+            </div>
+          `;
+        });
+
+        html += `</div>`;
+
+        html += `
+          <div class="playbook-section-title">🔥 Gatilhos de Urgência</div>
+          <div class="playbook-list">
+        `;
+
+        relatorio.gatilhos_urgencia.forEach(gatilho => {
+          html += `<div class="playbook-item">${gatilho}</div>`;
+        });
+
+        html += `</div>`;
+
+        html += `
+          <div class="playbook-section-title">❓ Perguntas de Qualificação</div>
+          <div class="playbook-list">
+        `;
+
+        relatorio.perguntas_qualificacao.forEach((pergunta, index) => {
+          html += `<div class="playbook-item"><strong>${index + 1}.</strong> ${pergunta}</div>`;
+        });
+
+        html += `</div>`;
+
+        html += `
+          <div class="playbook-section-title">🎬 Script de Fechamento</div>
+          <div class="playbook-script">${relatorio.script_fechamento}</div>
+        `;
+
+        if (relatorio.probabilidade_fechamento !== undefined) {
+          const prob = relatorio.probabilidade_fechamento;
+          const cor = prob >= 70 ? '#16a34a' : prob >= 40 ? '#f59e0b' : '#dc2626';
+          html += `
+            <div class="playbook-probability" style="border-color: ${cor};">
+              <div class="playbook-probability-value" style="color: ${cor};">${prob}%</div>
+              <div class="playbook-probability-label">Probabilidade de Fechamento</div>
+            </div>
+          `;
+        }
+
+        playbookContent.innerHTML = html;
+
+      } catch (error) {
+        console.error('Erro ao carregar playbook:', error);
+        playbookContent.innerHTML = `<p style="text-align: center; color: #dc2626;">❌ Erro ao carregar: ${error.message}</p>`;
+        playbookBadge.textContent = 'Erro';
+      }
     }
 
     function copiarDiagnostico() {
@@ -727,6 +1005,11 @@
         } else {
           displayLead(data.lead);
           showResult('✅ Usuário encontrado com sucesso!', true);
+          
+          // Carregar playbook se tiver perfil comercial
+          if (data.lead.perfil_comercial) {
+            carregarPlaybook(data.lead.id);
+          }
         }
         
       } catch (error) {

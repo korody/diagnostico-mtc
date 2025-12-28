@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test - Gráficos</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+    }
+    .chart-container {
+      position: relative;
+      height: 400px;
+      margin-bottom: 30px;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+    .debug {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Debug - Gráficos Chart.js</h1>
+
+    <div class="debug" id="debug"></div>
+
+    <h2>Gráfico de Barras - Análise Comparativa</h2>
+    <div class="chart-container">
+      <canvas id="barChart"></canvas>
+    </div>
+
+    <h2>Gráfico Radar - Elementos MTC</h2>
+    <div class="chart-container">
+      <canvas id="radarChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const debugEl = document.getElementById('debug');
+
+    function log(msg) {
+      debugEl.innerHTML += msg + '<br>';
+      console.log(msg);
+    }
+
+    log('✓ Chart.js carregado: ' + (typeof Chart !== 'undefined'));
+    log('✓ Chart.js versão: ' + (typeof Chart !== 'undefined' ? Chart.version : 'N/A'));
+
+    // Dados de teste
+    const testData = {
+      prontidaoScore: 75,
+      intensidadeScore: 80,
+      urgenciaScore: 70,
+      equilibrioScore: 60,
+      autonomiaScore: 85,
+      investimentoScore: 50
+    };
+
+    const testElementos = {
+      RIM: 3,
+      FÍGADO: 5,
+      BAÇO: 2,
+      CORAÇÃO: 4,
+      PULMÃO: 3
+    };
+
+    log('✓ Dados de teste criados');
+    log('  - Prontidão: ' + testData.prontidaoScore + '%');
+    log('  - Intensidade: ' + testData.intensidadeScore + '%');
+
+    // Renderizar gráfico de barras
+    try {
+      const barCtx = document.getElementById('barChart');
+      log('✓ Canvas barChart encontrado: ' + (barCtx !== null));
+
+      if (barCtx) {
+        const barChart = new Chart(barCtx, {
+          type: 'bar',
+          data: {
+            labels: ['Prontidão', 'Intensidade', 'Urgência', 'Equilíbrio', 'Autonomia', 'Investimento'],
+            datasets: [{
+              label: 'Score (%)',
+              data: [
+                testData.prontidaoScore,
+                testData.intensidadeScore,
+                testData.urgenciaScore,
+                testData.equilibrioScore,
+                testData.autonomiaScore,
+                testData.investimentoScore
+              ],
+              backgroundColor: '#667eea',
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100
+              }
+            },
+            plugins: {
+              legend: {
+                display: true
+              }
+            }
+          }
+        });
+        log('✓ Gráfico de barras criado com sucesso');
+      }
+    } catch (error) {
+      log('✗ ERRO no gráfico de barras: ' + error.message);
+      console.error(error);
+    }
+
+    // Renderizar gráfico radar
+    try {
+      const radarCtx = document.getElementById('radarChart');
+      log('✓ Canvas radarChart encontrado: ' + (radarCtx !== null));
+
+      if (radarCtx) {
+        const radarChart = new Chart(radarCtx, {
+          type: 'radar',
+          data: {
+            labels: ['Rim', 'Fígado', 'Baço', 'Coração', 'Pulmão'],
+            datasets: [{
+              label: 'Elementos',
+              data: [
+                testElementos.RIM,
+                testElementos.FÍGADO,
+                testElementos.BAÇO,
+                testElementos.CORAÇÃO,
+                testElementos.PULMÃO
+              ],
+              backgroundColor: 'rgba(102, 126, 234, 0.2)',
+              borderColor: '#667eea',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              r: {
+                beginAtZero: true,
+                max: 10
+              }
+            }
+          }
+        });
+        log('✓ Gráfico radar criado com sucesso');
+      }
+    } catch (error) {
+      log('✗ ERRO no gráfico radar: ' + error.message);
+      console.error(error);
+    }
+  </script>
+</body>
+</html>

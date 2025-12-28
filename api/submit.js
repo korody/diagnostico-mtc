@@ -143,7 +143,6 @@ module.exports = async (req, res) => {
       elemento_principal: elementoPrincipal,
       codigo_perfil: `${elementoPrincipal.substring(0, 2)}-${intensidade}`,
       nome_perfil: config.nome,
-      arquetipo: config.arquetipo,
       emoji: config.emoji,
       quadrante: quadrante,
       diagnostico_resumo: diagnosticoCompleto.substring(0, 200) + '...',
@@ -162,7 +161,17 @@ module.exports = async (req, res) => {
       confianca_arquetipo: dadosArquetipo.confianca,
       objecao_principal: dadosArquetipo.objecao_principal,
       autonomia_decisao: dadosArquetipo.autonomia_decisao,
-      investimento_mensal_atual: dadosArquetipo.investimento_mensal_atual
+      investimento_mensal_atual: dadosArquetipo.investimento_mensal_atual,
+      // Novos campos de segmentação e qualificação
+      estado: respostas.P17 || null,
+      custo_mensal_problema: respostas.P21 ? (
+        respostas.P21 === 'A' ? 50 :
+        respostas.P21 === 'B' ? 200 :
+        respostas.P21 === 'C' ? 400 :
+        respostas.P21 === 'D' ? 750 :
+        respostas.P21 === 'E' ? 1200 :
+        0
+      ) : null
     };
     
     // ============================================

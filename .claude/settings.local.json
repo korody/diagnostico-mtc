@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp add --transport stdio claude-code-web --env BROWSER=chrome -- cmd /c npx -y @anthropic/claude-code-web)",
+      "Bash(where:*)",
+      "Bash(claude mcp list:*)",
+      "Bash(npx -y @anthropic/claude-code-web)",
+      "Bash(npm install:*)",
+      "Bash(timeout:*)",
+      "Bash(exit 0)",
+      "Bash(powershell:*)",
+      "Bash(copy:*)",
+      "Bash(node:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(npm start)"
+    ]
+  }
+}

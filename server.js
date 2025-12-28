@@ -13,6 +13,7 @@ const cors = require('cors');
 const path = require('path');
 const { formatToE164, isValidE164, formatForUnnichat, formatForDisplay, findLeadByPhone } = require('./lib/phone-simple');
 const { addLeadTags, TAGS } = require('./lib/tags');
+const { calcularArquetipo } = require('./lib/calcularArquetipo');
 const fs = require('fs');
 
 // Importante: Não importe handlers que criam clients ANTES de carregar .env
@@ -151,14 +152,11 @@ function calcularLeadScore(respostas) {
   const pesoP3 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
   score += pesoP3[respostas.P3] || 0;
   
-  const pesoP6 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
-  score += pesoP6[respostas.P6] || 0;
+  const pesoP7 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
+  score += pesoP7[respostas.P7] || 0;
   
   const pesoP8 = { 'A': 20, 'B': 16, 'C': 12, 'D': 8, 'E': 4 };
   score += pesoP8[respostas.P8] || 0;
-  
-  const pesoP9 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
-  score += pesoP9[respostas.P9] || 0;
   
   const pesoP11 = { 'A': 2, 'B': 3, 'C': 4, 'D': 5, 'E': 6, 'F': 7, 'G': 8, 'H': 9, 'I': 10, 'J': 10 };
   score += pesoP11[respostas.P11] || 0;
@@ -197,6 +195,81 @@ app.get('/search-send', (req, res) => {
 // Alias compatível com produção: algumas infra geram esta URL com o prefixo /api
 app.get('/api/search-send', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'search-send.html'));
+});
+
+// ===== ROTA: PLAYBOOK COMERCIAL DE UM LEAD =====
+app.get('/api/lead/playbook', async (req, res) => {
+  try {
+    const { gerarRelatorioCall } = require('./lib/playbook-comercial');
+    const { leadId, email, phone } = req.query;
+
+    if (!leadId && !email && !phone) {
+      return res.status(400).json({
+        success: false,
+        error: 'Informe leadId, email ou phone para buscar o playbook'
+      });
+    }
+
+    // Buscar lead
+    let query = supabase.from('quiz_leads').select('*');
+
+    if (leadId) {
+      query = query.eq('id', leadId);
+    } else if (email) {
+      query = query.eq('email', email);
+    } else if (phone) {
+      const phoneNormalized = phone.replace(/\D/g, '');
+      query = query.eq('celular', phoneNormalized);
+    }
+
+    const { data: lead, error } = await query.single();
+
+    if (error || !lead) {
+      return res.status(404).json({
+        success: false,
+        error: 'Lead não encontrado'
+      });
+    }
+
+    // Verificar se tem perfil comercial
+    if (!lead.perfil_comercial) {
+      return res.status(400).json({
+        success: false,
+        error: 'Lead não possui perfil comercial calculado',
+        lead: {
+          id: lead.id,
+          nome: lead.nome,
+          email: lead.email
+        }
+      });
+    }
+
+    // Gerar relatório
+    const relatorio = gerarRelatorioCall(lead);
+
+    return res.status(200).json({
+      success: true,
+      lead: {
+        id: lead.id,
+        nome: lead.nome,
+        email: lead.email,
+        celular: lead.celular,
+        perfil_comercial: lead.perfil_comercial,
+        elemento_principal: lead.elemento_principal,
+        lead_score: lead.lead_score,
+        prioridade: lead.prioridade,
+        created_at: lead.created_at
+      },
+      relatorio
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao gerar playbook:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // ===== ROTA: BUSCAR LEAD POR TELEFONE OU EMAIL =====
@@ -542,6 +615,9 @@ app.post('/api/submit', async (req, res) => {
     const prioridade = leadScore >= 70 ? 'ALTA' : leadScore >= 40 ? 'MÉDIA' : 'BAIXA';
     const isHotLeadVIP = leadScore >= 80 || quadrante === 1 || respostas.P8 === 'A';
     
+    // Calcular arquétipo comportamental
+    const dadosArquetipo = calcularArquetipo(respostas);
+    
     console.log('🎯 Elemento:', elementoPrincipal, '| Score:', leadScore, '| VIP:', isHotLeadVIP ? 'SIM 🔥' : 'NÃO');
     
     const config = diagnosticos[elementoPrincipal] || diagnosticos['BAÇO'];
@@ -557,7 +633,6 @@ app.post('/api/submit', async (req, res) => {
       elemento_principal: elementoPrincipal,
       codigo_perfil: `${elementoPrincipal.substring(0, 2)}-${intensidade}`,
       nome_perfil: config.nome,
-      arquetipo: config.arquetipo,
       emoji: config.emoji,
       quadrante: quadrante,
       diagnostico_resumo: diagnosticoCompleto.substring(0, 200) + '...',
@@ -569,7 +644,24 @@ app.post('/api/submit', async (req, res) => {
       // Campos calculados adicionais
       contagem_elementos: contagem,
       intensidade_calculada: intensidade,
-      urgencia_calculada: urgencia
+      urgencia_calculada: urgencia,
+      // Novos campos de arquétipos comportamentais
+      perfil_comercial: dadosArquetipo.arquetipo_principal,
+      scores_arquetipos: dadosArquetipo.scores_arquetipos,
+      confianca_arquetipo: dadosArquetipo.confianca,
+      objecao_principal: dadosArquetipo.objecao_principal,
+      autonomia_decisao: dadosArquetipo.autonomia_decisao,
+      investimento_mensal_atual: dadosArquetipo.investimento_mensal_atual,
+      // Novos campos de segmentação e qualificação
+      estado: respostas.P17 || null,
+      custo_mensal_problema: respostas.P21 ? (
+        respostas.P21 === 'A' ? 50 :
+        respostas.P21 === 'B' ? 200 :
+        respostas.P21 === 'C' ? 400 :
+        respostas.P21 === 'D' ? 750 :
+        respostas.P21 === 'E' ? 1200 :
+        0
+      ) : null
     };
     
     // ============================================
@@ -693,8 +785,13 @@ app.post('/api/submit', async (req, res) => {
         codigo: `${elementoPrincipal.substring(0, 2)}-${intensidade}`,
         emoji: config.emoji,
         leadScore: leadScore,
+        lead_score: leadScore,
         quadrante: quadrante,
-        is_vip: isHotLeadVIP
+        is_vip: isHotLeadVIP,
+        intensidade_calculada: intensidade,
+        urgencia_calculada: urgencia,
+        contagem_elementos: contagem,
+        perfil_comercial: dadosArquetipo.arquetipo_principal
       }
     });
     
