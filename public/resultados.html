@@ -758,7 +758,7 @@
         // Verificar se é Mestre Ye Digital (precisa de auto-signup)
         const isMestreYeDigital = produto.nome.includes('Mestre Ye Digital');
         const onclickAction = isMestreYeDigital
-          ? `autoSignupRedirect('${produto.url}', {email: '${lead.EMAIL}', nome: '${lead.NOME}', celular: '${lead.celular}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})`
+          ? `autoSignupRedirect('${produto.url}', {email: '${lead.EMAIL}', nome: '${lead.NOME}', celular: '${lead.celular || lead.CELULAR || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})`
           : `window.location.href='${produto.url}'`;
 
         if (isDestaque) {
@@ -982,17 +982,25 @@
           </div>
         </div>
 
-        <!-- 7. DÚVIDAS: Suporte Personalizado -->
-        <div class="section" style="background: #f8f6f3; text-align: center;">
-          <h2>💬 Ainda Tem Dúvidas?</h2>
+        <!-- 7. PRÓXIMOS PASSOS: Dois Caminhos Principais -->
+        <div class="section" style="background: linear-gradient(135deg, #f8f6f3 0%, #fdfcfb 100%); text-align: center;">
+          <h2 style="margin-bottom: 40px;">✨ Escolha Como Quer Começar</h2>
 
-          <p style="max-width: 540px; margin: 0 auto 32px;">Nossa equipe está pronta para te ajudar a escolher o melhor caminho para sua transformação.</p>
+          <!-- Botão 1: Falar com Mestre Ye Digital -->
+          <div style="max-width: 500px; margin: 0 auto 32px;">
+            <button class="cta-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fdfcfb; border: none; font-size: 20px; padding: 20px 40px; width: 100%; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);" onclick="autoSignupRedirect('https://digital.mestreye.com/chat', {email: '${lead.EMAIL}', nome: '${lead.NOME}', celular: '${lead.celular || lead.CELULAR || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})">
+              🤖 Falar com Mestre Ye Digital Agora
+            </button>
+            <p style="font-size: 15px; color: #5a5a5a; margin-top: 12px;">IA treinada pelo Mestre Ye • Respostas personalizadas 24/7</p>
+          </div>
 
-          <button class="cta-button cta-secondary" style="background: #25D366; color: #fdfcfb; border: none;" onclick="window.open('https://wa.me/5511950879456?text=Olá! Tenho dúvidas sobre meu diagnóstico - ${primeiroNome}', '_blank')">
-            💬 Falar no WhatsApp
-          </button>
-
-          <p style="font-size: 17px; color: #5a5a5a; margin-top: 20px;">+55 11 95087-9456 • Resposta em até 24 horas</p>
+          <!-- Botão 2: Falar com Especialista -->
+          <div style="max-width: 500px; margin: 0 auto;">
+            <button class="cta-button cta-secondary" style="background: #25D366; color: #fdfcfb; border: none; font-size: 20px; padding: 20px 40px; width: 100%; box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3);" onclick="window.open('https://wa.me/5511950879456?text=Olá! Tenho dúvidas sobre meu diagnóstico - ${primeiroNome}', '_blank')">
+              💬 Falar com Especialista no WhatsApp
+            </button>
+            <p style="font-size: 15px; color: #5a5a5a; margin-top: 12px;">+55 11 95087-9456 • Resposta em até 24 horas</p>
+          </div>
         </div>
 
         <!-- 8. RISK REVERSAL: Garantia e Redução de Risco -->
