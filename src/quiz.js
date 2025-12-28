@@ -683,20 +683,13 @@ const QuizMTC = () => {
         console.log('  Diagnóstico:', result.diagnostico);
         console.log('  Redirect URL:', result.redirect_url);
         
-        // Salvar diagnóstico completo no state
-        setResultadoDiagnostico(result.diagnostico);
-
-        setStep('resultado');
-
-        // Redirect automático para página de resultados
-        setTimeout(() => {
-          const baseUrl = window.location.hostname === 'localhost'
-            ? 'http://localhost:3001'
-            : '';
-          const redirectUrl = `${baseUrl}/resultados.html?email=${encodeURIComponent(dadosLead.EMAIL)}`;
-          console.log('🔄 Redirecionando para:', redirectUrl);
-          window.location.href = redirectUrl;
-        }, 2000);
+        // Redirect imediato para página de resultados
+        const baseUrl = window.location.hostname === 'localhost'
+          ? 'http://localhost:3001'
+          : '';
+        const redirectUrl = `${baseUrl}/resultados.html?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+        console.log('🔄 Redirecionando para:', redirectUrl);
+        window.location.href = redirectUrl;
       } else {
         throw new Error(result.message || 'Erro desconhecido');
       }
