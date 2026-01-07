@@ -692,70 +692,76 @@
       };
 
       // Função de recomendação inteligente
+      // SEMPRE exibe PREVENTIVA como destaque + 2 produtos complementares personalizados
       function recomendarProdutos(lead, scoreAtual) {
         const recomendacoes = [];
         const elementoUpper = elemento.toUpperCase();
 
-        // 1. PREVENTIVA para leads qualificados (score alto + sintomas intensos)
-        if (scoreAtual >= 50 && intensidadeScore >= 50) {
-          recomendacoes.push({...produtos.preventiva, prioridade: 1, destaque: true});
-        }
+        // 1. PREVENTIVA: SEMPRE como produto principal em destaque
+        recomendacoes.push({...produtos.preventiva, prioridade: 1, destaque: true});
 
-        // 2. Qi Gong Completo para leads quentes mas sem PREVENTIVA
-        if (scoreAtual >= 45 && !recomendacoes.find(p => p.destaque)) {
-          recomendacoes.push({...produtos.qigongCompleto, prioridade: 1, destaque: true});
-        }
-
-        // 3. Produtos específicos por ELEMENTO MTC
-        if (['CORACAO', 'PULMAO'].includes(elementoUpper) && scoreAtual >= 35) {
+        // 2. Produto complementar #1: Baseado no ELEMENTO MTC do lead
+        // Cada elemento tem um produto específico que complementa melhor o tratamento
+        if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') {
           recomendacoes.push({...produtos.soproCura, prioridade: 2});
-        }
-
-        if (['RIM', 'BACO'].includes(elementoUpper) && scoreAtual >= 35) {
+        } else if (elementoUpper === 'PULMAO' || elementoUpper === 'PULMÃO') {
+          recomendacoes.push({...produtos.soproCura, prioridade: 2});
+        } else if (elementoUpper === 'RIM') {
           recomendacoes.push({...produtos.protocoloLombar, prioridade: 2});
-        }
-
-        if (elementoUpper === 'FIGADO' && scoreAtual >= 35) {
+        } else if (elementoUpper === 'BACO' || elementoUpper === 'BAÇO') {
+          recomendacoes.push({...produtos.qigongCompleto, prioridade: 2});
+        } else if (elementoUpper === 'FIGADO' || elementoUpper === 'FÍGADO') {
           recomendacoes.push({...produtos.toqueCura, prioridade: 2});
+        } else {
+          // Fallback: Workshop 5 Elementos (universal)
+          recomendacoes.push({...produtos.workshop5Elementos, prioridade: 2});
         }
 
-        // 4. Protocolos específicos por sintoma (se disponível nos dados do lead)
-        // Exemplo: se lead tem 'zumbido', recomendar protocoloZumbido
-        // Isso seria expandido com dados reais do lead
-
-        // 5. Workshop 5 Elementos - ótimo para todos os perfis
-        if (scoreAtual >= 30 && recomendacoes.length < 3) {
-          recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+        // 3. Produto complementar #2: Baseado no perfil de investimento e autonomia
+        // Alta autonomia + Alto investimento atual → Qi Gong Completo (autonomia total)
+        if (autonomia === 'ALTA' && investimentoAtual >= 400) {
+          if (!recomendacoes.find(p => p.nome.includes('Qi Gong'))) {
+            recomendacoes.push({...produtos.qigongCompleto, prioridade: 3});
+          } else {
+            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+          }
         }
-
-        // 6. Saúde Para Todos para quem busca comunidade e investimento moderado
-        if (scoreAtual >= 25 && investimentoAtual < 800 && recomendacoes.length < 3) {
+        // Média/Baixa autonomia OU baixo investimento → Saúde Para Todos (comunidade + suporte)
+        else if ((autonomia === 'MEDIA' || autonomia === 'MEDIA_ALTA' || autonomia === 'BAIXA') && investimentoAtual < 400) {
           recomendacoes.push({...produtos.saudeTodos, prioridade: 3});
         }
+        // Score alto + intensidade alta → Protocolo específico adicional
+        else if (scoreAtual >= 60 && intensidadeScore >= 60) {
+          if (!recomendacoes.find(p => p.nome.includes('Protocolo'))) {
+            recomendacoes.push({...produtos.protocoloLombar, prioridade: 3});
+          } else {
+            recomendacoes.push({...produtos.toqueCura, prioridade: 3});
+          }
+        }
+        // Fallback universal: Workshop 5 Elementos ou Mestre Ye Digital
+        else {
+          if (!recomendacoes.find(p => p.nome.includes('5 Elementos'))) {
+            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+          } else {
+            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 3});
+          }
+        }
 
-        // 7. Mestre Ye Digital sempre disponível (produto de entrada)
-        if (recomendacoes.length < 2 && !recomendacoes.find(p => p.destaque)) {
-          recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
+        // Garantir que sempre temos exatamente 3 produtos (1 destaque + 2 complementares)
+        // Se por algum motivo ainda não temos 3, adicionar fallbacks
+        if (recomendacoes.length < 3) {
+          if (!recomendacoes.find(p => p.nome.includes('Mestre Ye Digital'))) {
+            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
+          }
         }
-        // Se já tem destaque (PREVENTIVA), preencher até 2 produtos regulares
-        if (recomendacoes.length < 3 && recomendacoes.find(p => p.destaque)) {
-          recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
-        }
-
-        // 8. Toque da Cura como alternativa se ainda faltar produtos
-        if (recomendacoes.length < 2 && !recomendacoes.find(p => p.destaque) && !recomendacoes.find(p => p.nome.includes('Toque'))) {
-          recomendacoes.push({...produtos.toqueCura, prioridade: 3});
-        }
-        if (recomendacoes.length < 3 && recomendacoes.find(p => p.destaque) && !recomendacoes.find(p => p.nome.includes('Toque'))) {
-          recomendacoes.push({...produtos.toqueCura, prioridade: 3});
+        if (recomendacoes.length < 3) {
+          if (!recomendacoes.find(p => p.nome.includes('Toque da Cura'))) {
+            recomendacoes.push({...produtos.toqueCura, prioridade: 4});
+          }
         }
 
-        // Ordenar por prioridade
-        // Se tem destaque: retornar 3 (1 destaque + 2 regulares)
-        // Se NÃO tem destaque: retornar apenas 2 regulares
-        const sorted = recomendacoes.sort((a, b) => a.prioridade - b.prioridade);
-        const temDestaque = sorted.some(p => p.destaque);
-        return sorted.slice(0, temDestaque ? 3 : 2);
+        // Retornar exatamente 3 produtos: 1 em destaque (PREVENTIVA) + 2 complementares
+        return recomendacoes.slice(0, 3);
       }
 
       // Gerar recomendações personalizadas
