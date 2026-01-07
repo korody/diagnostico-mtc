@@ -506,7 +506,11 @@
       const urgenciaScore = lead.urgencia_calculada
         ? Math.round((lead.urgencia_calculada / 5) * 100)
         : 0;
-      const prontidaoScore = Math.round((intensidadeScore + urgenciaScore) / 2);
+
+      // IMPORTANTE: Usar lead_score do backend (calculado corretamente com todas as perguntas)
+      // O backend considera P1, P3, P7, P8, P11 e P12 - muito mais completo que apenas intensidade + urgência
+      const leadScoreFinal = lead.lead_score || 0;
+      const prontidaoScore = leadScoreFinal; // Alias para compatibilidade com código legado
 
       const contagemElementos = lead.contagem_elementos || {};
       const valoresElementos = Object.values(contagemElementos);
@@ -516,9 +520,6 @@
 
       const diagnostico = (lead.diagnostico_completo || lead.script_abertura || '')
         .replace(/{NOME}/g, primeiroNome);
-
-      // Calcular lead score final
-      const leadScoreFinal = lead.lead_score || prontidaoScore;
       const isLeadQuente = leadScoreFinal >= 60;
       const isLeadMorno = leadScoreFinal >= 40 && leadScoreFinal < 60;
       const isLeadFrio = leadScoreFinal < 40;
