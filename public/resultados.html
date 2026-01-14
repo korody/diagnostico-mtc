@@ -528,6 +528,72 @@
       const investimentoAtual = lead.investimento_mensal_atual || 0;
       const autonomia = lead.autonomia_decisao || 'MEDIA';
 
+      // Banco de depoimentos reais categorizados
+      const depoimentos = {
+        ansiedade: [
+          { nome: "Valda Maria dos Santos", texto: "Hoje eu estava muito ansiosa. Fiz movimentos que você postou aqui e me senti bem melhor." },
+          { nome: "Georgette Abdou da Silva", texto: "Equilíbrio emocional, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
+          { nome: "Luiza Maria Saucedo Corrêa", texto: "Tinha ansiedade, depois que comecei a fazer as aulas acalmou." }
+        ],
+        dor_lombar: [
+          { nome: "Marcia Miura", texto: "Tive dores na lombar e com práticas de Qi Gong todos os dias sumiram minhas dores." },
+          { nome: "@cosarcadandu, 49 anos", texto: "O meu corpo está se modelando como há 20 anos. A vitalidade, alegria, sem dores. Façam os exercícios." }
+        ],
+        dor_geral: [
+          { nome: "Norci Araujo, 70 anos", texto: "Tenho 70 anos e minha Fibromialgia melhorou 80%. Só não 100% porque não faço todos os dias." },
+          { nome: "Marta Dias", texto: "Praticando desde março 2025, já sinto muitos resultados em dores e flexibilidade." },
+          { nome: "Mara Cabral", texto: "Tenho artrite desde jovem, suas práticas me ajudam muito, meu sono melhorou muito." }
+        ],
+        insonia: [
+          { nome: "Mara Cabral", texto: "Tenho artrite desde jovem, suas práticas me ajudam muito, meu sono melhorou muito." },
+          { nome: "Lourdes Brum, 72 anos", texto: "Me senti renovada e minha filha autista teve um sono profundo." }
+        ],
+        zumbido: [
+          { nome: "Delvina Maia", texto: "Fiz os exercícios de ontem hoje cedo e senti um pouco o joelho e ombro direito livre. Mas quero falar algo INCRÍVEL que aconteceu: SUMIU A LABIRINTITE!!" },
+          { nome: "mteresaguedes", texto: "Muito obrigada, mestre. Essa massagem funcionou comigo. Diminuiu o volume do zumbido, que estava insuportável. Vou continuar fazendo. Obrigada" },
+          { nome: "oniviapantoja", texto: "Gente do céu, zumbido que estava alto, quase sumiu, meu Deus, obrigada." },
+          { nome: "sandraveneroso", texto: "Gente, eu fiz só um pouquinho e já diminuiu bastante, obrigada mestre" }
+        ],
+        universal: [
+          { nome: "Norci Araujo, 70 anos", texto: "Tenho 70 anos e minha Fibromialgia melhorou 80%. Só não 100% porque não faço todos os dias." },
+          { nome: "Marcia Miura", texto: "Tive dores na lombar e com práticas de Qi Gong todos os dias sumiram minhas dores." },
+          { nome: "@cosarcadandu, 49 anos", texto: "O meu corpo está se modelando como há 20 anos. A vitalidade, alegria, sem dores." },
+          { nome: "Ana Maria Batista de Jesus", texto: "Tem despertado a minha energia vital de uma maneira consciente e prazerosa." },
+          { nome: "Georgette Abdou da Silva", texto: "Equilíbrio emocional, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
+          { nome: "Marta Dias", texto: "Praticando desde março 2025, já sinto muitos resultados em dores e flexibilidade." }
+        ]
+      };
+
+      // Função para selecionar depoimentos inteligentes
+      function selecionarDepoimentos(lead, elemento) {
+        const selecionados = [];
+        const elementoUpper = elemento.toUpperCase();
+
+        const temAnsiedade = (lead.P2 && lead.P2.includes('E')) || (lead.P4 && lead.P4.includes('C'));
+        const temDorLombar = (lead.P2 && lead.P2.includes('A'));
+        const temInsonia = (lead.P2 && lead.P2.includes('E')) || (lead.P4 && lead.P4.includes('C'));
+        const temDorGeral = (lead.P2 && (lead.P2.includes('A') || lead.P2.includes('B') || lead.P2.includes('C')));
+        const temZumbido = (lead.P2 && lead.P2.includes('G')) || (lead.P4 && lead.P4.includes('F'));
+
+        // Prioridade para zumbido/labirintite
+        if (temZumbido) selecionados.push(...depoimentos.zumbido.slice(0, 2));
+
+        if (temAnsiedade) selecionados.push(...depoimentos.ansiedade.slice(0, 2));
+        if (temDorLombar && selecionados.length < 4) selecionados.push(...depoimentos.dor_lombar.slice(0, 2));
+        if (temInsonia && selecionados.length < 4) selecionados.push(depoimentos.insonia[0]);
+        if (temDorGeral && selecionados.length < 4) selecionados.push(depoimentos.dor_geral[0]);
+
+        if (selecionados.length < 3) {
+          if (elementoUpper === 'RIM') selecionados.push(depoimentos.dor_lombar[0]);
+          else if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') selecionados.push(depoimentos.ansiedade[0]);
+        }
+
+        const universais = depoimentos.universal.filter(d => !selecionados.find(s => s.nome === d.nome));
+        while (selecionados.length < 6 && universais.length > 0) selecionados.push(universais.shift());
+
+        return selecionados.slice(0, 6);
+      }
+
       // Catálogo de produtos por categoria
       const produtos = {
         // HIGH-END: Para leads quentes com alta intensidade/urgência
@@ -665,15 +731,15 @@
 
         saudeTodos: {
           nome: 'Saúde Para Todos - Aulas Semanais',
-          preco: 397,
-          de: 662,
+          preco: 97,
+          recorrente: true,
           url: 'https://curso.qigongbrasil.com/pay/spt',
           categoria: 'front-end',
           beneficios: [
-            'Aulas ao vivo semanais com Mestre Ye',
-            'Acesso a práticas de Qi Gong',
-            '3 meses de acesso',
-            'Comunidade de apoio'
+            'Aulas ao vivo online 4x por semana',
+            'Práticas de Qi Gong com Mestre Ye',
+            'Assinatura mensal - cancele quando quiser',
+            'Comunidade de apoio exclusiva'
           ]
         },
 
@@ -688,6 +754,23 @@
             'Fortaleça a região com Qi Gong',
             'Acesso vitalício'
           ]
+        },
+
+        // RETIRO: Evento especial presencial
+        retiroQigong: {
+          nome: 'Retiro de Qi Gong com Mestre Ye',
+          preco: 3997,
+          url: 'https://retiro.qigongbrasil.com/',
+          categoria: 'evento-presencial',
+          data: '3 dias de imersão completa',
+          beneficios: [
+            '3 dias de práticas intensivas de Qi Gong',
+            'Hospedagem completa em hotel fazenda',
+            'Alimentação vegetariana incluída',
+            'Aulas presenciais com Mestre Ye',
+            'Experiência transformadora em grupo',
+            'Conexão profunda com a natureza'
+          ]
         }
       };
 
@@ -700,9 +783,15 @@
         // 1. PREVENTIVA: SEMPRE como produto principal em destaque
         recomendacoes.push({...produtos.preventiva, prioridade: 1, destaque: true});
 
-        // 2. Produto complementar #1: Baseado no ELEMENTO MTC do lead
-        // Cada elemento tem um produto específico que complementa melhor o tratamento
-        if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') {
+        // 2. Produto complementar #1: Verificar SINTOMAS ESPECÍFICOS primeiro
+        // Se o lead mencionou zumbido/tontura/labirintite → recomendar Protocolo Zumbido
+        const temZumbido = (lead.P2 && lead.P2.includes('G')) || (lead.P4 && lead.P4.includes('F'));
+
+        if (temZumbido) {
+          recomendacoes.push({...produtos.protocoloZumbido, prioridade: 2});
+        }
+        // Senão, baseado no ELEMENTO MTC do lead
+        else if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') {
           recomendacoes.push({...produtos.soproCura, prioridade: 2});
         } else if (elementoUpper === 'PULMAO' || elementoUpper === 'PULMÃO') {
           recomendacoes.push({...produtos.soproCura, prioridade: 2});
@@ -766,6 +855,9 @@
 
       // Gerar recomendações personalizadas
       const produtosRecomendados = recomendarProdutos(lead, leadScoreFinal);
+
+      // Selecionar depoimentos inteligentes baseados no perfil
+      const depoimentosSelecionados = selecionarDepoimentos(lead, elemento);
 
       // Função para renderizar produto dinamicamente
       function renderizarProduto(produto, isDestaque = false) {
@@ -975,15 +1067,12 @@
 
           <p>Com mais de 20 anos de experiência, ele já transformou a vida de <strong>milhares de pessoas</strong> que, assim como você, sofriam com sintomas crônicos e desequilíbrios energéticos.</p>
 
-          <div class="social-proof">
-            <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"Depois de anos tentando tratamentos convencionais sem resultado, encontrei o Qi Gong com Mestre Ye. Em 3 meses, minha enxaqueca crônica desapareceu. Foi transformador!"</p>
-            <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— Maria Silva, 42 anos</p>
-          </div>
-
-          <div class="social-proof">
-            <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"Eu estava cético no início, mas os resultados falam por si. Minha ansiedade diminuiu drasticamente e finalmente consigo dormir bem. Recomendo de olhos fechados!"</p>
-            <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— João Santos, 38 anos</p>
-          </div>
+          ${depoimentosSelecionados.map(dep => `
+            <div class="social-proof">
+              <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"${dep.texto}"</p>
+              <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— ${dep.nome}</p>
+            </div>
+          `).join('')}
         </div>
 
         <!-- 6. OFERTAS: Produtos Inteligentes Baseados em Qualificação -->
@@ -1002,6 +1091,45 @@
           <p style="text-align: center;">Experimente o método por 15 dias. Se você não sentir melhorias reais na sua saúde e bem-estar, devolvemos 100% do seu investimento. Sem perguntas, sem complicação.</p>
 
           <p style="text-align: center; color: #5a5a5a; font-size: 18px; margin-top: 28px;">Você não tem nada a perder. Apenas saúde a ganhar.</p>
+        </div>
+
+        <!-- TRANSIÇÃO: Retiro Presencial -->
+        <div class="section" style="background: linear-gradient(135deg, #fdfcfb 0%, #f8f6f3 100%); padding: 40px 32px; text-align: center;">
+          <p style="font-size: 22px; color: #5a5a5a; max-width: 680px; margin: 0 auto; line-height: 1.6;">
+            Mas se você prefere um <strong style="color: #8b6f47;">evento presencial</strong> com o Mestre Ye, você pode tentar garantir uma das <strong style="color: #8b6f47;">últimas vagas do Retiro Revitaliza de Fevereiro</strong>:
+          </p>
+        </div>
+
+        <!-- CTA Especial: Retiro Presencial -->
+        <div class="section" style="background: #f8f6f3;">
+          <div style="background: linear-gradient(135deg, #8b6f47 0%, #a0845a 100%); border-radius: 20px; padding: 48px 40px; color: #fdfcfb; position: relative; overflow: hidden; max-width: 700px; margin: 0 auto;">
+            <div style="position: absolute; top: -16px; left: 50%; transform: translateX(-50%); background: #d4a574; color: #2c2c2c; padding: 8px 24px; border-radius: 20px; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;">🏞️ EVENTO PRESENCIAL</div>
+
+            <h3 style="text-align: center; color: #fdfcfb; font-size: 32px; margin-bottom: 16px; margin-top: 16px;">Retiro de Qi Gong com Mestre Ye</h3>
+            <p style="text-align: center; font-size: 21px; color: rgba(253, 252, 251, 0.9); margin-bottom: 32px;">3 dias de imersão completa em práticas de Qi Gong</p>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <span style="font-size: 52px; font-weight: 700; color: #fdfcfb;">R$ 3.997</span>
+              <br>
+              <span style="font-size: 18px; color: rgba(253, 252, 251, 0.85);">Investimento completo • Vagas limitadas</span>
+            </div>
+
+            <ul class="benefit-list" style="text-align: left; max-width: 540px; margin: 32px auto; color: rgba(253, 252, 251, 0.95);">
+              <li>3 dias de práticas intensivas de Qi Gong</li>
+              <li>Hospedagem completa em hotel fazenda</li>
+              <li>Alimentação vegetariana incluída</li>
+              <li>Aulas presenciais com Mestre Ye</li>
+              <li>Experiência transformadora em grupo</li>
+              <li>Conexão profunda com a natureza</li>
+            </ul>
+
+            <div style="text-align: center; margin-top: 40px;">
+              <button class="cta-button" style="background: #fdfcfb; color: #8b6f47; border: none; font-size: 22px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);" onclick="window.location.href='https://retiro.qigongbrasil.com/'">
+                🏞️ QUERO PARTICIPAR DO RETIRO
+              </button>
+              <p style="font-size: 16px; color: rgba(253, 252, 251, 0.8); margin-top: 16px;">Evento presencial • Vagas muito limitadas</p>
+            </div>
+          </div>
         </div>
 
         <!-- 8. FINAL URGENCY: Último Empurrão -->

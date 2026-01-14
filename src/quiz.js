@@ -75,7 +75,8 @@ const QuizMTC = () => {
         { valor: 'C', texto: 'Pescoço, ombros ou tensão muscular', elemento: 'FÍGADO' },
         { valor: 'D', texto: 'Digestão, estômago ou cansaço extremo', elemento: 'BAÇO' },
         { valor: 'E', texto: 'Insônia, palpitações ou ansiedade', elemento: 'CORAÇÃO' },
-        { valor: 'F', texto: 'Respiração curta ou resfriados frequentes', elemento: 'PULMÃO' }
+        { valor: 'F', texto: 'Respiração curta ou resfriados frequentes', elemento: 'PULMÃO' },
+        { valor: 'G', texto: 'Zumbido, tontura ou labirintite', elemento: 'RIM' }
       ]
     },
     {
@@ -101,7 +102,8 @@ const QuizMTC = () => {
         { valor: 'C', texto: 'Insônia, ansiedade ou mente agitada', elemento: 'CORAÇÃO' },
         { valor: 'D', texto: 'Digestão ruim, inchaço ou peso nas pernas', elemento: 'BAÇO' },
         { valor: 'E', texto: 'Tensão muscular ou irritabilidade', elemento: 'FÍGADO' },
-        { valor: 'F', texto: 'Nenhum desses', elemento: null }
+        { valor: 'F', texto: 'Zumbido, tontura ou labirintite', elemento: 'RIM' },
+        { valor: 'G', texto: 'Nenhum desses', elemento: null }
       ]
     },
     {
