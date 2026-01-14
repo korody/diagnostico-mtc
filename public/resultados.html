@@ -528,7 +528,7 @@
       const investimentoAtual = lead.investimento_mensal_atual || 0;
       const autonomia = lead.autonomia_decisao || 'MEDIA';
 
-      // Banco de depoimentos reais categorizados
+      // Banco de depoimentos reais categorizados (com imagens)
       const depoimentos = {
         ansiedade: [
           { nome: "Valda Maria dos Santos", texto: "Hoje eu estava muito ansiosa. Fiz movimentos que você postou aqui e me senti bem melhor." },
@@ -536,12 +536,12 @@
           { nome: "Luiza Maria Saucedo Corrêa", texto: "Tinha ansiedade, depois que comecei a fazer as aulas acalmou." }
         ],
         dor_lombar: [
-          { nome: "Marcia Miura", texto: "Tive dores na lombar e com práticas de Qi Gong todos os dias sumiram minhas dores." },
-          { nome: "@cosarcadandu, 49 anos", texto: "O meu corpo está se modelando como há 20 anos. A vitalidade, alegria, sem dores. Façam os exercícios." }
+          { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
+          { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" }
         ],
         dor_geral: [
-          { nome: "Norci Araujo, 70 anos", texto: "Tenho 70 anos e minha Fibromialgia melhorou 80%. Só não 100% porque não faço todos os dias." },
-          { nome: "Marta Dias", texto: "Praticando desde março 2025, já sinto muitos resultados em dores e flexibilidade." },
+          { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
+          { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
           { nome: "Mara Cabral", texto: "Tenho artrite desde jovem, suas práticas me ajudam muito, meu sono melhorou muito." }
         ],
         insonia: [
@@ -549,14 +549,14 @@
           { nome: "Lourdes Brum, 72 anos", texto: "Me senti renovada e minha filha autista teve um sono profundo." }
         ],
         zumbido: [
-          { nome: "Delvina Maia", texto: "Fiz os exercícios de ontem hoje cedo e senti um pouco o joelho e ombro direito livre. Mas quero falar algo INCRÍVEL que aconteceu: SUMIU A LABIRINTITE!!" },
-          { nome: "mteresaguedes", texto: "Muito obrigada, mestre. Essa massagem funcionou comigo. Diminuiu o volume do zumbido, que estava insuportável. Vou continuar fazendo. Obrigada" },
-          { nome: "oniviapantoja", texto: "Gente do céu, zumbido que estava alto, quase sumiu, meu Deus, obrigada." },
-          { nome: "sandraveneroso", texto: "Gente, eu fiz só um pouquinho e já diminuiu bastante, obrigada mestre" }
+          { imagem: "/testimonials/zumbido-mteresaguedes.jpeg", alt: "mteresaguedes: Muito obrigada, mestre. Essa massagem funcionou comigo. Diminuiu o volume do zumbido, que estava insuportável. Vou continuar fazendo. Obrigada" },
+          { imagem: "/testimonials/zumbido-silvinhapereira.jpeg", alt: "silvinhapereirafl oripa: Faço já dois exercícios que ensinasse este terceiro bom também. Tenho melhorado muito. Gratidão. Os zumbidos começaram a pouco tempo mas incomodam. Os exercícios são ótimos. Agradeço." },
+          { imagem: "/testimonials/zumbido-ouvido-tampado.jpeg", alt: "solange.giglio: Nossa dói mesmo, e mais do lado direito que sempre estou com o ouvido tampado. Lado esquerdo não senti dor!! Grata pelos ensinamentos, sempre indico você para as pessoas" },
+          { imagem: "/testimonials/zumbido-bigorna-tambor.jpeg", alt: "marilsasantini: Eu tenho um tipo de zumbido que parece o bater de uma bigorna. O tambor me ajudou muito!!! Gratidão" }
         ],
         universal: [
-          { nome: "Norci Araujo, 70 anos", texto: "Tenho 70 anos e minha Fibromialgia melhorou 80%. Só não 100% porque não faço todos os dias." },
-          { nome: "Marcia Miura", texto: "Tive dores na lombar e com práticas de Qi Gong todos os dias sumiram minhas dores." },
+          { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
+          { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
           { nome: "@cosarcadandu, 49 anos", texto: "O meu corpo está se modelando como há 20 anos. A vitalidade, alegria, sem dores." },
           { nome: "Ana Maria Batista de Jesus", texto: "Tem despertado a minha energia vital de uma maneira consciente e prazerosa." },
           { nome: "Georgette Abdou da Silva", texto: "Equilíbrio emocional, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
@@ -1067,12 +1067,24 @@
 
           <p>Com mais de 20 anos de experiência, ele já transformou a vida de <strong>milhares de pessoas</strong> que, assim como você, sofriam com sintomas crônicos e desequilíbrios energéticos.</p>
 
-          ${depoimentosSelecionados.map(dep => `
-            <div class="social-proof">
-              <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"${dep.texto}"</p>
-              <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— ${dep.nome}</p>
-            </div>
-          `).join('')}
+          ${depoimentosSelecionados.map(dep => {
+            if (dep.imagem) {
+              // Renderizar depoimento como imagem
+              return `
+                <div class="social-proof" style="text-align: center; padding: 20px 0;">
+                  <img src="${dep.imagem}" alt="${dep.alt}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+                </div>
+              `;
+            } else {
+              // Renderizar depoimento como texto
+              return `
+                <div class="social-proof">
+                  <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"${dep.texto}"</p>
+                  <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— ${dep.nome}</p>
+                </div>
+              `;
+            }
+          }).join('')}
         </div>
 
         <!-- 6. OFERTAS: Produtos Inteligentes Baseados em Qualificação -->
