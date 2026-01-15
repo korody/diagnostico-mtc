@@ -261,15 +261,18 @@
 
     /* Social Proof */
     .social-proof {
+      margin: 36px 0;
+    }
+
+    .social-proof-text {
       background: #f8f6f3;
       border-radius: 16px;
       padding: 32px;
-      margin: 36px 0;
       font-style: italic;
       border-left: 4px solid #b4a5c8;
     }
 
-    .social-proof::before {
+    .social-proof-text::before {
       content: '"';
       font-size: 56px;
       color: #8b9dc3;
@@ -1069,16 +1072,16 @@
 
           ${depoimentosSelecionados.map(dep => {
             if (dep.imagem) {
-              // Renderizar depoimento como imagem
+              // Renderizar depoimento como imagem (sem aspas)
               return `
                 <div class="social-proof" style="text-align: center; padding: 20px 0;">
                   <img src="${dep.imagem}" alt="${dep.alt}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
                 </div>
               `;
             } else {
-              // Renderizar depoimento como texto
+              // Renderizar depoimento como texto (com aspas via CSS)
               return `
-                <div class="social-proof">
+                <div class="social-proof-text">
                   <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"${dep.texto}"</p>
                   <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— ${dep.nome}</p>
                 </div>
