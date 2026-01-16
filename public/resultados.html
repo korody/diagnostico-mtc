@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,7 +124,7 @@
       display: inline-flex;
       align-items: center;
       gap: 12px;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(10px);
       padding: 12px 24px;
       border-radius: 50px;
@@ -309,21 +310,55 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     /* Responsive */
     @media (max-width: 768px) {
-      h1 { font-size: 32px; }
-      h2 { font-size: 28px; }
-      h3 { font-size: 22px; }
-      p { font-size: 18px; }
-      .score-hero { font-size: 64px; padding: 20px 36px; }
-      .section { padding: 36px 24px; }
-      .section-hero, .section-cta { padding: 52px 24px; }
-      .mini-scores { grid-template-columns: 1fr; }
-      .cta-button { font-size: 20px; padding: 20px 44px; }
+      h1 {
+        font-size: 32px;
+      }
+
+      h2 {
+        font-size: 28px;
+      }
+
+      h3 {
+        font-size: 22px;
+      }
+
+      p {
+        font-size: 18px;
+      }
+
+      .score-hero {
+        font-size: 64px;
+        padding: 20px 36px;
+      }
+
+      .section {
+        padding: 36px 24px;
+      }
+
+      .section-hero,
+      .section-cta {
+        padding: 52px 24px;
+      }
+
+      .mini-scores {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-button {
+        font-size: 20px;
+        padding: 20px 44px;
+      }
     }
 
     /* Highlight Box */
@@ -379,11 +414,19 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.8;
+      }
     }
   </style>
 </head>
+
 <body>
   <div id="loading" class="loading">
     <div class="loading-spinner"></div>
@@ -427,7 +470,7 @@
     window.currentLead = null;
 
     // Função para auto-signup e redirect com autenticação
-    window.autoSignupRedirect = async function(targetUrl, leadData) {
+    window.autoSignupRedirect = async function (targetUrl, leadData) {
       try {
         console.log('🔐 Iniciando auto-signup para:', leadData.email);
 
@@ -784,58 +827,58 @@
         const elementoUpper = elemento.toUpperCase();
 
         // 1. PREVENTIVA: SEMPRE como produto principal em destaque
-        recomendacoes.push({...produtos.preventiva, prioridade: 1, destaque: true});
+        recomendacoes.push({ ...produtos.preventiva, prioridade: 1, destaque: true });
 
         // 2. Produto complementar #1: Verificar SINTOMAS ESPECÍFICOS primeiro
         // Se o lead mencionou zumbido/tontura/labirintite → recomendar Protocolo Zumbido
         const temZumbido = (lead.P2 && lead.P2.includes('G')) || (lead.P4 && lead.P4.includes('F'));
 
         if (temZumbido) {
-          recomendacoes.push({...produtos.protocoloZumbido, prioridade: 2});
+          recomendacoes.push({ ...produtos.protocoloZumbido, prioridade: 2 });
         }
         // Senão, baseado no ELEMENTO MTC do lead
         else if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') {
-          recomendacoes.push({...produtos.soproCura, prioridade: 2});
+          recomendacoes.push({ ...produtos.soproCura, prioridade: 2 });
         } else if (elementoUpper === 'PULMAO' || elementoUpper === 'PULMÃO') {
-          recomendacoes.push({...produtos.soproCura, prioridade: 2});
+          recomendacoes.push({ ...produtos.soproCura, prioridade: 2 });
         } else if (elementoUpper === 'RIM') {
-          recomendacoes.push({...produtos.protocoloLombar, prioridade: 2});
+          recomendacoes.push({ ...produtos.protocoloLombar, prioridade: 2 });
         } else if (elementoUpper === 'BACO' || elementoUpper === 'BAÇO') {
-          recomendacoes.push({...produtos.qigongCompleto, prioridade: 2});
+          recomendacoes.push({ ...produtos.qigongCompleto, prioridade: 2 });
         } else if (elementoUpper === 'FIGADO' || elementoUpper === 'FÍGADO') {
-          recomendacoes.push({...produtos.toqueCura, prioridade: 2});
+          recomendacoes.push({ ...produtos.toqueCura, prioridade: 2 });
         } else {
           // Fallback: Workshop 5 Elementos (universal)
-          recomendacoes.push({...produtos.workshop5Elementos, prioridade: 2});
+          recomendacoes.push({ ...produtos.workshop5Elementos, prioridade: 2 });
         }
 
         // 3. Produto complementar #2: Baseado no perfil de investimento e autonomia
         // Alta autonomia + Alto investimento atual → Qi Gong Completo (autonomia total)
         if (autonomia === 'ALTA' && investimentoAtual >= 400) {
           if (!recomendacoes.find(p => p.nome.includes('Qi Gong'))) {
-            recomendacoes.push({...produtos.qigongCompleto, prioridade: 3});
+            recomendacoes.push({ ...produtos.qigongCompleto, prioridade: 3 });
           } else {
-            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+            recomendacoes.push({ ...produtos.workshop5Elementos, prioridade: 3 });
           }
         }
         // Média/Baixa autonomia OU baixo investimento → Saúde Para Todos (comunidade + suporte)
         else if ((autonomia === 'MEDIA' || autonomia === 'MEDIA_ALTA' || autonomia === 'BAIXA') && investimentoAtual < 400) {
-          recomendacoes.push({...produtos.saudeTodos, prioridade: 3});
+          recomendacoes.push({ ...produtos.saudeTodos, prioridade: 3 });
         }
         // Score alto + intensidade alta → Protocolo específico adicional
         else if (scoreAtual >= 60 && intensidadeScore >= 60) {
           if (!recomendacoes.find(p => p.nome.includes('Protocolo'))) {
-            recomendacoes.push({...produtos.protocoloLombar, prioridade: 3});
+            recomendacoes.push({ ...produtos.protocoloLombar, prioridade: 3 });
           } else {
-            recomendacoes.push({...produtos.toqueCura, prioridade: 3});
+            recomendacoes.push({ ...produtos.toqueCura, prioridade: 3 });
           }
         }
         // Fallback universal: Workshop 5 Elementos ou Mestre Ye Digital
         else {
           if (!recomendacoes.find(p => p.nome.includes('5 Elementos'))) {
-            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+            recomendacoes.push({ ...produtos.workshop5Elementos, prioridade: 3 });
           } else {
-            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 3});
+            recomendacoes.push({ ...produtos.mestreYeDigital, prioridade: 3 });
           }
         }
 
@@ -843,12 +886,12 @@
         // Se por algum motivo ainda não temos 3, adicionar fallbacks
         if (recomendacoes.length < 3) {
           if (!recomendacoes.find(p => p.nome.includes('Mestre Ye Digital'))) {
-            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
+            recomendacoes.push({ ...produtos.mestreYeDigital, prioridade: 4 });
           }
         }
         if (recomendacoes.length < 3) {
           if (!recomendacoes.find(p => p.nome.includes('Toque da Cura'))) {
-            recomendacoes.push({...produtos.toqueCura, prioridade: 4});
+            recomendacoes.push({ ...produtos.toqueCura, prioridade: 4 });
           }
         }
 
@@ -871,7 +914,7 @@
         // Verificar se é Mestre Ye Digital (precisa de auto-signup)
         const isMestreYeDigital = produto.nome.includes('Mestre Ye Digital');
         const onclickAction = isMestreYeDigital
-          ? `autoSignupRedirect('${produto.url}', {email: '${lead.EMAIL}', nome: '${lead.NOME}', celular: '${lead.celular || lead.CELULAR || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})`
+          ? `autoSignupRedirect('${produto.url}', {email: '${lead.email}', nome: '${lead.nome}', celular: '${lead.celular || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})`
           : `window.location.href='${produto.url}'`;
 
         if (isDestaque) {
@@ -884,8 +927,8 @@
               ${produto.categoria === 'high-end' ? '<p style="text-align: center; font-size: 21px; color: #5a5a5a; margin-bottom: 32px;">Mentoria de 12 Meses com Mestre Ye</p>' : ''}
 
               <div style="text-align: center; margin: 32px 0;">
-                ${temPrecoOriginal ? `<span style="font-size: 24px; color: #5a5a5a; text-decoration: line-through;">De R$ ${produto.de.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span><br>` : ''}
-                <span style="font-size: 56px; font-weight: 700; color: #2c5f2d;">R$ ${produto.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                ${temPrecoOriginal ? `<span style="font-size: 24px; color: #5a5a5a; text-decoration: line-through;">De R$ ${produto.de.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span><br>` : ''}
+                <span style="font-size: 56px; font-weight: 700; color: #2c5f2d;">R$ ${produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 <br>
                 ${temParcelamento ? `<span style="font-size: 18px; color: #5a5a5a;">ou ${produto.parcelas}</span>` : `<span style="font-size: 18px; color: #5a5a5a;">${isRecorrente ? 'por mês' : 'pagamento único'}</span>`}
               </div>
@@ -907,9 +950,9 @@
         } else {
           // Renderização para produtos regulares (grid)
           const cores = {
-            'front-end': {border: '#d4a574', titulo: '#8b6f47'},
-            'back-end': {border: '#81b29a', titulo: '#2c5f2d'},
-            'workshop': {border: '#8b9dc3', titulo: '#6b7fa8'}
+            'front-end': { border: '#d4a574', titulo: '#8b6f47' },
+            'back-end': { border: '#81b29a', titulo: '#2c5f2d' },
+            'workshop': { border: '#8b9dc3', titulo: '#6b7fa8' }
           };
           const cor = cores[produto.categoria] || cores['front-end'];
 
@@ -918,8 +961,8 @@
               <h3 style="color: ${cor.titulo}; font-size: 24px; margin-bottom: 16px;">${produto.nome}</h3>
 
               <div style="text-align: center; margin: 24px 0;">
-                ${temPrecoOriginal ? `<span style="font-size: 20px; color: #5a5a5a; text-decoration: line-through;">R$ ${produto.de.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span><br>` : ''}
-                <span style="font-size: 40px; font-weight: 700; color: ${cor.titulo};">R$ ${produto.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                ${temPrecoOriginal ? `<span style="font-size: 20px; color: #5a5a5a; text-decoration: line-through;">R$ ${produto.de.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span><br>` : ''}
+                <span style="font-size: 40px; font-weight: 700; color: ${cor.titulo};">R$ ${produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 <br>
                 <span style="font-size: 16px; color: #5a5a5a;">${isRecorrente ? 'por mês' : 'pagamento único'}</span>
               </div>
@@ -1071,23 +1114,23 @@
           <p>Com mais de 20 anos de experiência, ele já transformou a vida de <strong>milhares de pessoas</strong> que, assim como você, sofriam com sintomas crônicos e desequilíbrios energéticos.</p>
 
           ${depoimentosSelecionados.map(dep => {
-            if (dep.imagem) {
-              // Renderizar depoimento como imagem (sem aspas)
-              return `
+        if (dep.imagem) {
+          // Renderizar depoimento como imagem (sem aspas)
+          return `
                 <div class="social-proof" style="text-align: center; padding: 20px 0;">
                   <img src="${dep.imagem}" alt="${dep.alt}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
                 </div>
               `;
-            } else {
-              // Renderizar depoimento como texto (com aspas via CSS)
-              return `
+        } else {
+          // Renderizar depoimento como texto (com aspas via CSS)
+          return `
                 <div class="social-proof-text">
                   <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"${dep.texto}"</p>
                   <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— ${dep.nome}</p>
                 </div>
               `;
-            }
-          }).join('')}
+        }
+      }).join('')}
         </div>
 
         <!-- 6. OFERTAS: Produtos Inteligentes Baseados em Qualificação -->
@@ -1164,7 +1207,7 @@
 
           <!-- Botão 1: Falar com Mestre Ye Digital -->
           <div style="max-width: 500px; margin: 0 auto 32px;">
-            <button class="cta-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fdfcfb; border: none; font-size: 20px; padding: 20px 40px; width: 100%; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);" onclick="autoSignupRedirect('https://digital.mestreye.com/chat', {email: '${lead.EMAIL}', nome: '${lead.NOME}', celular: '${lead.celular || lead.CELULAR || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})">
+            <button class="cta-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fdfcfb; border: none; font-size: 20px; padding: 20px 40px; width: 100%; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);" onclick="autoSignupRedirect('https://digital.mestreye.com/chat', {email: '${lead.email}', nome: '${lead.nome}', celular: '${lead.celular || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})">
               🤖 Falar com Mestre Ye Digital Agora
             </button>
             <p style="font-size: 15px; color: #5a5a5a; margin-top: 12px;">IA treinada pelo Mestre Ye • <strong>Respostas personalizadas imediatas</strong></p>
@@ -1189,4 +1232,5 @@
     carregarResultados();
   </script>
 </body>
+
 </html>
