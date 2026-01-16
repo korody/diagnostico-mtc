@@ -506,7 +506,11 @@
       const urgenciaScore = lead.urgencia_calculada
         ? Math.round((lead.urgencia_calculada / 5) * 100)
         : 0;
-      const prontidaoScore = Math.round((intensidadeScore + urgenciaScore) / 2);
+
+      // IMPORTANTE: Usar lead_score do backend (calculado corretamente com todas as perguntas)
+      // O backend considera P1, P3, P7, P8, P11 e P12 - muito mais completo que apenas intensidade + urgência
+      const leadScoreFinal = lead.lead_score || 0;
+      const prontidaoScore = leadScoreFinal; // Alias para compatibilidade com código legado
 
       const contagemElementos = lead.contagem_elementos || {};
       const valoresElementos = Object.values(contagemElementos);
@@ -516,9 +520,6 @@
 
       const diagnostico = (lead.diagnostico_completo || lead.script_abertura || '')
         .replace(/{NOME}/g, primeiroNome);
-
-      // Calcular lead score final
-      const leadScoreFinal = lead.lead_score || prontidaoScore;
       const isLeadQuente = leadScoreFinal >= 60;
       const isLeadMorno = leadScoreFinal >= 40 && leadScoreFinal < 60;
       const isLeadFrio = leadScoreFinal < 40;
@@ -532,10 +533,10 @@
         // HIGH-END: Para leads quentes com alta intensidade/urgência
         preventiva: {
           nome: 'PREVENTIVA: O Plano de Saúde da MTC',
-          preco: 6000,
-          de: 12000,
-          parcelas: '12x de R$ 500',
-          url: 'https://mestreye.com/preventiva',
+          preco: 4764,
+          de: 6000,
+          parcelas: '12x de R$ 397',
+          url: 'https://curso.qigongbrasil.com/pay/plano-de-saude',
           categoria: 'high-end',
           minScore: 50,
           beneficios: [
@@ -553,7 +554,7 @@
           nome: 'Saúde & Longevidade Qi Gong',
           preco: 1197,
           de: 1697,
-          url: 'https://mestreye.com/saude-longevidade',
+          url: 'https://curso.qigongbrasil.com/pay/qig-ob',
           categoria: 'back-end',
           minScore: 40,
           beneficios: [
@@ -568,7 +569,7 @@
         protocoloLombar: {
           nome: 'Protocolo Intensivo Dor na Lombar',
           preco: 997,
-          url: 'https://mestreye.com/protocolo-lombar',
+          url: 'https://curso.qigongbrasil.com/pay/pdl-mestre-ye',
           sintomas: ['dor_lombar', 'dor_costas', 'coluna'],
           beneficios: [
             'Protocolo de 21 dias para eliminar dor lombar',
@@ -580,7 +581,8 @@
         protocoloZumbido: {
           nome: 'Protocolo Intensivo Zumbido/Labirintite',
           preco: 697,
-          url: 'https://mestreye.com/protocolo-zumbido',
+          de: 997,
+          url: 'https://curso.qigongbrasil.com/pay/mestre-ye-czl',
           sintomas: ['zumbido', 'tontura', 'labirintite'],
           beneficios: [
             'Alivie ou elimine zumbido naturalmente',
@@ -593,7 +595,8 @@
         workshop5Elementos: {
           nome: '5 Elementos da Medicina Chinesa',
           preco: 297,
-          url: 'https://mestreye.com/5-elementos',
+          de: 497,
+          url: 'https://curso.qigongbrasil.com/pay/elementos-medicina-tradicional-chinesa',
           categoria: 'workshop',
           elementos: ['todos'],
           beneficios: [
@@ -606,7 +609,8 @@
         toqueCura: {
           nome: 'Toque da Cura: Os 7 Pontos da Vitalidade',
           preco: 297,
-          url: 'https://mestreye.com/toque-da-cura',
+          de: 497,
+          url: 'https://curso.qigongbrasil.com/pay/toque-da-cura',
           categoria: 'workshop',
           beneficios: [
             'Curso de Tui Na (acupressão)',
@@ -619,7 +623,7 @@
           nome: 'Sopro da Cura: Mantras & Respirações',
           preco: 297,
           de: 497,
-          url: 'https://mestreye.com/sopro-da-cura',
+          url: 'https://curso.qigongbrasil.com/pay/mantra-e-respiracao',
           categoria: 'workshop',
           elementos: ['CORACAO', 'PULMAO'],
           beneficios: [
@@ -661,15 +665,15 @@
 
         saudeTodos: {
           nome: 'Saúde Para Todos - Aulas Semanais',
-          preco: 397,
-          de: 662,
-          url: 'https://mestreye.com/saude-para-todos',
+          preco: 97,
+          recorrente: true,
+          url: 'https://curso.qigongbrasil.com/pay/spt',
           categoria: 'front-end',
           beneficios: [
-            'Aulas ao vivo semanais com Mestre Ye',
-            'Acesso a práticas de Qi Gong',
-            '3 meses de acesso',
-            'Comunidade de apoio'
+            'Aulas ao vivo online 4x por semana',
+            'Práticas de Qi Gong com Mestre Ye',
+            'Assinatura mensal - cancele quando quiser',
+            'Comunidade de apoio exclusiva'
           ]
         },
 
@@ -677,81 +681,104 @@
         ebookLombar: {
           nome: 'E-book: Método Ye Xin para Lombar',
           preco: 29,
-          url: 'https://mestreye.com/ebook-lombar',
+          url: 'https://curso.qigongbrasil.com/pay/ebook-mestre-ye',
           sintomas: ['dor_lombar', 'dor_costas'],
           beneficios: [
             'Exercícios específicos para lombar',
             'Fortaleça a região com Qi Gong',
             'Acesso vitalício'
           ]
+        },
+
+        // RETIRO: Evento especial presencial
+        retiroQigong: {
+          nome: 'Retiro de Qi Gong com Mestre Ye',
+          preco: 3997,
+          url: 'https://retiro.qigongbrasil.com/',
+          categoria: 'evento-presencial',
+          data: '3 dias de imersão completa',
+          beneficios: [
+            '3 dias de práticas intensivas de Qi Gong',
+            'Hospedagem completa em hotel fazenda',
+            'Alimentação vegetariana incluída',
+            'Aulas presenciais com Mestre Ye',
+            'Experiência transformadora em grupo',
+            'Conexão profunda com a natureza'
+          ]
         }
       };
 
       // Função de recomendação inteligente
+      // SEMPRE exibe PREVENTIVA como destaque + 2 produtos complementares personalizados
       function recomendarProdutos(lead, scoreAtual) {
         const recomendacoes = [];
         const elementoUpper = elemento.toUpperCase();
 
-        // 1. PREVENTIVA para leads qualificados (score alto + sintomas intensos)
-        if (scoreAtual >= 50 && intensidadeScore >= 50) {
-          recomendacoes.push({...produtos.preventiva, prioridade: 1, destaque: true});
-        }
+        // 1. PREVENTIVA: SEMPRE como produto principal em destaque
+        recomendacoes.push({...produtos.preventiva, prioridade: 1, destaque: true});
 
-        // 2. Qi Gong Completo para leads quentes mas sem PREVENTIVA
-        if (scoreAtual >= 45 && !recomendacoes.find(p => p.destaque)) {
-          recomendacoes.push({...produtos.qigongCompleto, prioridade: 1, destaque: true});
-        }
-
-        // 3. Produtos específicos por ELEMENTO MTC
-        if (['CORACAO', 'PULMAO'].includes(elementoUpper) && scoreAtual >= 35) {
+        // 2. Produto complementar #1: Baseado no ELEMENTO MTC do lead
+        // Cada elemento tem um produto específico que complementa melhor o tratamento
+        if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') {
           recomendacoes.push({...produtos.soproCura, prioridade: 2});
-        }
-
-        if (['RIM', 'BACO'].includes(elementoUpper) && scoreAtual >= 35) {
+        } else if (elementoUpper === 'PULMAO' || elementoUpper === 'PULMÃO') {
+          recomendacoes.push({...produtos.soproCura, prioridade: 2});
+        } else if (elementoUpper === 'RIM') {
           recomendacoes.push({...produtos.protocoloLombar, prioridade: 2});
-        }
-
-        if (elementoUpper === 'FIGADO' && scoreAtual >= 35) {
+        } else if (elementoUpper === 'BACO' || elementoUpper === 'BAÇO') {
+          recomendacoes.push({...produtos.qigongCompleto, prioridade: 2});
+        } else if (elementoUpper === 'FIGADO' || elementoUpper === 'FÍGADO') {
           recomendacoes.push({...produtos.toqueCura, prioridade: 2});
+        } else {
+          // Fallback: Workshop 5 Elementos (universal)
+          recomendacoes.push({...produtos.workshop5Elementos, prioridade: 2});
         }
 
-        // 4. Protocolos específicos por sintoma (se disponível nos dados do lead)
-        // Exemplo: se lead tem 'zumbido', recomendar protocoloZumbido
-        // Isso seria expandido com dados reais do lead
-
-        // 5. Workshop 5 Elementos - ótimo para todos os perfis
-        if (scoreAtual >= 30 && recomendacoes.length < 3) {
-          recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+        // 3. Produto complementar #2: Baseado no perfil de investimento e autonomia
+        // Alta autonomia + Alto investimento atual → Qi Gong Completo (autonomia total)
+        if (autonomia === 'ALTA' && investimentoAtual >= 400) {
+          if (!recomendacoes.find(p => p.nome.includes('Qi Gong'))) {
+            recomendacoes.push({...produtos.qigongCompleto, prioridade: 3});
+          } else {
+            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+          }
         }
-
-        // 6. Saúde Para Todos para quem busca comunidade e investimento moderado
-        if (scoreAtual >= 25 && investimentoAtual < 800 && recomendacoes.length < 3) {
+        // Média/Baixa autonomia OU baixo investimento → Saúde Para Todos (comunidade + suporte)
+        else if ((autonomia === 'MEDIA' || autonomia === 'MEDIA_ALTA' || autonomia === 'BAIXA') && investimentoAtual < 400) {
           recomendacoes.push({...produtos.saudeTodos, prioridade: 3});
         }
+        // Score alto + intensidade alta → Protocolo específico adicional
+        else if (scoreAtual >= 60 && intensidadeScore >= 60) {
+          if (!recomendacoes.find(p => p.nome.includes('Protocolo'))) {
+            recomendacoes.push({...produtos.protocoloLombar, prioridade: 3});
+          } else {
+            recomendacoes.push({...produtos.toqueCura, prioridade: 3});
+          }
+        }
+        // Fallback universal: Workshop 5 Elementos ou Mestre Ye Digital
+        else {
+          if (!recomendacoes.find(p => p.nome.includes('5 Elementos'))) {
+            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+          } else {
+            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 3});
+          }
+        }
 
-        // 7. Mestre Ye Digital sempre disponível (produto de entrada)
-        if (recomendacoes.length < 2 && !recomendacoes.find(p => p.destaque)) {
-          recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
+        // Garantir que sempre temos exatamente 3 produtos (1 destaque + 2 complementares)
+        // Se por algum motivo ainda não temos 3, adicionar fallbacks
+        if (recomendacoes.length < 3) {
+          if (!recomendacoes.find(p => p.nome.includes('Mestre Ye Digital'))) {
+            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
+          }
         }
-        // Se já tem destaque (PREVENTIVA), preencher até 2 produtos regulares
-        if (recomendacoes.length < 3 && recomendacoes.find(p => p.destaque)) {
-          recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
-        }
-
-        // 8. Toque da Cura como alternativa se ainda faltar produtos
-        if (recomendacoes.length < 2 && !recomendacoes.find(p => p.destaque) && !recomendacoes.find(p => p.nome.includes('Toque'))) {
-          recomendacoes.push({...produtos.toqueCura, prioridade: 3});
-        }
-        if (recomendacoes.length < 3 && recomendacoes.find(p => p.destaque) && !recomendacoes.find(p => p.nome.includes('Toque'))) {
-          recomendacoes.push({...produtos.toqueCura, prioridade: 3});
+        if (recomendacoes.length < 3) {
+          if (!recomendacoes.find(p => p.nome.includes('Toque da Cura'))) {
+            recomendacoes.push({...produtos.toqueCura, prioridade: 4});
+          }
         }
 
-        // Ordenar por prioridade
-        // Se tem destaque: retornar 3 (1 destaque + 2 regulares)
-        // Se NÃO tem destaque: retornar apenas 2 regulares
-        const sorted = recomendacoes.sort((a, b) => a.prioridade - b.prioridade);
-        const temDestaque = sorted.some(p => p.destaque);
-        return sorted.slice(0, temDestaque ? 3 : 2);
+        // Retornar exatamente 3 produtos: 1 em destaque (PREVENTIVA) + 2 complementares
+        return recomendacoes.slice(0, 3);
       }
 
       // Gerar recomendações personalizadas
@@ -992,6 +1019,45 @@
           <p style="text-align: center;">Experimente o método por 15 dias. Se você não sentir melhorias reais na sua saúde e bem-estar, devolvemos 100% do seu investimento. Sem perguntas, sem complicação.</p>
 
           <p style="text-align: center; color: #5a5a5a; font-size: 18px; margin-top: 28px;">Você não tem nada a perder. Apenas saúde a ganhar.</p>
+        </div>
+
+        <!-- TRANSIÇÃO: Retiro Presencial -->
+        <div class="section" style="background: linear-gradient(135deg, #fdfcfb 0%, #f8f6f3 100%); padding: 40px 32px; text-align: center;">
+          <p style="font-size: 22px; color: #5a5a5a; max-width: 680px; margin: 0 auto; line-height: 1.6;">
+            Mas se você prefere um <strong style="color: #8b6f47;">evento presencial</strong> com o Mestre Ye, você pode tentar garantir uma das <strong style="color: #8b6f47;">últimas vagas do Retiro Revitaliza de Fevereiro</strong>:
+          </p>
+        </div>
+
+        <!-- CTA Especial: Retiro Presencial -->
+        <div class="section" style="background: #f8f6f3;">
+          <div style="background: linear-gradient(135deg, #8b6f47 0%, #a0845a 100%); border-radius: 20px; padding: 48px 40px; color: #fdfcfb; position: relative; overflow: hidden; max-width: 700px; margin: 0 auto;">
+            <div style="position: absolute; top: -16px; left: 50%; transform: translateX(-50%); background: #d4a574; color: #2c2c2c; padding: 8px 24px; border-radius: 20px; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;">🏞️ EVENTO PRESENCIAL</div>
+
+            <h3 style="text-align: center; color: #fdfcfb; font-size: 32px; margin-bottom: 16px; margin-top: 16px;">Retiro de Qi Gong com Mestre Ye</h3>
+            <p style="text-align: center; font-size: 21px; color: rgba(253, 252, 251, 0.9); margin-bottom: 32px;">3 dias de imersão completa em práticas de Qi Gong</p>
+
+            <div style="text-align: center; margin: 32px 0;">
+              <span style="font-size: 52px; font-weight: 700; color: #fdfcfb;">R$ 3.997</span>
+              <br>
+              <span style="font-size: 18px; color: rgba(253, 252, 251, 0.85);">Investimento completo • Vagas limitadas</span>
+            </div>
+
+            <ul class="benefit-list" style="text-align: left; max-width: 540px; margin: 32px auto; color: rgba(253, 252, 251, 0.95);">
+              <li>3 dias de práticas intensivas de Qi Gong</li>
+              <li>Hospedagem completa em hotel fazenda</li>
+              <li>Alimentação vegetariana incluída</li>
+              <li>Aulas presenciais com Mestre Ye</li>
+              <li>Experiência transformadora em grupo</li>
+              <li>Conexão profunda com a natureza</li>
+            </ul>
+
+            <div style="text-align: center; margin-top: 40px;">
+              <button class="cta-button" style="background: #fdfcfb; color: #8b6f47; border: none; font-size: 22px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);" onclick="window.location.href='https://retiro.qigongbrasil.com/'">
+                🏞️ QUERO PARTICIPAR DO RETIRO
+              </button>
+              <p style="font-size: 16px; color: rgba(253, 252, 251, 0.8); margin-top: 16px;">Evento presencial • Vagas muito limitadas</p>
+            </div>
+          </div>
         </div>
 
         <!-- 8. FINAL URGENCY: Último Empurrão -->
