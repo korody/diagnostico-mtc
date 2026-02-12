@@ -9,7 +9,7 @@ const QuizMTC = () => {
   // Função para ler parâmetros da URL
   const getUrlParams = () => {
     const params = new URLSearchParams(window.location.search);
-    
+
     // Função helper para capturar múltiplas variações
     const getParam = (...keys) => {
       for (const key of keys) {
@@ -18,21 +18,23 @@ const QuizMTC = () => {
       }
       return '';
     };
-    
+
     return {
       nome: getParam('nome', 'name', 'first_name', 'firstname'),
       email: getParam('email', 'e-mail', 'mail'),
       celular: getParam('celular', 'telefone', 'phone', 'whatsapp', 'tel'),
-      leadId: getParam('leadId', 'lead_id', 'id')
+      leadId: getParam('leadId', 'lead_id', 'id'),
+      funil: getParam('funil', 'funnel') || 'perpetuo' // 'perpetuo' ou 'lancamento'
     };
   };
 
   const urlParams = getUrlParams();
-  
+
   // Se tem dados na URL, pula identificação e vai direto pro quiz
   const temDadosURL = urlParams.nome && urlParams.email && urlParams.celular;
-  
+
   const [step, setStep] = useState(temDadosURL ? 'quiz' : 'identificacao');
+  const [funil, setFunil] = useState(urlParams.funil); // 'perpetuo' ou 'lancamento'
   const [dadosLead, setDadosLead] = useState({
     NOME: urlParams.nome,
     EMAIL: urlParams.email,
@@ -636,7 +638,8 @@ const QuizMTC = () => {
           EMAIL: dadosLead.EMAIL,
           CELULAR: celularE164 // Envia em formato E.164
         },
-        respostas: respostas
+        respostas: respostas,
+        funil: funil // 'perpetuo' ou 'lancamento'
       };
       
       console.log('📞 Telefone formatado para E.164:', celularE164);
@@ -685,12 +688,23 @@ const QuizMTC = () => {
         console.log('  Diagnóstico:', result.diagnostico);
         console.log('  Redirect URL:', result.redirect_url);
         
-        // Redirect imediato para página de resultados
+        // Redirect baseado no funil
         const baseUrl = window.location.hostname === 'localhost'
           ? 'http://localhost:3001'
           : '';
-        const redirectUrl = `${baseUrl}/resultados.html?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+
+        let redirectUrl;
+        if (funil === 'lancamento') {
+          // Funil de Lançamento - URL customizada
+          // CONFIGURAÇÃO: Altere esta URL para a página do seu funil de lançamento
+          redirectUrl = `https://mestre-ye.vercel.app?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+        } else {
+          // Funil Perpétuo - Página de resultados padrão
+          redirectUrl = `${baseUrl}/resultados.html?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+        }
+
         console.log('🔄 Redirecionando para:', redirectUrl);
+        console.log('📊 Funil:', funil);
         window.location.href = redirectUrl;
       } else {
         throw new Error(result.message || 'Erro desconhecido');

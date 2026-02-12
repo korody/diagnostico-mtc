@@ -586,7 +586,7 @@ app.get('/api/leads/search', async (req, res) => {
 // ===== ROTA: SUBMIT QUIZ =====
 app.post('/api/submit', async (req, res) => {
   try {
-    const { lead, respostas } = req.body;
+    const { lead, respostas, funil } = req.body;
     
     console.log('\n📥 NOVO QUIZ:', lead.NOME);
     
@@ -661,7 +661,9 @@ app.post('/api/submit', async (req, res) => {
         respostas.P21 === 'D' ? 750 :
         respostas.P21 === 'E' ? 1200 :
         0
-      ) : null
+      ) : null,
+      // Tipo de funil (perpétuo ou lançamento)
+      funil: funil || 'perpetuo'
     };
     
     // ============================================
@@ -684,7 +686,8 @@ app.post('/api/submit', async (req, res) => {
         diagnostico_completo: dadosParaSalvar.diagnostico_completo,
         elemento_principal: dadosParaSalvar.elemento_principal,
         quadrante: dadosParaSalvar.quadrante,
-        lead_score: dadosParaSalvar.lead_score
+        lead_score: dadosParaSalvar.lead_score,
+        funil: funil || 'perpetuo'
       };
       
       const payload = {
