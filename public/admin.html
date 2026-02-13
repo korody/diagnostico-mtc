@@ -366,6 +366,28 @@
             <small>Página VSL de lançamento (campanhas temporárias)</small>
           </div>
           <button onclick="saveFunis()" style="background: #22c55e;">💾 Salvar Funis</button>
+
+          <div style="margin-top: 32px; padding: 20px; background: #252836; border-radius: 12px; border-left: 4px solid #6366f1;">
+            <h3 style="color: #6366f1; margin-bottom: 12px; font-size: 16px;">📍 Como acionar cada funil</h3>
+            <div style="margin-bottom: 16px;">
+              <strong style="color: #e5e7eb;">Funil Perpétuo (padrão):</strong>
+              <code style="display: block; background: #1a1d27; padding: 8px 12px; border-radius: 6px; margin-top: 6px; color: #9ca3af; font-family: monospace;">
+                https://quiz.qigongbrasil.com/?email=teste@email.com
+              </code>
+              <small style="color: #6b7280; display: block; margin-top: 4px;">
+                ➜ Redireciona para: <span style="color: #9ca3af;" id="display_perpetuo_url">/resultados.html</span>
+              </small>
+            </div>
+            <div>
+              <strong style="color: #e5e7eb;">Funil Lançamento:</strong>
+              <code style="display: block; background: #1a1d27; padding: 8px 12px; border-radius: 6px; margin-top: 6px; color: #9ca3af; font-family: monospace;">
+                https://quiz.qigongbrasil.com/?email=teste@email.com&funil=lancamento
+              </code>
+              <small style="color: #6b7280; display: block; margin-top: 4px;">
+                ➜ Redireciona para: <span style="color: #9ca3af;" id="display_lancamento_url">https://mestre-ye.vercel.app</span>
+              </small>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -546,8 +568,17 @@
     // Funis
     function renderFunis() {
       const funis = configs.funis || {};
-      document.getElementById('funil_perpetuo_url').value = funis.perpetuo_url || '/resultados.html';
-      document.getElementById('funil_lancamento_url').value = funis.lancamento_url || 'https://mestre-ye.vercel.app';
+      const perpetuoUrl = funis.perpetuo_url || '/resultados.html';
+      const lancamentoUrl = funis.lancamento_url || 'https://mestre-ye.vercel.app';
+
+      document.getElementById('funil_perpetuo_url').value = perpetuoUrl;
+      document.getElementById('funil_lancamento_url').value = lancamentoUrl;
+
+      // Atualizar displays informativos
+      const displayPerpetuoEl = document.getElementById('display_perpetuo_url');
+      const displayLancamentoEl = document.getElementById('display_lancamento_url');
+      if (displayPerpetuoEl) displayPerpetuoEl.textContent = perpetuoUrl;
+      if (displayLancamentoEl) displayLancamentoEl.textContent = lancamentoUrl;
     }
 
     async function saveFunis() {
