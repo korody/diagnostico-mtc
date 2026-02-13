@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -123,7 +124,7 @@
       display: inline-flex;
       align-items: center;
       gap: 12px;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(10px);
       padding: 12px 24px;
       border-radius: 50px;
@@ -261,15 +262,18 @@
 
     /* Social Proof */
     .social-proof {
+      margin: 36px 0;
+    }
+
+    .social-proof-text {
       background: #f8f6f3;
       border-radius: 16px;
       padding: 32px;
-      margin: 36px 0;
       font-style: italic;
       border-left: 4px solid #b4a5c8;
     }
 
-    .social-proof::before {
+    .social-proof-text::before {
       content: '"';
       font-size: 56px;
       color: #8b9dc3;
@@ -306,21 +310,55 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     /* Responsive */
     @media (max-width: 768px) {
-      h1 { font-size: 32px; }
-      h2 { font-size: 28px; }
-      h3 { font-size: 22px; }
-      p { font-size: 18px; }
-      .score-hero { font-size: 64px; padding: 20px 36px; }
-      .section { padding: 36px 24px; }
-      .section-hero, .section-cta { padding: 52px 24px; }
-      .mini-scores { grid-template-columns: 1fr; }
-      .cta-button { font-size: 20px; padding: 20px 44px; }
+      h1 {
+        font-size: 32px;
+      }
+
+      h2 {
+        font-size: 28px;
+      }
+
+      h3 {
+        font-size: 22px;
+      }
+
+      p {
+        font-size: 18px;
+      }
+
+      .score-hero {
+        font-size: 64px;
+        padding: 20px 36px;
+      }
+
+      .section {
+        padding: 36px 24px;
+      }
+
+      .section-hero,
+      .section-cta {
+        padding: 52px 24px;
+      }
+
+      .mini-scores {
+        grid-template-columns: 1fr;
+      }
+
+      .cta-button {
+        font-size: 20px;
+        padding: 20px 44px;
+      }
     }
 
     /* Highlight Box */
@@ -376,11 +414,19 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.8;
+      }
     }
   </style>
 </head>
+
 <body>
   <div id="loading" class="loading">
     <div class="loading-spinner"></div>
@@ -420,11 +466,240 @@
       'PULMÃO': 'Elemento METAL (Pulmão)'
     };
 
-    // Variável global para armazenar dados do lead
+    // Variáveis globais
     window.currentLead = null;
+    let configsCarregadas = false;
+
+    // Banco de depoimentos (FALLBACK - será sobrescrito por configs do admin se disponível)
+    let depoimentos = {
+      ansiedade: [
+        { imagem: "/testimonials/valda-qi-gong-danca.png", alt: "valdamariadossantos: Eu gosto muito de Qi Gong. Eu conheci através de jornalista, tornou-se mestre e tem um canal no YouTube. Sou apaixonada pelos movimentos. É uma dança pra mim. É muito lindo e prazeroso. Eu preciso de disciplina para dar continuidade." },
+        { imagem: "/testimonials/georgette-equilibrio.jpg", alt: "Georgette Abdou Da Silva: Aulas maravilhosas. Me auxilia em tudo! Equilibrio fisico e mental, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
+        { imagem: "/testimonials/luiza-ansiedade-acalmou.jpg", alt: "Luiza Maria Saucedo Corrêa: Tinha ansiedade. Depois que comecei fazer as aulas acalmou." }
+      ],
+      dor_lombar: [
+        { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
+        { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" }
+      ],
+      dor_geral: [
+        { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
+        { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
+        { imagem: "/testimonials/marta-dores-flexibilidade.png", alt: "@martadias8015: Sou aluna #14. Praticando desde março 25 já sinto muitos resultados em dores e flexibilidade. Gracias Mestre Ye" }
+      ],
+      insonia: [
+        { imagem: "/testimonials/mara-artrite-sono.jpg", alt: "maraocabral: Mestre tenho artrite desde de jovem, suas práticas me ajudam muito, meu sono melhorou muito, desde q vi seu vídeo sobre a qualidade do sono, muito obrigada, sua filhinha é linda" },
+        { imagem: "/testimonials/lourdes-renovada-filha-autista.png", alt: "Lourdes Brum: Me senti renovada, nos meus 72 anos. Tambem minha filha Autista, Nível 1 de suporte, que tem 39 anos e acompanhou os exercícios e está tendo um sono mais profundo e único da noite até de manhã" }
+      ],
+      zumbido: [
+        { imagem: "/testimonials/zumbido-mteresaguedes.jpeg", alt: "mteresaguedes: Muito obrigada, mestre. Essa massagem funcionou comigo. Diminuiu o volume do zumbido, que estava insuportável. Vou continuar fazendo. Obrigada" },
+        { imagem: "/testimonials/zumbido-silvinhapereira.jpeg", alt: "silvinhapereirafl oripa: Faço já dois exercícios que ensinasse este terceiro bom também. Tenho melhorado muito. Gratidão. Os zumbidos começaram a pouco tempo mas incomodam. Os exercícios são ótimos. Agradeço." },
+        { imagem: "/testimonials/zumbido-ouvido-tampado.jpeg", alt: "solange.giglio: Nossa dói mesmo, e mais do lado direito que sempre estou com o ouvido tampado. Lado esquerdo não senti dor!! Grata pelos ensinamentos, sempre indico você para as pessoas" },
+        { imagem: "/testimonials/zumbido-bigorna-tambor.jpeg", alt: "marilsasantini: Eu tenho um tipo de zumbido que parece o bater de uma bigorna. O tambor me ajudou muito!!! Gratidão" }
+      ],
+      universal: [
+        { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
+        { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
+        { imagem: "/testimonials/cosarcadandu-corpo-modelando.png", alt: "cosarcadandu: Agora posso ir dormir, feliz e em paz. Os seus exercícios são saúde na minha vida. Logo depois que pratico os seus exercícios fico bem. Quando eu era pequena fiz ginástica de performance e isso agora me ajuda conseguir fazer os exercícios bastante bem. Sem duvida eu não conheço a cultura dessa pratica do chi cong. Esses exercícios são uma grande alegria na minha vida." },
+        { imagem: "/testimonials/ana-maria-energia-vital.jpg", alt: "Ana Maria Batista De Jesus: Mestre Ye, a prática do Qi Gong em mim, apesar de pouco tempo, tem despertado minha energia vital de uma maneira consciente e prazerosa. Estou mais alegre, descontraída!" },
+        { imagem: "/testimonials/georgette-equilibrio.jpg", alt: "Georgette Abdou Da Silva: Aulas maravilhosas. Me auxilia em tudo! Equilibrio fisico e mental, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
+        { imagem: "/testimonials/marta-dores-flexibilidade.png", alt: "@martadias8015: Sou aluna #14. Praticando desde março 25 já sinto muitos resultados em dores e flexibilidade. Gracias Mestre Ye" }
+      ]
+    };
+
+    // Catálogo de produtos (FALLBACK - será sobrescrito por configs do admin se disponível)
+    let produtos = {
+      preventiva: {
+        nome: 'PREVENTIVA: O Plano de Saúde da MTC',
+        preco: 4764,
+        de: 5800,
+        parcelas: '12x de R$ 397',
+        url: 'https://curso.qigongbrasil.com/pay/plano-de-saude',
+        categoria: 'high-end',
+        minScore: 50,
+        beneficios: [
+          'Consultas mensais personalizadas com Mestre Ye',
+          'Diagnóstico completo de Medicina Chinesa',
+          'Práticas de Qi Gong específicas para seu ${elementoNome}',
+          'Acompanhamento personalizado por 12 meses',
+          'Receba cuidados preventivos contínuos',
+          'Evite doenças antes que apareçam'
+        ]
+      },
+      qigongCompleto: {
+        nome: 'Saúde & Longevidade Qi Gong',
+        preco: 1197,
+        de: 1697,
+        url: 'https://curso.qigongbrasil.com/pay/qig-ob',
+        categoria: 'back-end',
+        minScore: 40,
+        beneficios: [
+          'Curso completo de Qi Gong com exercícios diários',
+          'Aumente sua energia e vitalidade naturais',
+          'Fortaleça o corpo e promova longevidade',
+          'Acesso por 1 ano a todo conteúdo'
+        ]
+      },
+      protocoloLombar: {
+        nome: 'Protocolo Intensivo Dor na Lombar',
+        preco: 997,
+        url: 'https://curso.qigongbrasil.com/pay/pdl-mestre-ye',
+        sintomas: ['dor_lombar', 'dor_costas', 'coluna'],
+        beneficios: [
+          'Protocolo de 21 dias para eliminar dor lombar',
+          'Exercícios e técnicas específicas',
+          'Recupere mobilidade e qualidade de vida'
+        ]
+      },
+      protocoloZumbido: {
+        nome: 'Protocolo Intensivo Zumbido/Labirintite',
+        preco: 697,
+        de: 997,
+        url: 'https://curso.qigongbrasil.com/pay/mestre-ye-czl',
+        sintomas: ['zumbido', 'tontura', 'labirintite'],
+        beneficios: [
+          'Alivie ou elimine zumbido naturalmente',
+          'Recupere seu equilíbrio e bem-estar',
+          'Técnicas comprovadas da MTC'
+        ]
+      },
+      workshop5Elementos: {
+        nome: '5 Elementos da Medicina Chinesa',
+        preco: 297,
+        de: 497,
+        url: 'https://curso.qigongbrasil.com/pay/elementos-medicina-tradicional-chinesa',
+        categoria: 'workshop',
+        elementos: ['todos'],
+        beneficios: [
+          'Workshop ao vivo sobre o poder dos 5 Elementos',
+          'Entenda como ${elementoNome} influencia sua saúde',
+          'Aplique conhecimento no dia a dia'
+        ]
+      },
+      toqueCura: {
+        nome: 'Toque da Cura: Os 7 Pontos da Vitalidade',
+        preco: 297,
+        de: 497,
+        url: 'https://curso.qigongbrasil.com/pay/toque-da-cura',
+        categoria: 'workshop',
+        beneficios: [
+          'Curso de Tui Na (acupressão)',
+          'Alivie tensões e melhore circulação',
+          'Técnicas de auto-aplicação'
+        ]
+      },
+      soproCura: {
+        nome: 'Sopro da Cura: Mantras & Respirações',
+        preco: 297,
+        de: 497,
+        url: 'https://curso.qigongbrasil.com/pay/mantra-e-respiracao',
+        categoria: 'workshop',
+        elementos: ['CORACAO', 'PULMAO'],
+        beneficios: [
+          'Técnicas ancestrais de mantras curativos',
+          'Respirações conscientes da MTC',
+          'Libere feridas emocionais e acalme a mente'
+        ]
+      },
+      diagnostico: {
+        nome: 'Diagnóstico MTC Completo',
+        preco: 29.90,
+        de: 197,
+        url: 'https://mestreye.com/diagnostico-mtc',
+        categoria: 'front-end',
+        beneficios: [
+          'Consulta de 45 minutos',
+          'Análise de pulso e língua',
+          'Diagnóstico energético completo',
+          'Plano personalizado de cuidados'
+        ]
+      },
+      mestreYeDigital: {
+        nome: 'Mestre Ye Digital - Terapeuta IA',
+        preco: 29.90,
+        de: 129.90,
+        recorrente: true,
+        url: 'https://digital.mestreye.com/chat',
+        categoria: 'front-end',
+        beneficios: [
+          'IA treinada pelo Mestre Ye',
+          'Orientações personalizadas 24/7',
+          'Práticas adaptadas para você',
+          'Cancele quando quiser'
+        ]
+      },
+      saudeTodos: {
+        nome: 'Saúde Para Todos - Aulas Semanais',
+        preco: 97,
+        recorrente: true,
+        url: 'https://curso.qigongbrasil.com/pay/spt',
+        categoria: 'front-end',
+        beneficios: [
+          'Aulas ao vivo online 4x por semana',
+          'Práticas de Qi Gong com Mestre Ye',
+          'Assinatura mensal - cancele quando quiser',
+          'Comunidade de apoio exclusiva'
+        ]
+      },
+      ebookLombar: {
+        nome: 'E-book: Método Ye Xin para Lombar',
+        preco: 29,
+        url: 'https://curso.qigongbrasil.com/pay/ebook-mestre-ye',
+        sintomas: ['dor_lombar', 'dor_costas'],
+        beneficios: [
+          'Exercícios específicos para lombar',
+          'Fortaleça a região com Qi Gong',
+          'Acesso vitalício'
+        ]
+      },
+      retiroQigong: {
+        nome: 'Retiro de Qi Gong com Mestre Ye',
+        preco: 3997,
+        url: 'https://retiro.qigongbrasil.com/',
+        categoria: 'evento-presencial',
+        data: '3 dias de imersão completa',
+        beneficios: [
+          '3 dias de práticas intensivas de Qi Gong',
+          'Hospedagem completa em hotel fazenda',
+          'Alimentação vegetariana incluída',
+          'Aulas presenciais com Mestre Ye',
+          'Experiência transformadora em grupo',
+          'Conexão profunda com a natureza'
+        ]
+      }
+    };
+
+    // Função para carregar configurações do painel admin
+    async function carregarConfigs() {
+      try {
+        const response = await fetch(`${API_URL}/api/admin/config?key=all`);
+        const data = await response.json();
+
+        if (data.success && data.configs) {
+          console.log('✅ Configurações do admin carregadas com sucesso');
+
+          // Atualizar depoimentos se disponível
+          if (data.configs.depoimentos) {
+            depoimentos = data.configs.depoimentos;
+            console.log('📸 Depoimentos atualizados do admin');
+          }
+
+          // Atualizar produtos se disponível
+          if (data.configs.produtos) {
+            produtos = data.configs.produtos;
+            console.log('🛍️ Produtos atualizados do admin');
+          }
+
+          configsCarregadas = true;
+        } else {
+          console.warn('⚠️ Configs do admin não disponíveis, usando valores hardcoded');
+        }
+      } catch (error) {
+        console.warn('⚠️ Erro ao carregar configs do admin, usando fallback hardcoded:', error);
+      }
+    }
 
     // Função para auto-signup e redirect com autenticação
-    window.autoSignupRedirect = async function(targetUrl, leadData) {
+    window.autoSignupRedirect = async function (targetUrl, leadData) {
       try {
         console.log('🔐 Iniciando auto-signup para:', leadData.email);
 
@@ -471,6 +746,11 @@
       if (!email && !leadId) {
         document.getElementById('loading').innerHTML = '<p style="color: #dc2626;">❌ Nenhum email ou ID fornecido.</p>';
         return;
+      }
+
+      // Carregar configurações do admin (com fallback para hardcoded)
+      if (!configsCarregadas) {
+        await carregarConfigs();
       }
 
       try {
@@ -528,239 +808,95 @@
       const investimentoAtual = lead.investimento_mensal_atual || 0;
       const autonomia = lead.autonomia_decisao || 'MEDIA';
 
-      // Catálogo de produtos por categoria
-      const produtos = {
-        // HIGH-END: Para leads quentes com alta intensidade/urgência
-        preventiva: {
-          nome: 'PREVENTIVA: O Plano de Saúde da MTC',
-          preco: 4764,
-          de: 6000,
-          parcelas: '12x de R$ 397',
-          url: 'https://curso.qigongbrasil.com/pay/plano-de-saude',
-          categoria: 'high-end',
-          minScore: 50,
-          beneficios: [
-            'Consultas mensais personalizadas com Mestre Ye',
-            'Diagnóstico completo de Medicina Chinesa',
-            `Práticas de Qi Gong específicas para seu ${elementoNome}`,
-            'Acompanhamento personalizado por 12 meses',
-            'Receba cuidados preventivos contínuos',
-            'Evite doenças antes que apareçam'
-          ]
-        },
+      // Função para selecionar depoimentos inteligentes (usa objeto global 'depoimentos')
+      function selecionarDepoimentos(lead, elemento) {
+        const selecionados = [];
+        const elementoUpper = elemento.toUpperCase();
 
-        // BACK-END: Para leads com bom engajamento
-        qigongCompleto: {
-          nome: 'Saúde & Longevidade Qi Gong',
-          preco: 1197,
-          de: 1697,
-          url: 'https://curso.qigongbrasil.com/pay/qig-ob',
-          categoria: 'back-end',
-          minScore: 40,
-          beneficios: [
-            'Curso completo de Qi Gong com exercícios diários',
-            'Aumente sua energia e vitalidade naturais',
-            'Fortaleça o corpo e promova longevidade',
-            'Acesso por 1 ano a todo conteúdo'
-          ]
-        },
+        const temAnsiedade = (lead.P2 && lead.P2.includes('E')) || (lead.P4 && lead.P4.includes('C'));
+        const temDorLombar = (lead.P2 && lead.P2.includes('A'));
+        const temInsonia = (lead.P2 && lead.P2.includes('E')) || (lead.P4 && lead.P4.includes('C'));
+        const temDorGeral = (lead.P2 && (lead.P2.includes('A') || lead.P2.includes('B') || lead.P2.includes('C')));
+        const temZumbido = (lead.P2 && lead.P2.includes('G')) || (lead.P4 && lead.P4.includes('F'));
 
-        // PRODUTOS ESPECÍFICOS POR SINTOMA
-        protocoloLombar: {
-          nome: 'Protocolo Intensivo Dor na Lombar',
-          preco: 997,
-          url: 'https://curso.qigongbrasil.com/pay/pdl-mestre-ye',
-          sintomas: ['dor_lombar', 'dor_costas', 'coluna'],
-          beneficios: [
-            'Protocolo de 21 dias para eliminar dor lombar',
-            'Exercícios e técnicas específicas',
-            'Recupere mobilidade e qualidade de vida'
-          ]
-        },
+        // Prioridade para zumbido/labirintite
+        if (temZumbido) selecionados.push(...depoimentos.zumbido.slice(0, 2));
 
-        protocoloZumbido: {
-          nome: 'Protocolo Intensivo Zumbido/Labirintite',
-          preco: 697,
-          de: 997,
-          url: 'https://curso.qigongbrasil.com/pay/mestre-ye-czl',
-          sintomas: ['zumbido', 'tontura', 'labirintite'],
-          beneficios: [
-            'Alivie ou elimine zumbido naturalmente',
-            'Recupere seu equilíbrio e bem-estar',
-            'Técnicas comprovadas da MTC'
-          ]
-        },
+        if (temAnsiedade) selecionados.push(...depoimentos.ansiedade.slice(0, 2));
+        if (temDorLombar && selecionados.length < 4) selecionados.push(...depoimentos.dor_lombar.slice(0, 2));
+        if (temInsonia && selecionados.length < 4) selecionados.push(depoimentos.insonia[0]);
+        if (temDorGeral && selecionados.length < 4) selecionados.push(depoimentos.dor_geral[0]);
 
-        // WORKSHOPS: Aprendizado focado
-        workshop5Elementos: {
-          nome: '5 Elementos da Medicina Chinesa',
-          preco: 297,
-          de: 497,
-          url: 'https://curso.qigongbrasil.com/pay/elementos-medicina-tradicional-chinesa',
-          categoria: 'workshop',
-          elementos: ['todos'],
-          beneficios: [
-            'Workshop ao vivo sobre o poder dos 5 Elementos',
-            `Entenda como ${elementoNome} influencia sua saúde`,
-            'Aplique conhecimento no dia a dia'
-          ]
-        },
-
-        toqueCura: {
-          nome: 'Toque da Cura: Os 7 Pontos da Vitalidade',
-          preco: 297,
-          de: 497,
-          url: 'https://curso.qigongbrasil.com/pay/toque-da-cura',
-          categoria: 'workshop',
-          beneficios: [
-            'Curso de Tui Na (acupressão)',
-            'Alivie tensões e melhore circulação',
-            'Técnicas de auto-aplicação'
-          ]
-        },
-
-        soproCura: {
-          nome: 'Sopro da Cura: Mantras & Respirações',
-          preco: 297,
-          de: 497,
-          url: 'https://curso.qigongbrasil.com/pay/mantra-e-respiracao',
-          categoria: 'workshop',
-          elementos: ['CORACAO', 'PULMAO'],
-          beneficios: [
-            'Técnicas ancestrais de mantras curativos',
-            'Respirações conscientes da MTC',
-            'Libere feridas emocionais e acalme a mente'
-          ]
-        },
-
-        // FRONT-END: Porta de entrada
-        diagnostico: {
-          nome: 'Diagnóstico MTC Completo',
-          preco: 29.90,
-          de: 197,
-          url: 'https://mestreye.com/diagnostico-mtc',
-          categoria: 'front-end',
-          beneficios: [
-            'Consulta de 45 minutos',
-            'Análise de pulso e língua',
-            'Diagnóstico energético completo',
-            'Plano personalizado de cuidados'
-          ]
-        },
-
-        mestreYeDigital: {
-          nome: 'Mestre Ye Digital - Terapeuta IA',
-          preco: 29.90,
-          de: 129.90,
-          recorrente: true,
-          url: 'https://digital.mestreye.com/chat',
-          categoria: 'front-end',
-          beneficios: [
-            'IA treinada pelo Mestre Ye',
-            'Orientações personalizadas 24/7',
-            'Práticas adaptadas para você',
-            'Cancele quando quiser'
-          ]
-        },
-
-        saudeTodos: {
-          nome: 'Saúde Para Todos - Aulas Semanais',
-          preco: 97,
-          recorrente: true,
-          url: 'https://curso.qigongbrasil.com/pay/spt',
-          categoria: 'front-end',
-          beneficios: [
-            'Aulas ao vivo online 4x por semana',
-            'Práticas de Qi Gong com Mestre Ye',
-            'Assinatura mensal - cancele quando quiser',
-            'Comunidade de apoio exclusiva'
-          ]
-        },
-
-        // E-BOOKS: Entrada mais acessível
-        ebookLombar: {
-          nome: 'E-book: Método Ye Xin para Lombar',
-          preco: 29,
-          url: 'https://curso.qigongbrasil.com/pay/ebook-mestre-ye',
-          sintomas: ['dor_lombar', 'dor_costas'],
-          beneficios: [
-            'Exercícios específicos para lombar',
-            'Fortaleça a região com Qi Gong',
-            'Acesso vitalício'
-          ]
-        },
-
-        // RETIRO: Evento especial presencial
-        retiroQigong: {
-          nome: 'Retiro de Qi Gong com Mestre Ye',
-          preco: 3997,
-          url: 'https://retiro.qigongbrasil.com/',
-          categoria: 'evento-presencial',
-          data: '3 dias de imersão completa',
-          beneficios: [
-            '3 dias de práticas intensivas de Qi Gong',
-            'Hospedagem completa em hotel fazenda',
-            'Alimentação vegetariana incluída',
-            'Aulas presenciais com Mestre Ye',
-            'Experiência transformadora em grupo',
-            'Conexão profunda com a natureza'
-          ]
+        if (selecionados.length < 3) {
+          if (elementoUpper === 'RIM') selecionados.push(depoimentos.dor_lombar[0]);
+          else if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') selecionados.push(depoimentos.ansiedade[0]);
         }
-      };
 
-      // Função de recomendação inteligente
+        const universais = depoimentos.universal.filter(d => !selecionados.find(s => s.nome === d.nome));
+        while (selecionados.length < 6 && universais.length > 0) selecionados.push(universais.shift());
+
+        return selecionados.slice(0, 6);
+      }
+
+      // Função de recomendação inteligente (usa objeto global 'produtos')
       // SEMPRE exibe PREVENTIVA como destaque + 2 produtos complementares personalizados
       function recomendarProdutos(lead, scoreAtual) {
         const recomendacoes = [];
         const elementoUpper = elemento.toUpperCase();
 
         // 1. PREVENTIVA: SEMPRE como produto principal em destaque
-        recomendacoes.push({...produtos.preventiva, prioridade: 1, destaque: true});
+        recomendacoes.push({ ...produtos.preventiva, prioridade: 1, destaque: true });
 
-        // 2. Produto complementar #1: Baseado no ELEMENTO MTC do lead
-        // Cada elemento tem um produto específico que complementa melhor o tratamento
-        if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') {
-          recomendacoes.push({...produtos.soproCura, prioridade: 2});
+        // 2. Produto complementar #1: Verificar SINTOMAS ESPECÍFICOS primeiro
+        // Se o lead mencionou zumbido/tontura/labirintite → recomendar Protocolo Zumbido
+        const temZumbido = (lead.P2 && lead.P2.includes('G')) || (lead.P4 && lead.P4.includes('F'));
+
+        if (temZumbido) {
+          recomendacoes.push({ ...produtos.protocoloZumbido, prioridade: 2 });
+        }
+        // Senão, baseado no ELEMENTO MTC do lead
+        else if (elementoUpper === 'CORACAO' || elementoUpper === 'CORAÇÃO') {
+          recomendacoes.push({ ...produtos.soproCura, prioridade: 2 });
         } else if (elementoUpper === 'PULMAO' || elementoUpper === 'PULMÃO') {
-          recomendacoes.push({...produtos.soproCura, prioridade: 2});
+          recomendacoes.push({ ...produtos.soproCura, prioridade: 2 });
         } else if (elementoUpper === 'RIM') {
-          recomendacoes.push({...produtos.protocoloLombar, prioridade: 2});
+          recomendacoes.push({ ...produtos.protocoloLombar, prioridade: 2 });
         } else if (elementoUpper === 'BACO' || elementoUpper === 'BAÇO') {
-          recomendacoes.push({...produtos.qigongCompleto, prioridade: 2});
+          recomendacoes.push({ ...produtos.qigongCompleto, prioridade: 2 });
         } else if (elementoUpper === 'FIGADO' || elementoUpper === 'FÍGADO') {
-          recomendacoes.push({...produtos.toqueCura, prioridade: 2});
+          recomendacoes.push({ ...produtos.toqueCura, prioridade: 2 });
         } else {
           // Fallback: Workshop 5 Elementos (universal)
-          recomendacoes.push({...produtos.workshop5Elementos, prioridade: 2});
+          recomendacoes.push({ ...produtos.workshop5Elementos, prioridade: 2 });
         }
 
         // 3. Produto complementar #2: Baseado no perfil de investimento e autonomia
         // Alta autonomia + Alto investimento atual → Qi Gong Completo (autonomia total)
         if (autonomia === 'ALTA' && investimentoAtual >= 400) {
           if (!recomendacoes.find(p => p.nome.includes('Qi Gong'))) {
-            recomendacoes.push({...produtos.qigongCompleto, prioridade: 3});
+            recomendacoes.push({ ...produtos.qigongCompleto, prioridade: 3 });
           } else {
-            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+            recomendacoes.push({ ...produtos.workshop5Elementos, prioridade: 3 });
           }
         }
         // Média/Baixa autonomia OU baixo investimento → Saúde Para Todos (comunidade + suporte)
         else if ((autonomia === 'MEDIA' || autonomia === 'MEDIA_ALTA' || autonomia === 'BAIXA') && investimentoAtual < 400) {
-          recomendacoes.push({...produtos.saudeTodos, prioridade: 3});
+          recomendacoes.push({ ...produtos.saudeTodos, prioridade: 3 });
         }
         // Score alto + intensidade alta → Protocolo específico adicional
         else if (scoreAtual >= 60 && intensidadeScore >= 60) {
           if (!recomendacoes.find(p => p.nome.includes('Protocolo'))) {
-            recomendacoes.push({...produtos.protocoloLombar, prioridade: 3});
+            recomendacoes.push({ ...produtos.protocoloLombar, prioridade: 3 });
           } else {
-            recomendacoes.push({...produtos.toqueCura, prioridade: 3});
+            recomendacoes.push({ ...produtos.toqueCura, prioridade: 3 });
           }
         }
         // Fallback universal: Workshop 5 Elementos ou Mestre Ye Digital
         else {
           if (!recomendacoes.find(p => p.nome.includes('5 Elementos'))) {
-            recomendacoes.push({...produtos.workshop5Elementos, prioridade: 3});
+            recomendacoes.push({ ...produtos.workshop5Elementos, prioridade: 3 });
           } else {
-            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 3});
+            recomendacoes.push({ ...produtos.mestreYeDigital, prioridade: 3 });
           }
         }
 
@@ -768,12 +904,12 @@
         // Se por algum motivo ainda não temos 3, adicionar fallbacks
         if (recomendacoes.length < 3) {
           if (!recomendacoes.find(p => p.nome.includes('Mestre Ye Digital'))) {
-            recomendacoes.push({...produtos.mestreYeDigital, prioridade: 4});
+            recomendacoes.push({ ...produtos.mestreYeDigital, prioridade: 4 });
           }
         }
         if (recomendacoes.length < 3) {
           if (!recomendacoes.find(p => p.nome.includes('Toque da Cura'))) {
-            recomendacoes.push({...produtos.toqueCura, prioridade: 4});
+            recomendacoes.push({ ...produtos.toqueCura, prioridade: 4 });
           }
         }
 
@@ -784,16 +920,24 @@
       // Gerar recomendações personalizadas
       const produtosRecomendados = recomendarProdutos(lead, leadScoreFinal);
 
+      // Selecionar depoimentos inteligentes baseados no perfil
+      const depoimentosSelecionados = selecionarDepoimentos(lead, elemento);
+
       // Função para renderizar produto dinamicamente
       function renderizarProduto(produto, isDestaque = false) {
         const temParcelamento = produto.parcelas;
         const temPrecoOriginal = produto.de;
         const isRecorrente = produto.recorrente;
 
+        // Substituir ${elementoNome} nos benefícios do produto
+        const beneficiosProcessados = produto.beneficios ? produto.beneficios.map(b =>
+          b.replace(/\$\{elementoNome\}/g, elementoNome)
+        ) : [];
+
         // Verificar se é Mestre Ye Digital (precisa de auto-signup)
         const isMestreYeDigital = produto.nome.includes('Mestre Ye Digital');
         const onclickAction = isMestreYeDigital
-          ? `autoSignupRedirect('${produto.url}', {email: '${lead.EMAIL}', nome: '${lead.NOME}', celular: '${lead.celular || lead.CELULAR || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})`
+          ? `autoSignupRedirect('${produto.url}', {email: '${lead.email}', nome: '${lead.nome}', celular: '${lead.celular || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})`
           : `window.location.href='${produto.url}'`;
 
         if (isDestaque) {
@@ -806,15 +950,15 @@
               ${produto.categoria === 'high-end' ? '<p style="text-align: center; font-size: 21px; color: #5a5a5a; margin-bottom: 32px;">Mentoria de 12 Meses com Mestre Ye</p>' : ''}
 
               <div style="text-align: center; margin: 32px 0;">
-                ${temPrecoOriginal ? `<span style="font-size: 24px; color: #5a5a5a; text-decoration: line-through;">De R$ ${produto.de.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span><br>` : ''}
-                <span style="font-size: 56px; font-weight: 700; color: #2c5f2d;">R$ ${produto.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                ${temPrecoOriginal ? `<span style="font-size: 24px; color: #5a5a5a; text-decoration: line-through;">De R$ ${produto.de.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span><br>` : ''}
+                <span style="font-size: 56px; font-weight: 700; color: #2c5f2d;">R$ ${produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 <br>
                 ${temParcelamento ? `<span style="font-size: 18px; color: #5a5a5a;">ou ${produto.parcelas}</span>` : `<span style="font-size: 18px; color: #5a5a5a;">${isRecorrente ? 'por mês' : 'pagamento único'}</span>`}
               </div>
 
-              ${produto.beneficios ? `
+              ${beneficiosProcessados.length > 0 ? `
               <ul class="benefit-list" style="text-align: left; max-width: 540px; margin: 32px auto;">
-                ${produto.beneficios.map(b => `<li>${b}</li>`).join('')}
+                ${beneficiosProcessados.map(b => `<li>${b}</li>`).join('')}
               </ul>
               ` : ''}
 
@@ -829,9 +973,9 @@
         } else {
           // Renderização para produtos regulares (grid)
           const cores = {
-            'front-end': {border: '#d4a574', titulo: '#8b6f47'},
-            'back-end': {border: '#81b29a', titulo: '#2c5f2d'},
-            'workshop': {border: '#8b9dc3', titulo: '#6b7fa8'}
+            'front-end': { border: '#d4a574', titulo: '#8b6f47' },
+            'back-end': { border: '#81b29a', titulo: '#2c5f2d' },
+            'workshop': { border: '#8b9dc3', titulo: '#6b7fa8' }
           };
           const cor = cores[produto.categoria] || cores['front-end'];
 
@@ -840,16 +984,16 @@
               <h3 style="color: ${cor.titulo}; font-size: 24px; margin-bottom: 16px;">${produto.nome}</h3>
 
               <div style="text-align: center; margin: 24px 0;">
-                ${temPrecoOriginal ? `<span style="font-size: 20px; color: #5a5a5a; text-decoration: line-through;">R$ ${produto.de.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span><br>` : ''}
-                <span style="font-size: 40px; font-weight: 700; color: ${cor.titulo};">R$ ${produto.preco.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                ${temPrecoOriginal ? `<span style="font-size: 20px; color: #5a5a5a; text-decoration: line-through;">R$ ${produto.de.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span><br>` : ''}
+                <span style="font-size: 40px; font-weight: 700; color: ${cor.titulo};">R$ ${produto.preco.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                 <br>
                 <span style="font-size: 16px; color: #5a5a5a;">${isRecorrente ? 'por mês' : 'pagamento único'}</span>
               </div>
 
-              ${produto.beneficios ? `
+              ${beneficiosProcessados.length > 0 ? `
               <ul style="list-style: none; margin: 24px 0; padding: 0;">
-                ${produto.beneficios.map((b, i) => `
-                  <li style="padding: 10px 0; font-size: 17px; line-height: 1.7; ${i < produto.beneficios.length - 1 ? 'border-bottom: 1px solid #e8e5e0;' : ''}">✅ ${b}</li>
+                ${beneficiosProcessados.map((b, i) => `
+                  <li style="padding: 10px 0; font-size: 17px; line-height: 1.7; ${i < beneficiosProcessados.length - 1 ? 'border-bottom: 1px solid #e8e5e0;' : ''}">✅ ${b}</li>
                 `).join('')}
               </ul>
               ` : ''}
@@ -992,15 +1136,24 @@
 
           <p>Com mais de 20 anos de experiência, ele já transformou a vida de <strong>milhares de pessoas</strong> que, assim como você, sofriam com sintomas crônicos e desequilíbrios energéticos.</p>
 
-          <div class="social-proof">
-            <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"Depois de anos tentando tratamentos convencionais sem resultado, encontrei o Qi Gong com Mestre Ye. Em 3 meses, minha enxaqueca crônica desapareceu. Foi transformador!"</p>
-            <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— Maria Silva, 42 anos</p>
-          </div>
-
-          <div class="social-proof">
-            <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"Eu estava cético no início, mas os resultados falam por si. Minha ansiedade diminuiu drasticamente e finalmente consigo dormir bem. Recomendo de olhos fechados!"</p>
-            <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— João Santos, 38 anos</p>
-          </div>
+          ${depoimentosSelecionados.map(dep => {
+        if (dep.imagem) {
+          // Renderizar depoimento como imagem (sem aspas)
+          return `
+                <div class="social-proof" style="text-align: center; padding: 20px 0;">
+                  <img src="${dep.imagem}" alt="${dep.alt}" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+                </div>
+              `;
+        } else {
+          // Renderizar depoimento como texto (com aspas via CSS)
+          return `
+                <div class="social-proof-text">
+                  <p style="color: #3a3a3a; margin-bottom: 14px; font-size: 19px;">"${dep.texto}"</p>
+                  <p style="font-size: 16px; color: #5a5a5a; margin: 0; text-align: right; font-style: normal;">— ${dep.nome}</p>
+                </div>
+              `;
+        }
+      }).join('')}
         </div>
 
         <!-- 6. OFERTAS: Produtos Inteligentes Baseados em Qualificação -->
@@ -1077,7 +1230,7 @@
 
           <!-- Botão 1: Falar com Mestre Ye Digital -->
           <div style="max-width: 500px; margin: 0 auto 32px;">
-            <button class="cta-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fdfcfb; border: none; font-size: 20px; padding: 20px 40px; width: 100%; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);" onclick="autoSignupRedirect('https://digital.mestreye.com/chat', {email: '${lead.EMAIL}', nome: '${lead.NOME}', celular: '${lead.celular || lead.CELULAR || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})">
+            <button class="cta-button" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fdfcfb; border: none; font-size: 20px; padding: 20px 40px; width: 100%; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);" onclick="autoSignupRedirect('https://digital.mestreye.com/chat', {email: '${lead.email}', nome: '${lead.nome}', celular: '${lead.celular || ''}', elemento: '${elemento}', lead_score: ${leadScoreFinal}})">
               🤖 Falar com Mestre Ye Digital Agora
             </button>
             <p style="font-size: 15px; color: #5a5a5a; margin-top: 12px;">IA treinada pelo Mestre Ye • <strong>Respostas personalizadas imediatas</strong></p>
@@ -1102,4 +1255,5 @@
     carregarResultados();
   </script>
 </body>
+
 </html>

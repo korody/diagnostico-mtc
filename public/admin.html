@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin - Quiz MTC</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f1117 0%, #1a1d27 100%);
+      color: #e5e7eb;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Login */
+    .login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+    }
+
+    .login-card {
+      background: #1a1d27;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .login-card h1 {
+      color: #6366f1;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .login-card p {
+      color: #9ca3af;
+      margin-bottom: 30px;
+    }
+
+    input[type="password"],
+    input[type="text"],
+    input[type="number"],
+    input[type="url"],
+    textarea,
+    select {
+      width: 100%;
+      background: #252836;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #e5e7eb;
+      font-size: 15px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: #6366f1;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-size: 15px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background: #374151;
+    }
+
+    button.danger {
+      background: #ef4444;
+    }
+
+    /* Main App */
+    .main-app {
+      display: none;
+    }
+
+    header {
+      background: #1a1d27;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      color: #6366f1;
+      font-size: 24px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      background: #252836;
+      border: 2px solid transparent;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+
+    .tab.active {
+      background: #6366f1;
+      border-color: #6366f1;
+      color: white;
+    }
+
+    .tab-content {
+      display: none;
+      background: #1a1d27;
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section h2 {
+      color: #6366f1;
+      margin-bottom: 16px;
+      font-size: 20px;
+    }
+
+    .section h3 {
+      color: #9ca3af;
+      margin-bottom: 12px;
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    label {
+      display: block;
+      color: #9ca3af;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      margin: 0;
+    }
+
+    .product-card,
+    .depoimento-card {
+      background: #252836;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid #333;
+    }
+
+    .product-header,
+    .depoimento-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .product-header h4,
+    .depoimento-header h4 {
+      color: #e5e7eb;
+      font-size: 16px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #22c55e;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.error {
+      background: #ef4444;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    small {
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #374151;
+      color: #9ca3af;
+    }
+
+    .image-preview {
+      max-width: 200px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <h1>🔐 Admin</h1>
+      <p>Painel de Configurações - Quiz MTC</p>
+      <form id="loginForm">
+        <input
+          type="password"
+          id="passwordInput"
+          placeholder="Digite a senha admin"
+          required
+          autocomplete="current-password"
+        />
+        <button type="submit" style="width: 100%;">Entrar</button>
+      </form>
+      <p id="loginError" style="color: #ef4444; margin-top: 16px; display: none;"></p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="mainApp" class="main-app">
+    <div class="container">
+      <header>
+        <div>
+          <h1>⚙️ Painel Admin</h1>
+          <small>Gerenciar configurações do Quiz MTC</small>
+        </div>
+        <button onclick="logout()" class="secondary">Sair</button>
+      </header>
+
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('produtos')">Produtos e Preços</div>
+        <div class="tab" onclick="switchTab('funis')">Funis e URLs</div>
+        <div class="tab" onclick="switchTab('depoimentos')">Depoimentos</div>
+        <div class="tab" onclick="switchTab('whatsapp')">WhatsApp</div>
+      </div>
+
+      <!-- Tab: Produtos -->
+      <div id="tab-produtos" class="tab-content active">
+        <div class="section">
+          <h2>Produtos e Preços</h2>
+          <div id="produtosList"></div>
+          <div class="btn-group">
+            <button onclick="addProduto()">+ Adicionar Produto</button>
+            <button onclick="saveProdutos()" style="background: #22c55e;">💾 Salvar Produtos</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Funis -->
+      <div id="tab-funis" class="tab-content">
+        <div class="section">
+          <h2>URLs dos Funis</h2>
+          <div class="form-group">
+            <label>URL Funil Perpétuo</label>
+            <input type="text" id="funil_perpetuo_url" placeholder="/resultados.html" />
+            <small>Página de resultados padrão (funil evergreen)</small>
+          </div>
+          <div class="form-group">
+            <label>URL Funil Lançamento</label>
+            <input type="url" id="funil_lancamento_url" placeholder="https://mestre-ye.vercel.app" />
+            <small>Página VSL de lançamento (campanhas temporárias)</small>
+          </div>
+          <button onclick="saveFunis()" style="background: #22c55e;">💾 Salvar Funis</button>
+        </div>
+      </div>
+
+      <!-- Tab: Depoimentos -->
+      <div id="tab-depoimentos" class="tab-content">
+        <div class="section">
+          <h2>Depoimentos por Categoria</h2>
+          <div id="depoimentosList"></div>
+          <button onclick="saveDepoimentos()" style="background: #22c55e; margin-top: 20px;">💾 Salvar Depoimentos</button>
+        </div>
+      </div>
+
+      <!-- Tab: WhatsApp -->
+      <div id="tab-whatsapp" class="tab-content">
+        <div class="section">
+          <h2>Configurações de WhatsApp</h2>
+          <div class="checkbox-group form-group">
+            <input type="checkbox" id="whatsapp_enabled" />
+            <label for="whatsapp_enabled" style="margin: 0;">Envios habilitados</label>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Rate Limit (msgs/min)</label>
+              <input type="number" id="whatsapp_rate_limit" min="1" max="60" />
+            </div>
+            <div class="form-group">
+              <label>Delay Hot Lead (ms)</label>
+              <input type="number" id="whatsapp_hot_lead_delay_ms" min="0" step="1000" />
+            </div>
+            <div class="form-group">
+              <label>Delay Normal Lead (ms)</label>
+              <input type="number" id="whatsapp_normal_lead_delay_ms" min="0" step="1000" />
+            </div>
+            <div class="form-group">
+              <label>Horário Início</label>
+              <input type="number" id="whatsapp_horario_inicio" min="0" max="23" />
+            </div>
+            <div class="form-group">
+              <label>Horário Fim</label>
+              <input type="number" id="whatsapp_horario_fim" min="0" max="23" />
+            </div>
+          </div>
+          <div class="checkbox-group form-group">
+            <input type="checkbox" id="whatsapp_simulation_mode" />
+            <label for="whatsapp_simulation_mode" style="margin: 0;">Modo simulação (não envia mensagens reais)</label>
+          </div>
+          <button onclick="saveWhatsapp()" style="background: #22c55e;">💾 Salvar WhatsApp</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+    let configs = {};
+    const CATEGORIAS_DEPOIMENTOS = ['ansiedade', 'dor_lombar', 'dor_geral', 'insonia', 'zumbido', 'universal'];
+
+    // Login
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('passwordInput').value;
+
+      try {
+        const res = await fetch(`${API_URL}/api/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          sessionStorage.setItem('admin_token', password);
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('mainApp').style.display = 'block';
+          loadConfigs();
+        } else {
+          document.getElementById('loginError').textContent = data.error || 'Senha incorreta';
+          document.getElementById('loginError').style.display = 'block';
+        }
+      } catch (err) {
+        showToast('Erro ao fazer login', true);
+      }
+    });
+
+    function logout() {
+      sessionStorage.removeItem('admin_token');
+      location.reload();
+    }
+
+    // Load configs
+    async function loadConfigs() {
+      try {
+        const res = await fetch(`${API_URL}/api/admin/config?key=all`);
+        const data = await res.json();
+
+        if (data.success) {
+          configs = data.configs;
+          renderProdutos();
+          renderFunis();
+          renderDepoimentos();
+          renderWhatsapp();
+        }
+      } catch (err) {
+        showToast('Erro ao carregar configurações', true);
+      }
+    }
+
+    // Produtos
+    function renderProdutos() {
+      const produtos = configs.produtos || {};
+      const container = document.getElementById('produtosList');
+      container.innerHTML = '';
+
+      Object.entries(produtos).forEach(([key, prod]) => {
+        container.innerHTML += `
+          <div class="product-card" data-key="${key}">
+            <div class="product-header">
+              <h4>${key}</h4>
+              <button class="danger" onclick="removeProduto('${key}')">Remover</button>
+            </div>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Nome</label>
+                <input type="text" data-field="nome" value="${prod.nome || ''}" />
+              </div>
+              <div class="form-group">
+                <label>URL</label>
+                <input type="url" data-field="url" value="${prod.url || ''}" />
+              </div>
+              <div class="form-group">
+                <label>Preço (R$)</label>
+                <input type="number" data-field="preco" value="${prod.preco || ''}" step="0.01" />
+              </div>
+              <div class="form-group">
+                <label>De (opcional)</label>
+                <input type="number" data-field="de" value="${prod.de || ''}" step="0.01" />
+              </div>
+              <div class="form-group">
+                <label>Parcelas (opcional)</label>
+                <input type="text" data-field="parcelas" value="${prod.parcelas || ''}" placeholder="12x de R$ 97" />
+              </div>
+              <div class="form-group">
+                <label>Categoria</label>
+                <input type="text" data-field="categoria" value="${prod.categoria || ''}" />
+              </div>
+            </div>
+            <div class="checkbox-group">
+              <input type="checkbox" data-field="recorrente" ${prod.recorrente ? 'checked' : ''} />
+              <label style="margin: 0;">Recorrente (assinatura)</label>
+            </div>
+            <div class="form-group">
+              <label>Benefícios (um por linha)</label>
+              <textarea data-field="beneficios">${(prod.beneficios || []).join('\n')}</textarea>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    function addProduto() {
+      const key = prompt('Chave do novo produto (ex: novoProduto):');
+      if (!key) return;
+      if (!configs.produtos) configs.produtos = {};
+      configs.produtos[key] = {
+        nome: '',
+        preco: 0,
+        url: '',
+        beneficios: []
+      };
+      renderProdutos();
+    }
+
+    function removeProduto(key) {
+      if (!confirm(`Remover produto "${key}"?`)) return;
+      delete configs.produtos[key];
+      renderProdutos();
+    }
+
+    async function saveProdutos() {
+      const cards = document.querySelectorAll('.product-card');
+      const produtos = {};
+
+      cards.forEach(card => {
+        const key = card.dataset.key;
+        const prod = {};
+
+        card.querySelectorAll('[data-field]').forEach(input => {
+          const field = input.dataset.field;
+          if (input.type === 'checkbox') {
+            prod[field] = input.checked;
+          } else if (field === 'beneficios') {
+            prod[field] = input.value.split('\n').filter(b => b.trim());
+          } else if (input.type === 'number') {
+            prod[field] = parseFloat(input.value) || (field === 'preco' ? 0 : undefined);
+          } else {
+            prod[field] = input.value || undefined;
+          }
+        });
+
+        produtos[key] = prod;
+      });
+
+      await saveConfig('produtos', produtos);
+    }
+
+    // Funis
+    function renderFunis() {
+      const funis = configs.funis || {};
+      document.getElementById('funil_perpetuo_url').value = funis.perpetuo_url || '/resultados.html';
+      document.getElementById('funil_lancamento_url').value = funis.lancamento_url || 'https://mestre-ye.vercel.app';
+    }
+
+    async function saveFunis() {
+      const funis = {
+        perpetuo_url: document.getElementById('funil_perpetuo_url').value,
+        lancamento_url: document.getElementById('funil_lancamento_url').value
+      };
+      await saveConfig('funis', funis);
+    }
+
+    // Depoimentos
+    function renderDepoimentos() {
+      const depoimentos = configs.depoimentos || {};
+      const container = document.getElementById('depoimentosList');
+      container.innerHTML = '';
+
+      CATEGORIAS_DEPOIMENTOS.forEach(cat => {
+        const deps = depoimentos[cat] || [];
+        container.innerHTML += `
+          <div class="section">
+            <h3>${cat.replace(/_/g, ' ').toUpperCase()}</h3>
+            <div id="cat-${cat}">
+              ${deps.map((dep, idx) => `
+                <div class="depoimento-card">
+                  <div class="depoimento-header">
+                    <h4>Depoimento #${idx + 1}</h4>
+                    <button class="danger" onclick="removeDepoimento('${cat}', ${idx})">Remover</button>
+                  </div>
+                  ${dep.imagem ? `
+                    <div class="form-group">
+                      <label>Imagem (path)</label>
+                      <input type="text" data-cat="${cat}" data-idx="${idx}" data-field="imagem" value="${dep.imagem}" />
+                      ${dep.imagem.startsWith('/') ? `<img src="${dep.imagem}" class="image-preview" onerror="this.style.display='none'" />` : ''}
+                    </div>
+                    <div class="form-group">
+                      <label>Alt Text</label>
+                      <textarea data-cat="${cat}" data-idx="${idx}" data-field="alt">${dep.alt || ''}</textarea>
+                    </div>
+                  ` : `
+                    <div class="form-group">
+                      <label>Nome</label>
+                      <input type="text" data-cat="${cat}" data-idx="${idx}" data-field="nome" value="${dep.nome || ''}" />
+                    </div>
+                    <div class="form-group">
+                      <label>Texto</label>
+                      <textarea data-cat="${cat}" data-idx="${idx}" data-field="texto">${dep.texto || ''}</textarea>
+                    </div>
+                  `}
+                </div>
+              `).join('')}
+            </div>
+            <button onclick="addDepoimento('${cat}')">+ Adicionar Depoimento</button>
+          </div>
+        `;
+      });
+    }
+
+    function addDepoimento(cat) {
+      const tipo = prompt('Tipo: "imagem" ou "texto"?');
+      if (!['imagem', 'texto'].includes(tipo)) return;
+
+      if (!configs.depoimentos) configs.depoimentos = {};
+      if (!configs.depoimentos[cat]) configs.depoimentos[cat] = [];
+
+      if (tipo === 'imagem') {
+        configs.depoimentos[cat].push({ imagem: '', alt: '' });
+      } else {
+        configs.depoimentos[cat].push({ nome: '', texto: '' });
+      }
+
+      renderDepoimentos();
+    }
+
+    function removeDepoimento(cat, idx) {
+      if (!confirm('Remover este depoimento?')) return;
+      configs.depoimentos[cat].splice(idx, 1);
+      renderDepoimentos();
+    }
+
+    async function saveDepoimentos() {
+      const depoimentos = {};
+
+      CATEGORIAS_DEPOIMENTOS.forEach(cat => {
+        depoimentos[cat] = [];
+        const inputs = document.querySelectorAll(`[data-cat="${cat}"]`);
+        const byIdx = {};
+
+        inputs.forEach(input => {
+          const idx = input.dataset.idx;
+          const field = input.dataset.field;
+          if (!byIdx[idx]) byIdx[idx] = {};
+          byIdx[idx][field] = input.value;
+        });
+
+        Object.values(byIdx).forEach(dep => {
+          if (dep.imagem || dep.texto) {
+            depoimentos[cat].push(dep);
+          }
+        });
+      });
+
+      await saveConfig('depoimentos', depoimentos);
+    }
+
+    // WhatsApp
+    function renderWhatsapp() {
+      const wa = configs.whatsapp || {};
+      document.getElementById('whatsapp_enabled').checked = wa.enabled !== false;
+      document.getElementById('whatsapp_rate_limit').value = wa.rate_limit || 20;
+      document.getElementById('whatsapp_hot_lead_delay_ms').value = wa.hot_lead_delay_ms || 0;
+      document.getElementById('whatsapp_normal_lead_delay_ms').value = wa.normal_lead_delay_ms || 10000;
+      document.getElementById('whatsapp_horario_inicio').value = wa.horario_inicio || 0;
+      document.getElementById('whatsapp_horario_fim').value = wa.horario_fim || 23;
+      document.getElementById('whatsapp_simulation_mode').checked = wa.simulation_mode || false;
+    }
+
+    async function saveWhatsapp() {
+      const wa = {
+        enabled: document.getElementById('whatsapp_enabled').checked,
+        rate_limit: parseInt(document.getElementById('whatsapp_rate_limit').value),
+        hot_lead_delay_ms: parseInt(document.getElementById('whatsapp_hot_lead_delay_ms').value),
+        normal_lead_delay_ms: parseInt(document.getElementById('whatsapp_normal_lead_delay_ms').value),
+        horario_inicio: parseInt(document.getElementById('whatsapp_horario_inicio').value),
+        horario_fim: parseInt(document.getElementById('whatsapp_horario_fim').value),
+        simulation_mode: document.getElementById('whatsapp_simulation_mode').checked
+      };
+      await saveConfig('whatsapp', wa);
+    }
+
+    // Generic save
+    async function saveConfig(key, value) {
+      const token = sessionStorage.getItem('admin_token');
+
+      try {
+        const res = await fetch(`${API_URL}/api/admin/config`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ key, value })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          configs[key] = value;
+          showToast(`✅ ${key} salvo com sucesso!`);
+        } else {
+          showToast(data.error || 'Erro ao salvar', true);
+        }
+      } catch (err) {
+        showToast('Erro de conexão', true);
+      }
+    }
+
+    // UI
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    function showToast(message, isError = false) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${isError ? 'error' : ''}`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // Check auth on load
+    if (sessionStorage.getItem('admin_token')) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      loadConfigs();
+    }
+  </script>
+</body>
+</html>

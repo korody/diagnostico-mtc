@@ -1316,6 +1316,16 @@ app.post('/api/referral-link', (req, res) => require('./api/referral-link')(req,
 // - Isso reduziria duplicação mas manteria flexibilidade local
 // ========================================
 
+// ========================================
+// ROTAS ADMIN
+// ========================================
+const adminConfigHandler = require('./api/admin/config');
+const adminLoginHandler = require('./api/admin/login');
+
+app.post('/api/admin/login', (req, res) => adminLoginHandler(req, res));
+app.get('/api/admin/config', (req, res) => adminConfigHandler(req, res));
+app.post('/api/admin/config', (req, res) => adminConfigHandler(req, res));
+
 const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
@@ -1333,6 +1343,10 @@ app.listen(PORT, () => {
   console.log('   • GET  /api/lead/find (Buscar lead)');
   console.log('   • GET  /api/leads/search (Buscar múltiplos)');
   console.log('   • POST /api/whatsapp/send (Enviar WhatsApp)');
+  console.log('   • GET  /admin.html (Painel Admin)');
+  console.log('   • POST /api/admin/login (Auth Admin)');
+  console.log('   • GET  /api/admin/config (Ler configs)');
+  console.log('   • POST /api/admin/config (Salvar configs)');
   console.log('=========================================\n');
 });
 

@@ -466,8 +466,237 @@
       'PULMÃO': 'Elemento METAL (Pulmão)'
     };
 
-    // Variável global para armazenar dados do lead
+    // Variáveis globais
     window.currentLead = null;
+    let configsCarregadas = false;
+
+    // Banco de depoimentos (FALLBACK - será sobrescrito por configs do admin se disponível)
+    let depoimentos = {
+      ansiedade: [
+        { imagem: "/testimonials/valda-qi-gong-danca.png", alt: "valdamariadossantos: Eu gosto muito de Qi Gong. Eu conheci através de jornalista, tornou-se mestre e tem um canal no YouTube. Sou apaixonada pelos movimentos. É uma dança pra mim. É muito lindo e prazeroso. Eu preciso de disciplina para dar continuidade." },
+        { imagem: "/testimonials/georgette-equilibrio.jpg", alt: "Georgette Abdou Da Silva: Aulas maravilhosas. Me auxilia em tudo! Equilibrio fisico e mental, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
+        { imagem: "/testimonials/luiza-ansiedade-acalmou.jpg", alt: "Luiza Maria Saucedo Corrêa: Tinha ansiedade. Depois que comecei fazer as aulas acalmou." }
+      ],
+      dor_lombar: [
+        { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
+        { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" }
+      ],
+      dor_geral: [
+        { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
+        { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
+        { imagem: "/testimonials/marta-dores-flexibilidade.png", alt: "@martadias8015: Sou aluna #14. Praticando desde março 25 já sinto muitos resultados em dores e flexibilidade. Gracias Mestre Ye" }
+      ],
+      insonia: [
+        { imagem: "/testimonials/mara-artrite-sono.jpg", alt: "maraocabral: Mestre tenho artrite desde de jovem, suas práticas me ajudam muito, meu sono melhorou muito, desde q vi seu vídeo sobre a qualidade do sono, muito obrigada, sua filhinha é linda" },
+        { imagem: "/testimonials/lourdes-renovada-filha-autista.png", alt: "Lourdes Brum: Me senti renovada, nos meus 72 anos. Tambem minha filha Autista, Nível 1 de suporte, que tem 39 anos e acompanhou os exercícios e está tendo um sono mais profundo e único da noite até de manhã" }
+      ],
+      zumbido: [
+        { imagem: "/testimonials/zumbido-mteresaguedes.jpeg", alt: "mteresaguedes: Muito obrigada, mestre. Essa massagem funcionou comigo. Diminuiu o volume do zumbido, que estava insuportável. Vou continuar fazendo. Obrigada" },
+        { imagem: "/testimonials/zumbido-silvinhapereira.jpeg", alt: "silvinhapereirafl oripa: Faço já dois exercícios que ensinasse este terceiro bom também. Tenho melhorado muito. Gratidão. Os zumbidos começaram a pouco tempo mas incomodam. Os exercícios são ótimos. Agradeço." },
+        { imagem: "/testimonials/zumbido-ouvido-tampado.jpeg", alt: "solange.giglio: Nossa dói mesmo, e mais do lado direito que sempre estou com o ouvido tampado. Lado esquerdo não senti dor!! Grata pelos ensinamentos, sempre indico você para as pessoas" },
+        { imagem: "/testimonials/zumbido-bigorna-tambor.jpeg", alt: "marilsasantini: Eu tenho um tipo de zumbido que parece o bater de uma bigorna. O tambor me ajudou muito!!! Gratidão" }
+      ],
+      universal: [
+        { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
+        { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
+        { imagem: "/testimonials/cosarcadandu-corpo-modelando.png", alt: "cosarcadandu: Agora posso ir dormir, feliz e em paz. Os seus exercícios são saúde na minha vida. Logo depois que pratico os seus exercícios fico bem. Quando eu era pequena fiz ginástica de performance e isso agora me ajuda conseguir fazer os exercícios bastante bem. Sem duvida eu não conheço a cultura dessa pratica do chi cong. Esses exercícios são uma grande alegria na minha vida." },
+        { imagem: "/testimonials/ana-maria-energia-vital.jpg", alt: "Ana Maria Batista De Jesus: Mestre Ye, a prática do Qi Gong em mim, apesar de pouco tempo, tem despertado minha energia vital de uma maneira consciente e prazerosa. Estou mais alegre, descontraída!" },
+        { imagem: "/testimonials/georgette-equilibrio.jpg", alt: "Georgette Abdou Da Silva: Aulas maravilhosas. Me auxilia em tudo! Equilibrio fisico e mental, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
+        { imagem: "/testimonials/marta-dores-flexibilidade.png", alt: "@martadias8015: Sou aluna #14. Praticando desde março 25 já sinto muitos resultados em dores e flexibilidade. Gracias Mestre Ye" }
+      ]
+    };
+
+    // Catálogo de produtos (FALLBACK - será sobrescrito por configs do admin se disponível)
+    let produtos = {
+      preventiva: {
+        nome: 'PREVENTIVA: O Plano de Saúde da MTC',
+        preco: 4764,
+        de: 5800,
+        parcelas: '12x de R$ 397',
+        url: 'https://curso.qigongbrasil.com/pay/plano-de-saude',
+        categoria: 'high-end',
+        minScore: 50,
+        beneficios: [
+          'Consultas mensais personalizadas com Mestre Ye',
+          'Diagnóstico completo de Medicina Chinesa',
+          'Práticas de Qi Gong específicas para seu ${elementoNome}',
+          'Acompanhamento personalizado por 12 meses',
+          'Receba cuidados preventivos contínuos',
+          'Evite doenças antes que apareçam'
+        ]
+      },
+      qigongCompleto: {
+        nome: 'Saúde & Longevidade Qi Gong',
+        preco: 1197,
+        de: 1697,
+        url: 'https://curso.qigongbrasil.com/pay/qig-ob',
+        categoria: 'back-end',
+        minScore: 40,
+        beneficios: [
+          'Curso completo de Qi Gong com exercícios diários',
+          'Aumente sua energia e vitalidade naturais',
+          'Fortaleça o corpo e promova longevidade',
+          'Acesso por 1 ano a todo conteúdo'
+        ]
+      },
+      protocoloLombar: {
+        nome: 'Protocolo Intensivo Dor na Lombar',
+        preco: 997,
+        url: 'https://curso.qigongbrasil.com/pay/pdl-mestre-ye',
+        sintomas: ['dor_lombar', 'dor_costas', 'coluna'],
+        beneficios: [
+          'Protocolo de 21 dias para eliminar dor lombar',
+          'Exercícios e técnicas específicas',
+          'Recupere mobilidade e qualidade de vida'
+        ]
+      },
+      protocoloZumbido: {
+        nome: 'Protocolo Intensivo Zumbido/Labirintite',
+        preco: 697,
+        de: 997,
+        url: 'https://curso.qigongbrasil.com/pay/mestre-ye-czl',
+        sintomas: ['zumbido', 'tontura', 'labirintite'],
+        beneficios: [
+          'Alivie ou elimine zumbido naturalmente',
+          'Recupere seu equilíbrio e bem-estar',
+          'Técnicas comprovadas da MTC'
+        ]
+      },
+      workshop5Elementos: {
+        nome: '5 Elementos da Medicina Chinesa',
+        preco: 297,
+        de: 497,
+        url: 'https://curso.qigongbrasil.com/pay/elementos-medicina-tradicional-chinesa',
+        categoria: 'workshop',
+        elementos: ['todos'],
+        beneficios: [
+          'Workshop ao vivo sobre o poder dos 5 Elementos',
+          'Entenda como ${elementoNome} influencia sua saúde',
+          'Aplique conhecimento no dia a dia'
+        ]
+      },
+      toqueCura: {
+        nome: 'Toque da Cura: Os 7 Pontos da Vitalidade',
+        preco: 297,
+        de: 497,
+        url: 'https://curso.qigongbrasil.com/pay/toque-da-cura',
+        categoria: 'workshop',
+        beneficios: [
+          'Curso de Tui Na (acupressão)',
+          'Alivie tensões e melhore circulação',
+          'Técnicas de auto-aplicação'
+        ]
+      },
+      soproCura: {
+        nome: 'Sopro da Cura: Mantras & Respirações',
+        preco: 297,
+        de: 497,
+        url: 'https://curso.qigongbrasil.com/pay/mantra-e-respiracao',
+        categoria: 'workshop',
+        elementos: ['CORACAO', 'PULMAO'],
+        beneficios: [
+          'Técnicas ancestrais de mantras curativos',
+          'Respirações conscientes da MTC',
+          'Libere feridas emocionais e acalme a mente'
+        ]
+      },
+      diagnostico: {
+        nome: 'Diagnóstico MTC Completo',
+        preco: 29.90,
+        de: 197,
+        url: 'https://mestreye.com/diagnostico-mtc',
+        categoria: 'front-end',
+        beneficios: [
+          'Consulta de 45 minutos',
+          'Análise de pulso e língua',
+          'Diagnóstico energético completo',
+          'Plano personalizado de cuidados'
+        ]
+      },
+      mestreYeDigital: {
+        nome: 'Mestre Ye Digital - Terapeuta IA',
+        preco: 29.90,
+        de: 129.90,
+        recorrente: true,
+        url: 'https://digital.mestreye.com/chat',
+        categoria: 'front-end',
+        beneficios: [
+          'IA treinada pelo Mestre Ye',
+          'Orientações personalizadas 24/7',
+          'Práticas adaptadas para você',
+          'Cancele quando quiser'
+        ]
+      },
+      saudeTodos: {
+        nome: 'Saúde Para Todos - Aulas Semanais',
+        preco: 97,
+        recorrente: true,
+        url: 'https://curso.qigongbrasil.com/pay/spt',
+        categoria: 'front-end',
+        beneficios: [
+          'Aulas ao vivo online 4x por semana',
+          'Práticas de Qi Gong com Mestre Ye',
+          'Assinatura mensal - cancele quando quiser',
+          'Comunidade de apoio exclusiva'
+        ]
+      },
+      ebookLombar: {
+        nome: 'E-book: Método Ye Xin para Lombar',
+        preco: 29,
+        url: 'https://curso.qigongbrasil.com/pay/ebook-mestre-ye',
+        sintomas: ['dor_lombar', 'dor_costas'],
+        beneficios: [
+          'Exercícios específicos para lombar',
+          'Fortaleça a região com Qi Gong',
+          'Acesso vitalício'
+        ]
+      },
+      retiroQigong: {
+        nome: 'Retiro de Qi Gong com Mestre Ye',
+        preco: 3997,
+        url: 'https://retiro.qigongbrasil.com/',
+        categoria: 'evento-presencial',
+        data: '3 dias de imersão completa',
+        beneficios: [
+          '3 dias de práticas intensivas de Qi Gong',
+          'Hospedagem completa em hotel fazenda',
+          'Alimentação vegetariana incluída',
+          'Aulas presenciais com Mestre Ye',
+          'Experiência transformadora em grupo',
+          'Conexão profunda com a natureza'
+        ]
+      }
+    };
+
+    // Função para carregar configurações do painel admin
+    async function carregarConfigs() {
+      try {
+        const response = await fetch(`${API_URL}/api/admin/config?key=all`);
+        const data = await response.json();
+
+        if (data.success && data.configs) {
+          console.log('✅ Configurações do admin carregadas com sucesso');
+
+          // Atualizar depoimentos se disponível
+          if (data.configs.depoimentos) {
+            depoimentos = data.configs.depoimentos;
+            console.log('📸 Depoimentos atualizados do admin');
+          }
+
+          // Atualizar produtos se disponível
+          if (data.configs.produtos) {
+            produtos = data.configs.produtos;
+            console.log('🛍️ Produtos atualizados do admin');
+          }
+
+          configsCarregadas = true;
+        } else {
+          console.warn('⚠️ Configs do admin não disponíveis, usando valores hardcoded');
+        }
+      } catch (error) {
+        console.warn('⚠️ Erro ao carregar configs do admin, usando fallback hardcoded:', error);
+      }
+    }
 
     // Função para auto-signup e redirect com autenticação
     window.autoSignupRedirect = async function (targetUrl, leadData) {
@@ -517,6 +746,11 @@
       if (!email && !leadId) {
         document.getElementById('loading').innerHTML = '<p style="color: #dc2626;">❌ Nenhum email ou ID fornecido.</p>';
         return;
+      }
+
+      // Carregar configurações do admin (com fallback para hardcoded)
+      if (!configsCarregadas) {
+        await carregarConfigs();
       }
 
       try {
@@ -574,43 +808,7 @@
       const investimentoAtual = lead.investimento_mensal_atual || 0;
       const autonomia = lead.autonomia_decisao || 'MEDIA';
 
-      // Banco de depoimentos reais categorizados (com imagens)
-      const depoimentos = {
-        ansiedade: [
-          { imagem: "/testimonials/valda-qi-gong-danca.png", alt: "valdamariadossantos: Eu gosto muito de Qi Gong. Eu conheci através de jornalista, tornou-se mestre e tem um canal no YouTube. Sou apaixonada pelos movimentos. É uma dança pra mim. É muito lindo e prazeroso. Eu preciso de disciplina para dar continuidade." },
-          { imagem: "/testimonials/georgette-equilibrio.jpg", alt: "Georgette Abdou Da Silva: Aulas maravilhosas. Me auxilia em tudo! Equilibrio fisico e mental, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
-          { imagem: "/testimonials/luiza-ansiedade-acalmou.jpg", alt: "Luiza Maria Saucedo Corrêa: Tinha ansiedade. Depois que comecei fazer as aulas acalmou." }
-        ],
-        dor_lombar: [
-          { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
-          { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" }
-        ],
-        dor_geral: [
-          { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
-          { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
-          { imagem: "/testimonials/marta-dores-flexibilidade.png", alt: "@martadias8015: Sou aluna #14. Praticando desde março 25 já sinto muitos resultados em dores e flexibilidade. Gracias Mestre Ye" }
-        ],
-        insonia: [
-          { imagem: "/testimonials/mara-artrite-sono.jpg", alt: "maraocabral: Mestre tenho artrite desde de jovem, suas práticas me ajudam muito, meu sono melhorou muito, desde q vi seu vídeo sobre a qualidade do sono, muito obrigada, sua filhinha é linda" },
-          { imagem: "/testimonials/lourdes-renovada-filha-autista.png", alt: "Lourdes Brum: Me senti renovada, nos meus 72 anos. Tambem minha filha Autista, Nível 1 de suporte, que tem 39 anos e acompanhou os exercícios e está tendo um sono mais profundo e único da noite até de manhã" }
-        ],
-        zumbido: [
-          { imagem: "/testimonials/zumbido-mteresaguedes.jpeg", alt: "mteresaguedes: Muito obrigada, mestre. Essa massagem funcionou comigo. Diminuiu o volume do zumbido, que estava insuportável. Vou continuar fazendo. Obrigada" },
-          { imagem: "/testimonials/zumbido-silvinhapereira.jpeg", alt: "silvinhapereirafl oripa: Faço já dois exercícios que ensinasse este terceiro bom também. Tenho melhorado muito. Gratidão. Os zumbidos começaram a pouco tempo mas incomodam. Os exercícios são ótimos. Agradeço." },
-          { imagem: "/testimonials/zumbido-ouvido-tampado.jpeg", alt: "solange.giglio: Nossa dói mesmo, e mais do lado direito que sempre estou com o ouvido tampado. Lado esquerdo não senti dor!! Grata pelos ensinamentos, sempre indico você para as pessoas" },
-          { imagem: "/testimonials/zumbido-bigorna-tambor.jpeg", alt: "marilsasantini: Eu tenho um tipo de zumbido que parece o bater de uma bigorna. O tambor me ajudou muito!!! Gratidão" }
-        ],
-        universal: [
-          { imagem: "/testimonials/dor-mariza-sumiu.png", alt: "Mariza Belmonte: A minha dor praticamente sumiu!! Obrigada" },
-          { imagem: "/testimonials/dor-lombar-sueli.png", alt: "Sueli Torres Rodrigues: Estava com muita dor na lombar, melhorou bastante" },
-          { imagem: "/testimonials/cosarcadandu-corpo-modelando.png", alt: "cosarcadandu: Agora posso ir dormir, feliz e em paz. Os seus exercícios são saúde na minha vida. Logo depois que pratico os seus exercícios fico bem. Quando eu era pequena fiz ginástica de performance e isso agora me ajuda conseguir fazer os exercícios bastante bem. Sem duvida eu não conheço a cultura dessa pratica do chi cong. Esses exercícios são uma grande alegria na minha vida." },
-          { imagem: "/testimonials/ana-maria-energia-vital.jpg", alt: "Ana Maria Batista De Jesus: Mestre Ye, a prática do Qi Gong em mim, apesar de pouco tempo, tem despertado minha energia vital de uma maneira consciente e prazerosa. Estou mais alegre, descontraída!" },
-          { imagem: "/testimonials/georgette-equilibrio.jpg", alt: "Georgette Abdou Da Silva: Aulas maravilhosas. Me auxilia em tudo! Equilibrio fisico e mental, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte." },
-          { imagem: "/testimonials/marta-dores-flexibilidade.png", alt: "@martadias8015: Sou aluna #14. Praticando desde março 25 já sinto muitos resultados em dores e flexibilidade. Gracias Mestre Ye" }
-        ]
-      };
-
-      // Função para selecionar depoimentos inteligentes
+      // Função para selecionar depoimentos inteligentes (usa objeto global 'depoimentos')
       function selecionarDepoimentos(lead, elemento) {
         const selecionados = [];
         const elementoUpper = elemento.toUpperCase();
@@ -640,187 +838,7 @@
         return selecionados.slice(0, 6);
       }
 
-      // Catálogo de produtos por categoria
-      const produtos = {
-        // HIGH-END: Para leads quentes com alta intensidade/urgência
-        preventiva: {
-          nome: 'PREVENTIVA: O Plano de Saúde da MTC',
-          preco: 4764,
-          de: 5800,
-          parcelas: '12x de R$ 397',
-          url: 'https://curso.qigongbrasil.com/pay/plano-de-saude',
-          categoria: 'high-end',
-          minScore: 50,
-          beneficios: [
-            'Consultas mensais personalizadas com Mestre Ye',
-            'Diagnóstico completo de Medicina Chinesa',
-            `Práticas de Qi Gong específicas para seu ${elementoNome}`,
-            'Acompanhamento personalizado por 12 meses',
-            'Receba cuidados preventivos contínuos',
-            'Evite doenças antes que apareçam'
-          ]
-        },
-
-        // BACK-END: Para leads com bom engajamento
-        qigongCompleto: {
-          nome: 'Saúde & Longevidade Qi Gong',
-          preco: 1197,
-          de: 1697,
-          url: 'https://curso.qigongbrasil.com/pay/qig-ob',
-          categoria: 'back-end',
-          minScore: 40,
-          beneficios: [
-            'Curso completo de Qi Gong com exercícios diários',
-            'Aumente sua energia e vitalidade naturais',
-            'Fortaleça o corpo e promova longevidade',
-            'Acesso por 1 ano a todo conteúdo'
-          ]
-        },
-
-        // PRODUTOS ESPECÍFICOS POR SINTOMA
-        protocoloLombar: {
-          nome: 'Protocolo Intensivo Dor na Lombar',
-          preco: 997,
-          url: 'https://curso.qigongbrasil.com/pay/pdl-mestre-ye',
-          sintomas: ['dor_lombar', 'dor_costas', 'coluna'],
-          beneficios: [
-            'Protocolo de 21 dias para eliminar dor lombar',
-            'Exercícios e técnicas específicas',
-            'Recupere mobilidade e qualidade de vida'
-          ]
-        },
-
-        protocoloZumbido: {
-          nome: 'Protocolo Intensivo Zumbido/Labirintite',
-          preco: 697,
-          de: 997,
-          url: 'https://curso.qigongbrasil.com/pay/mestre-ye-czl',
-          sintomas: ['zumbido', 'tontura', 'labirintite'],
-          beneficios: [
-            'Alivie ou elimine zumbido naturalmente',
-            'Recupere seu equilíbrio e bem-estar',
-            'Técnicas comprovadas da MTC'
-          ]
-        },
-
-        // WORKSHOPS: Aprendizado focado
-        workshop5Elementos: {
-          nome: '5 Elementos da Medicina Chinesa',
-          preco: 297,
-          de: 497,
-          url: 'https://curso.qigongbrasil.com/pay/elementos-medicina-tradicional-chinesa',
-          categoria: 'workshop',
-          elementos: ['todos'],
-          beneficios: [
-            'Workshop ao vivo sobre o poder dos 5 Elementos',
-            `Entenda como ${elementoNome} influencia sua saúde`,
-            'Aplique conhecimento no dia a dia'
-          ]
-        },
-
-        toqueCura: {
-          nome: 'Toque da Cura: Os 7 Pontos da Vitalidade',
-          preco: 297,
-          de: 497,
-          url: 'https://curso.qigongbrasil.com/pay/toque-da-cura',
-          categoria: 'workshop',
-          beneficios: [
-            'Curso de Tui Na (acupressão)',
-            'Alivie tensões e melhore circulação',
-            'Técnicas de auto-aplicação'
-          ]
-        },
-
-        soproCura: {
-          nome: 'Sopro da Cura: Mantras & Respirações',
-          preco: 297,
-          de: 497,
-          url: 'https://curso.qigongbrasil.com/pay/mantra-e-respiracao',
-          categoria: 'workshop',
-          elementos: ['CORACAO', 'PULMAO'],
-          beneficios: [
-            'Técnicas ancestrais de mantras curativos',
-            'Respirações conscientes da MTC',
-            'Libere feridas emocionais e acalme a mente'
-          ]
-        },
-
-        // FRONT-END: Porta de entrada
-        diagnostico: {
-          nome: 'Diagnóstico MTC Completo',
-          preco: 29.90,
-          de: 197,
-          url: 'https://mestreye.com/diagnostico-mtc',
-          categoria: 'front-end',
-          beneficios: [
-            'Consulta de 45 minutos',
-            'Análise de pulso e língua',
-            'Diagnóstico energético completo',
-            'Plano personalizado de cuidados'
-          ]
-        },
-
-        mestreYeDigital: {
-          nome: 'Mestre Ye Digital - Terapeuta IA',
-          preco: 29.90,
-          de: 129.90,
-          recorrente: true,
-          url: 'https://digital.mestreye.com/chat',
-          categoria: 'front-end',
-          beneficios: [
-            'IA treinada pelo Mestre Ye',
-            'Orientações personalizadas 24/7',
-            'Práticas adaptadas para você',
-            'Cancele quando quiser'
-          ]
-        },
-
-        saudeTodos: {
-          nome: 'Saúde Para Todos - Aulas Semanais',
-          preco: 97,
-          recorrente: true,
-          url: 'https://curso.qigongbrasil.com/pay/spt',
-          categoria: 'front-end',
-          beneficios: [
-            'Aulas ao vivo online 4x por semana',
-            'Práticas de Qi Gong com Mestre Ye',
-            'Assinatura mensal - cancele quando quiser',
-            'Comunidade de apoio exclusiva'
-          ]
-        },
-
-        // E-BOOKS: Entrada mais acessível
-        ebookLombar: {
-          nome: 'E-book: Método Ye Xin para Lombar',
-          preco: 29,
-          url: 'https://curso.qigongbrasil.com/pay/ebook-mestre-ye',
-          sintomas: ['dor_lombar', 'dor_costas'],
-          beneficios: [
-            'Exercícios específicos para lombar',
-            'Fortaleça a região com Qi Gong',
-            'Acesso vitalício'
-          ]
-        },
-
-        // RETIRO: Evento especial presencial
-        retiroQigong: {
-          nome: 'Retiro de Qi Gong com Mestre Ye',
-          preco: 3997,
-          url: 'https://retiro.qigongbrasil.com/',
-          categoria: 'evento-presencial',
-          data: '3 dias de imersão completa',
-          beneficios: [
-            '3 dias de práticas intensivas de Qi Gong',
-            'Hospedagem completa em hotel fazenda',
-            'Alimentação vegetariana incluída',
-            'Aulas presenciais com Mestre Ye',
-            'Experiência transformadora em grupo',
-            'Conexão profunda com a natureza'
-          ]
-        }
-      };
-
-      // Função de recomendação inteligente
+      // Função de recomendação inteligente (usa objeto global 'produtos')
       // SEMPRE exibe PREVENTIVA como destaque + 2 produtos complementares personalizados
       function recomendarProdutos(lead, scoreAtual) {
         const recomendacoes = [];
@@ -911,6 +929,11 @@
         const temPrecoOriginal = produto.de;
         const isRecorrente = produto.recorrente;
 
+        // Substituir ${elementoNome} nos benefícios do produto
+        const beneficiosProcessados = produto.beneficios ? produto.beneficios.map(b =>
+          b.replace(/\$\{elementoNome\}/g, elementoNome)
+        ) : [];
+
         // Verificar se é Mestre Ye Digital (precisa de auto-signup)
         const isMestreYeDigital = produto.nome.includes('Mestre Ye Digital');
         const onclickAction = isMestreYeDigital
@@ -933,9 +956,9 @@
                 ${temParcelamento ? `<span style="font-size: 18px; color: #5a5a5a;">ou ${produto.parcelas}</span>` : `<span style="font-size: 18px; color: #5a5a5a;">${isRecorrente ? 'por mês' : 'pagamento único'}</span>`}
               </div>
 
-              ${produto.beneficios ? `
+              ${beneficiosProcessados.length > 0 ? `
               <ul class="benefit-list" style="text-align: left; max-width: 540px; margin: 32px auto;">
-                ${produto.beneficios.map(b => `<li>${b}</li>`).join('')}
+                ${beneficiosProcessados.map(b => `<li>${b}</li>`).join('')}
               </ul>
               ` : ''}
 
@@ -967,10 +990,10 @@
                 <span style="font-size: 16px; color: #5a5a5a;">${isRecorrente ? 'por mês' : 'pagamento único'}</span>
               </div>
 
-              ${produto.beneficios ? `
+              ${beneficiosProcessados.length > 0 ? `
               <ul style="list-style: none; margin: 24px 0; padding: 0;">
-                ${produto.beneficios.map((b, i) => `
-                  <li style="padding: 10px 0; font-size: 17px; line-height: 1.7; ${i < produto.beneficios.length - 1 ? 'border-bottom: 1px solid #e8e5e0;' : ''}">✅ ${b}</li>
+                ${beneficiosProcessados.map((b, i) => `
+                  <li style="padding: 10px 0; font-size: 17px; line-height: 1.7; ${i < beneficiosProcessados.length - 1 ? 'border-bottom: 1px solid #e8e5e0;' : ''}">✅ ${b}</li>
                 `).join('')}
               </ul>
               ` : ''}

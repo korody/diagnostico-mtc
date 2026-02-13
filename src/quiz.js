@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle, Heart, Activity, Brain, Sparkles } from 'lucide-react';
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -51,6 +51,37 @@ const QuizMTC = () => {
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState('');
   const [resultadoDiagnostico, setResultadoDiagnostico] = useState(null);
+
+  // URLs dos funis (carregadas do admin com fallback)
+  const [funilUrls, setFunilUrls] = useState({
+    perpetuo_url: '/resultados.html', // Fallback
+    lancamento_url: 'https://mestre-ye.vercel.app' // Fallback
+  });
+
+  // Carregar configuração de funis do painel admin
+  useEffect(() => {
+    const carregarConfigFunis = async () => {
+      try {
+        const API_URL = window.location.hostname === 'localhost'
+          ? 'http://localhost:3001'
+          : '';
+
+        const response = await fetch(`${API_URL}/api/admin/config?key=funis`);
+        const data = await response.json();
+
+        if (data.success && data.value) {
+          console.log('✅ URLs de funis carregadas do admin:', data.value);
+          setFunilUrls(data.value);
+        } else {
+          console.warn('⚠️ Config de funis não disponível, usando fallback');
+        }
+      } catch (error) {
+        console.warn('⚠️ Erro ao carregar config de funis, usando fallback:', error);
+      }
+    };
+
+    carregarConfigFunis();
+  }, []);
 
   // Perguntas do quiz
   const perguntas = [
@@ -688,23 +719,26 @@ const QuizMTC = () => {
         console.log('  Diagnóstico:', result.diagnostico);
         console.log('  Redirect URL:', result.redirect_url);
         
-        // Redirect baseado no funil
+        // Redirect baseado no funil (usando URLs do admin ou fallback)
         const baseUrl = window.location.hostname === 'localhost'
           ? 'http://localhost:3001'
           : '';
 
         let redirectUrl;
         if (funil === 'lancamento') {
-          // Funil de Lançamento - URL customizada
-          // CONFIGURAÇÃO: Altere esta URL para a página do seu funil de lançamento
-          redirectUrl = `https://mestre-ye.vercel.app?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+          // Funil de Lançamento - URL dinâmica do admin
+          const lancamentoUrl = funilUrls.lancamento_url || 'https://mestre-ye.vercel.app';
+          redirectUrl = `${lancamentoUrl}?email=${encodeURIComponent(dadosLead.EMAIL)}`;
         } else {
-          // Funil Perpétuo - Página de resultados padrão
-          redirectUrl = `${baseUrl}/resultados.html?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+          // Funil Perpétuo - Página de resultados (dinâmica do admin)
+          const perpetuoUrl = funilUrls.perpetuo_url || '/resultados.html';
+          const fullPerpetuoUrl = perpetuoUrl.startsWith('http') ? perpetuoUrl : `${baseUrl}${perpetuoUrl}`;
+          redirectUrl = `${fullPerpetuoUrl}?email=${encodeURIComponent(dadosLead.EMAIL)}`;
         }
 
         console.log('🔄 Redirecionando para:', redirectUrl);
         console.log('📊 Funil:', funil);
+        console.log('🔗 URLs configuradas:', funilUrls);
         window.location.href = redirectUrl;
       } else {
         throw new Error(result.message || 'Erro desconhecido');
