@@ -13,6 +13,8 @@
     { "source": "/webhook/unnichat/ver-resultados", "destination": "/api/webhook/unnichat/send-diagnostic", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/api/admin/config", "destination": "/api/admin" },
+    { "source": "/api/admin/login", "destination": "/api/admin" }
   ],
   "headers": [
     {
