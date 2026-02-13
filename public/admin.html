@@ -313,27 +313,16 @@
   </style>
 </head>
 <body>
-  <!-- Login Screen -->
-  <div id="loginScreen" class="login-screen">
+  <!-- Login Screen (bypass direto) -->
+  <div id="loginScreen" class="login-screen" style="display: none;">
     <div class="login-card">
       <h1>🔐 Admin</h1>
-      <p>Painel de Configurações - Quiz MTC</p>
-      <form id="loginForm">
-        <input
-          type="password"
-          id="passwordInput"
-          placeholder="Digite a senha admin"
-          required
-          autocomplete="current-password"
-        />
-        <button type="submit" style="width: 100%;">Entrar</button>
-      </form>
-      <p id="loginError" style="color: #ef4444; margin-top: 16px; display: none;"></p>
+      <p>Carregando painel...</p>
     </div>
   </div>
 
   <!-- Main App -->
-  <div id="mainApp" class="main-app">
+  <div id="mainApp" class="main-app" style="display: block;">
     <div class="container">
       <header>
         <div>
@@ -434,36 +423,7 @@
     let configs = {};
     const CATEGORIAS_DEPOIMENTOS = ['ansiedade', 'dor_lombar', 'dor_geral', 'insonia', 'zumbido', 'universal'];
 
-    // Login
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const password = document.getElementById('passwordInput').value;
-
-      try {
-        const res = await fetch(`${API_URL}/api/admin/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
-        });
-
-        const data = await res.json();
-
-        if (data.success) {
-          sessionStorage.setItem('admin_token', password);
-          document.getElementById('loginScreen').style.display = 'none';
-          document.getElementById('mainApp').style.display = 'block';
-          loadConfigs();
-        } else {
-          document.getElementById('loginError').textContent = data.error || 'Senha incorreta';
-          document.getElementById('loginError').style.display = 'block';
-        }
-      } catch (err) {
-        showToast('Erro ao fazer login', true);
-      }
-    });
-
     function logout() {
-      sessionStorage.removeItem('admin_token');
       location.reload();
     }
 
@@ -717,16 +677,13 @@
       await saveConfig('whatsapp', wa);
     }
 
-    // Generic save
+    // Generic save (sem autenticação)
     async function saveConfig(key, value) {
-      const token = sessionStorage.getItem('admin_token');
-
       try {
         const res = await fetch(`${API_URL}/api/admin/config`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({ key, value })
         });
@@ -760,12 +717,8 @@
       setTimeout(() => toast.remove(), 3000);
     }
 
-    // Check auth on load
-    if (sessionStorage.getItem('admin_token')) {
-      document.getElementById('loginScreen').style.display = 'none';
-      document.getElementById('mainApp').style.display = 'block';
-      loadConfigs();
-    }
+    // Auto-load configs on page load (sem autenticação)
+    loadConfigs();
   </script>
 </body>
 </html>
