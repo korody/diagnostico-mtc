@@ -17,21 +17,11 @@ async function deleteLead() {
 
   console.log(`\n🔍 Procurando lead com email: ${email}`);
 
-  // Buscar o lead primeiro (tentar ambos os formatos de coluna)
-  let { data: leads, error: searchError } = await supabase
+  // Buscar o lead
+  const { data: leads, error: searchError } = await supabase
     .from('quiz_leads')
     .select('*')
     .eq('email', email);
-
-  // Se não encontrou, tentar com EMAIL maiúsculo
-  if (!leads || leads.length === 0) {
-    const result = await supabase
-      .from('quiz_leads')
-      .select('*')
-      .eq('EMAIL', email);
-    leads = result.data;
-    searchError = result.error;
-  }
 
   if (searchError) {
     console.error('❌ Erro ao buscar lead:', searchError);
@@ -45,9 +35,9 @@ async function deleteLead() {
 
   console.log(`\n✅ Encontrado ${leads.length} registro(s):`);
   leads.forEach(lead => {
-    console.log(`   - ID: ${lead.id || lead.ID}`);
-    console.log(`   - Nome: ${lead.NOME}`);
-    console.log(`   - Email: ${lead.EMAIL}`);
+    console.log(`   - ID: ${lead.id}`);
+    console.log(`   - Nome: ${lead.nome}`);
+    console.log(`   - Email: ${lead.email}`);
     console.log(`   - Criado em: ${lead.created_at}`);
   });
 

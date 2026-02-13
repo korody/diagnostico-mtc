@@ -1,0 +1,496 @@
+{
+  "metadata": {
+    "source": "https://personagency.notion.site/3249d3136c3a4316b484a0cd805b3b8b?v=2e810a87bb6b80cd8168000c9ca9c600",
+    "extraction_date": "2026-01-13",
+    "total_extracted": 43,
+    "note": "Extracted from Biblioteca de Depoimentos Mestre Ye - Notion page 'Prints' tab"
+  },
+  "testimonials": [
+    {
+      "client_name": "Luiza Aparecida",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Além disso, os exercícios que eu achava difícil, agora estão fáceis",
+      "health_conditions": ["Exercícios Difíceis"],
+      "results_achieved": ["Progresso em exercícios que antes eram difíceis"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Graciela",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Excelente didática de ensino, minuciosa explicação dos movimentos",
+      "health_conditions": [],
+      "results_achieved": ["Facilidade de compreensão"],
+      "tags": ["Didática", "Curso"]
+    },
+    {
+      "client_name": "Marta Dias",
+      "age": null,
+      "source": "Youtube",
+      "testimonial": "Praticando desde março 2025, já sinto muitos resultados em dores e flexibilidade",
+      "health_conditions": ["Dor"],
+      "results_achieved": ["Alívio de Dores", "Melhora da Flexibilidade"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Conchita Miranda",
+      "age": 82,
+      "source": "Youtube",
+      "testimonial": "Tenho 82 anos e ainda dou aulas de Dança Circular",
+      "health_conditions": [],
+      "results_achieved": ["Vitalidade aos 82 anos", "Capacidade de dar aulas de dança"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Gladys Marinelli",
+      "age": null,
+      "source": "Youtube",
+      "testimonial": null,
+      "health_conditions": ["Câncer/Oncológica"],
+      "results_achieved": [],
+      "tags": []
+    },
+    {
+      "client_name": "Noemi",
+      "age": null,
+      "source": "Youtube",
+      "testimonial": "Sou aluna faz mais de 6 meses e é muito bom para o corpo e alma",
+      "health_conditions": [],
+      "results_achieved": ["Melhora da saúde"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Norci Araujo",
+      "age": 70,
+      "source": "Youtube",
+      "testimonial": "Tenho 70 anos e minha Fibromialgia melhorou 80%. Só não 100% porque não faço todos os dias",
+      "health_conditions": ["Fibromialgia"],
+      "results_achieved": ["Melhora de 80% da Fibromialgia"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "@cosarcadandu",
+      "age": 49,
+      "source": "Instagram",
+      "testimonial": "O meu corpo está se modelando como há 20 anos. A vitalidade, alegria, sem dores. Façam os exercícios.",
+      "health_conditions": ["Dor"],
+      "results_achieved": ["Alívio de Dores", "Aumento de energia", "Vitalidade", "Alegria"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Mara Cabral",
+      "age": null,
+      "source": "Instagram",
+      "testimonial": "Tenho artrite desde jovem, suas práticas me ajudam muito, meu sono melhorou muito",
+      "health_conditions": ["Artrite rematoide"],
+      "results_achieved": ["Dormir melhor", "Alívio dos sintomas de artrite"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Evelin Oliveira",
+      "age": null,
+      "source": "Facebook",
+      "testimonial": "Tinha dificuldade pra entender muitos detalhes do exercício",
+      "health_conditions": [],
+      "results_achieved": [],
+      "tags": ["Exercícios Difíceis", "Curso"]
+    },
+    {
+      "client_name": "Valda Maria dos Santos",
+      "age": null,
+      "source": "Instagram",
+      "testimonial": "Hoje eu estava muito ansiosa. Fiz movimentos que você postou aqui e me senti bem melhor.",
+      "health_conditions": ["Ansiedade"],
+      "results_achieved": ["Alívio de ansiedade"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Márcia Frazza",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Sua forma de explicar é muito clara e fácil de entender",
+      "health_conditions": [],
+      "results_achieved": ["Facilidade de compreensão"],
+      "tags": ["Exercícios Difíceis", "Curso", "Acupressão"]
+    },
+    {
+      "client_name": "Ana Pandini",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Fora de série, muito bem explicado",
+      "health_conditions": [],
+      "results_achieved": ["Facilidade de compreensão"],
+      "tags": ["Exercícios Difíceis", "Acupressão"]
+    },
+    {
+      "client_name": "Lidia Bazarian",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Aula eficaz, senti os efeitos da acupressão",
+      "health_conditions": [],
+      "results_achieved": ["Sentiu efeitos imediatos da acupressão"],
+      "tags": ["Curso", "Acupressão"]
+    },
+    {
+      "client_name": "Georgette Abdou da Silva",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Equilíbrio emocional, coordenação motora, reduz a ansiedade, o corpo fica leve e ao mesmo tempo forte.",
+      "health_conditions": ["Ansiedade"],
+      "results_achieved": ["Alívio de ansiedade", "Equilíbrio emocional", "Melhora da coordenação motora", "Corpo leve e forte"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Luiza Maria Saucedo Corrêa",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Tinha ansiedade, depois que comecei a fazer as aulas acalmou",
+      "health_conditions": ["Ansiedade"],
+      "results_achieved": ["Alívio de ansiedade"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Nancy Maria Costa de Oliveira",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Fiz um ótimo investimento em mim mesma",
+      "health_conditions": [],
+      "results_achieved": ["Satisfação com o investimento"],
+      "tags": ["Preço", "Curso"]
+    },
+    {
+      "client_name": "Evelin De Oliveira",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Ótima sequência de exercícios, estou impressionada com a eficácia das atividades.",
+      "health_conditions": [],
+      "results_achieved": ["Eficácia dos exercícios"],
+      "tags": ["Exercícios Difíceis", "Qi Gong", "Método"]
+    },
+    {
+      "client_name": "Silvana Marques",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": null,
+      "health_conditions": [],
+      "results_achieved": [],
+      "tags": ["Desafio 14 dias", "Método", "Mantras"]
+    },
+    {
+      "client_name": "Ana Maria Batista de Jesus",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Tem despertado a minha energia vital de uma maneira consciente e prazerosa",
+      "health_conditions": [],
+      "results_achieved": ["Melhora do Humor", "Despertar da energia vital"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Dalva Vieira De Carvalho",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Com os sons da MTC sinto a energia circular imediatamente.",
+      "health_conditions": [],
+      "results_achieved": ["Sensação de energia circulando"],
+      "tags": ["Mantras", "Método"]
+    },
+    {
+      "client_name": "Lourdes Brum",
+      "age": 72,
+      "source": "Youtube",
+      "testimonial": "Me senti renovada e minha filha autista teve um sono profundo.",
+      "health_conditions": ["Autismo (filha)"],
+      "results_achieved": ["Disposição", "Dormir melhor (filha autista)", "Renovação"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Marcia Miura",
+      "age": null,
+      "source": "Youtube",
+      "testimonial": "Tive dores na lombar e com práticas de Qi Gong todos os dias sumiram minhas dores",
+      "health_conditions": ["Dor na Lombar"],
+      "results_achieved": ["Alívio de Dores", "Eliminação completa da dor lombar"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Luiza Aparecida Ribeiro",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Tenho feito os exercícios que aprendi no evento. Vou introduzir novos exercícios, estou gostando desse começo de curso.",
+      "health_conditions": [],
+      "results_achieved": ["Disposição", "Dormir melhor"],
+      "tags": ["Curso", "Evento Aula 1", "Evento Aula 2", "Evento aula 3"]
+    },
+    {
+      "client_name": "Sandra Regina Braga",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": null,
+      "health_conditions": ["Dor"],
+      "results_achieved": ["Alívio de Dores", "Disposição", "Melhora da saúde"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Marcia de Moraes Braga",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Muito didático, isso facilita a compreensão dos exercícios",
+      "health_conditions": [],
+      "results_achieved": ["Facilidade de compreensão"],
+      "tags": ["Exercícios Difíceis", "Curso"]
+    },
+    {
+      "client_name": "Uryel Gabrielle Marconato Miranda",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Esse conhecimento da MTC é apaixonante. Já tenho uma ferramenta a mais para buscar a restauração.",
+      "health_conditions": [],
+      "results_achieved": ["Aprendizado de nova ferramenta para restauração"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Elizete Benedita de Lima",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Estou felicíssima pela oportunidade de ser a sua aluna",
+      "health_conditions": [],
+      "results_achieved": ["Satisfação com o curso"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "Silvana Marques (Desafio + Método)",
+      "age": null,
+      "source": "Memberkit",
+      "testimonial": "Após os exercícios faço respiração e com mantra me ajuda a relaxar muito.",
+      "health_conditions": [],
+      "results_achieved": ["Relaxamento"],
+      "tags": ["Curso"]
+    },
+    {
+      "client_name": "@cosarcadandu",
+      "age": null,
+      "source": "Instagram",
+      "testimonial": "Os seus exercícios são saúde na minha vida. São uma grande alegria na minha vida.",
+      "health_conditions": [],
+      "results_achieved": ["Saúde", "Alegria"],
+      "tags": ["Qi Gong"]
+    },
+    {
+      "client_name": "Valda Maria dos Santos",
+      "age": null,
+      "source": "Instagram",
+      "testimonial": "Estava ansiosa e me senti melhor. É lindo e prazeroso, mas não tenho disciplina.",
+      "health_conditions": ["Ansiedade"],
+      "results_achieved": ["Alívio de ansiedade"],
+      "tags": ["Qi Gong"]
+    }
+  ],
+  "categories_by_symptoms": {
+    "anxiety": {
+      "symptom": "Ansiedade",
+      "testimonials": [
+        {
+          "client": "Valda Maria dos Santos",
+          "age": null,
+          "result": "Alívio de ansiedade imediato após prática"
+        },
+        {
+          "client": "Georgette Abdou da Silva",
+          "age": null,
+          "result": "Redução da ansiedade, equilíbrio emocional"
+        },
+        {
+          "client": "Luiza Maria Saucedo Corrêa",
+          "age": null,
+          "result": "Ansiedade acalmou após começar as aulas"
+        },
+        {
+          "client": "Valda Maria dos Santos (duplicate)",
+          "age": null,
+          "result": "Sentiu-se melhor quando ansiosa"
+        }
+      ]
+    },
+    "pain": {
+      "symptom": "Dores (geral)",
+      "testimonials": [
+        {
+          "client": "Marta Dias",
+          "age": null,
+          "result": "Alívio de dores e melhora da flexibilidade"
+        },
+        {
+          "client": "@cosarcadandu",
+          "age": 49,
+          "result": "Sem dores, vitalidade como há 20 anos"
+        },
+        {
+          "client": "Marcia Miura",
+          "age": null,
+          "result": "Dores na lombar sumiram completamente"
+        },
+        {
+          "client": "Sandra Regina Braga",
+          "age": null,
+          "result": "Alívio de dores"
+        }
+      ]
+    },
+    "fibromyalgia": {
+      "symptom": "Fibromialgia",
+      "testimonials": [
+        {
+          "client": "Norci Araujo",
+          "age": 70,
+          "result": "Melhora de 80% da Fibromialgia (poderia ser 100% com prática diária)"
+        }
+      ]
+    },
+    "arthritis": {
+      "symptom": "Artrite Rematoide",
+      "testimonials": [
+        {
+          "client": "Mara Cabral",
+          "age": null,
+          "result": "Práticas ajudam muito, sono melhorou muito"
+        }
+      ]
+    },
+    "sleep": {
+      "symptom": "Problemas de Sono/Insônia",
+      "testimonials": [
+        {
+          "client": "Mara Cabral",
+          "age": null,
+          "result": "Sono melhorou muito"
+        },
+        {
+          "client": "Lourdes Brum",
+          "age": 72,
+          "result": "Filha autista teve sono profundo"
+        },
+        {
+          "client": "Luiza Aparecida Ribeiro",
+          "age": null,
+          "result": "Dormir melhor"
+        }
+      ]
+    },
+    "back_pain": {
+      "symptom": "Dor na Lombar/Costas",
+      "testimonials": [
+        {
+          "client": "Marcia Miura",
+          "age": null,
+          "result": "Dores na lombar sumiram com prática diária de Qi Gong"
+        }
+      ]
+    },
+    "energy_vitality": {
+      "symptom": "Falta de Energia/Vitalidade",
+      "testimonials": [
+        {
+          "client": "@cosarcadandu",
+          "age": 49,
+          "result": "Vitalidade, alegria, corpo modelado como há 20 anos"
+        },
+        {
+          "client": "Lourdes Brum",
+          "age": 72,
+          "result": "Sentiu-se renovada, disposição"
+        },
+        {
+          "client": "Ana Maria Batista de Jesus",
+          "age": null,
+          "result": "Energia vital despertada"
+        },
+        {
+          "client": "Dalva Vieira De Carvalho",
+          "age": null,
+          "result": "Sente energia circular imediatamente"
+        }
+      ]
+    },
+    "oncology": {
+      "symptom": "Câncer/Oncologia",
+      "testimonials": [
+        {
+          "client": "Gladys Marinelli",
+          "age": null,
+          "result": "Paciente oncológica (detalhes não especificados)"
+        }
+      ]
+    },
+    "special_needs": {
+      "symptom": "Autismo (familiar)",
+      "testimonials": [
+        {
+          "client": "Lourdes Brum (filha)",
+          "age": null,
+          "result": "Filha autista teve sono profundo após práticas"
+        }
+      ]
+    },
+    "flexibility": {
+      "symptom": "Falta de Flexibilidade",
+      "testimonials": [
+        {
+          "client": "Marta Dias",
+          "age": null,
+          "result": "Melhora da flexibilidade"
+        },
+        {
+          "client": "Luiza Aparecida",
+          "age": null,
+          "result": "Exercícios que eram difíceis ficaram fáceis"
+        }
+      ]
+    }
+  },
+  "compilation_pages": [
+    {
+      "title": "Compilado de DORES",
+      "source": "Youtube",
+      "tags": ["Alívio de Dores", "redução de remédios", "Qi Gong"],
+      "note": "Página com múltiplos depoimentos sobre alívio de dores"
+    },
+    {
+      "title": "ZUMBIDO E LABIRINTITE",
+      "source": "Youtube",
+      "tags": ["Método"],
+      "note": "Página específica sobre zumbido e labirintite"
+    },
+    {
+      "title": "QIG13 | Comentários CPL1",
+      "tags": ["Alívio de Dores", "Hérnia de disco", "Dormir melhor", "Evento Aula 1"]
+    },
+    {
+      "title": "Comentários CPL1 | QIG14",
+      "source": "Youtube",
+      "tags": ["Evento Aula 1"]
+    },
+    {
+      "title": "Comentários CPL2 | QIG14",
+      "source": "Youtube",
+      "tags": ["Evento Aula 2"]
+    },
+    {
+      "title": "Comentários CPL3 | QIG14",
+      "source": "Youtube",
+      "tags": ["Evento aula 3"]
+    },
+    {
+      "title": "Retiro Revitaliza com Mestre Ye",
+      "tags": ["Alívio de Dores", "Retiro"]
+    }
+  ],
+  "notes": [
+    "Some entries are compilation pages containing multiple testimonials that would need individual access",
+    "The Notion page uses lazy loading, so not all 100+ testimonials may have been visible",
+    "Some testimonials have limited information (only tags, no full text)",
+    "Age information is only available for some clients (Conchita Miranda: 82, Norci Araujo: 70, Lourdes Brum: 72, @cosarcadandu: 49)",
+    "Main health conditions found: Anxiety, Pain (general and specific), Fibromyalgia, Arthritis, Sleep disorders, Low back pain, Low energy, Cancer, Autism (family member), Flexibility issues",
+    "Common results: Pain relief, anxiety reduction, better sleep, increased energy/vitality, improved flexibility, medication reduction"
+  ]
+}
