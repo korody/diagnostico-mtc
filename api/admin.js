@@ -13,15 +13,21 @@ module.exports = async (req, res) => {
   const isConfigEndpoint = path.includes('/config') || path.includes('config=');
 
   // ============================================
-  // ENDPOINT: /api/admin/login (sem autenticação)
+  // ENDPOINT: /api/admin/login
   // ============================================
   if (isLoginEndpoint) {
     if (req.method !== 'POST') {
       return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Login sem senha - sempre permitir acesso
-    return res.json({ success: true, message: 'Autenticado' });
+    const { password } = req.body || {};
+    const expectedPassword = process.env.ADMIN_SECRET || 'admin123';
+
+    if (password === expectedPassword) {
+      return res.json({ success: true, token: expectedPassword });
+    } else {
+      return res.status(401).json({ success: false, error: 'Senha incorreta' });
+    }
   }
 
   // ============================================
@@ -66,8 +72,16 @@ module.exports = async (req, res) => {
       }
     }
 
-    // POST: Escrita sem autenticação
+    // POST: Escrita protegida por token
     if (req.method === 'POST') {
+      const authHeader = req.headers.authorization || '';
+      const token = authHeader.replace('Bearer ', '');
+      const expectedPassword = process.env.ADMIN_SECRET || 'admin123';
+
+      if (token !== expectedPassword) {
+        return res.status(401).json({ success: false, error: 'Não autorizado' });
+      }
+
       try {
         const { key, value } = req.body;
         if (!key || value === undefined) {

@@ -313,16 +313,27 @@
   </style>
 </head>
 <body>
-  <!-- Login Screen (bypass direto) -->
-  <div id="loginScreen" class="login-screen" style="display: none;">
+  <!-- Login Screen -->
+  <div id="loginScreen" class="login-screen">
     <div class="login-card">
       <h1>🔐 Admin</h1>
-      <p>Carregando painel...</p>
+      <p>Painel de Configurações - Quiz MTC</p>
+      <form id="loginForm" onsubmit="handleLogin(event)">
+        <input
+          type="password"
+          id="passwordInput"
+          placeholder="Digite a senha admin"
+          required
+          autocomplete="current-password"
+        />
+        <button type="submit" style="width: 100%;">Entrar</button>
+      </form>
+      <p id="loginError" style="color: #ef4444; margin-top: 16px; display: none;"></p>
     </div>
   </div>
 
   <!-- Main App -->
-  <div id="mainApp" class="main-app" style="display: block;">
+  <div id="mainApp" class="main-app" style="display: none;">
     <div class="container">
       <header>
         <div>
@@ -445,8 +456,49 @@
     let configs = {};
     const CATEGORIAS_DEPOIMENTOS = ['ansiedade', 'dor_lombar', 'dor_geral', 'insonia', 'zumbido', 'universal'];
 
+    // Autenticação
+    async function handleLogin(e) {
+      e.preventDefault();
+      const password = document.getElementById('passwordInput').value;
+      const errorEl = document.getElementById('loginError');
+
+      try {
+        const res = await fetch(`${API_URL}/api/admin/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+
+        const data = await res.json();
+
+        if (data.success && data.token) {
+          sessionStorage.setItem('admin_token', data.token);
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('mainApp').style.display = 'block';
+          errorEl.style.display = 'none';
+          loadConfigs();
+        } else {
+          errorEl.textContent = data.error || 'Senha incorreta';
+          errorEl.style.display = 'block';
+        }
+      } catch (err) {
+        errorEl.textContent = 'Erro ao fazer login: ' + err.message;
+        errorEl.style.display = 'block';
+      }
+    }
+
     function logout() {
+      sessionStorage.removeItem('admin_token');
       location.reload();
+    }
+
+    function checkAuth() {
+      const token = sessionStorage.getItem('admin_token');
+      if (token) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        loadConfigs();
+      }
     }
 
     // Load configs
@@ -708,13 +760,21 @@
       await saveConfig('whatsapp', wa);
     }
 
-    // Generic save (sem autenticação)
+    // Generic save (com autenticação)
     async function saveConfig(key, value) {
+      const token = sessionStorage.getItem('admin_token');
+      if (!token) {
+        showToast('Sessão expirada. Faça login novamente.', true);
+        setTimeout(() => location.reload(), 2000);
+        return;
+      }
+
       try {
         const res = await fetch(`${API_URL}/api/admin/config`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({ key, value })
         });
@@ -748,8 +808,8 @@
       setTimeout(() => toast.remove(), 3000);
     }
 
-    // Auto-load configs on page load (sem autenticação)
-    loadConfigs();
+    // Verificar autenticação ao carregar página
+    checkAuth();
   </script>
 </body>
 </html>
