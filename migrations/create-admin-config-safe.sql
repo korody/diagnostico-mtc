@@ -110,7 +110,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "preco": 4764,
     "de": 5800,
     "parcelas": "12x de R$ 397",
-    "url": "https://curso.qigongbrasil.com/pay/plano-de-saude?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/plano-de-saude?utm_source=DEX",
     "categoria": "high-end",
     "minScore": 50,
     "beneficios": [
@@ -126,7 +126,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "nome": "Saúde & Longevidade Qi Gong",
     "preco": 1197,
     "de": 1697,
-    "url": "https://curso.qigongbrasil.com/pay/qig-ob?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/qig-ob?utm_source=DEX",
     "categoria": "back-end",
     "minScore": 40,
     "beneficios": [
@@ -139,7 +139,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
   "protocoloLombar": {
     "nome": "Protocolo Intensivo Dor na Lombar",
     "preco": 997,
-    "url": "https://curso.qigongbrasil.com/pay/pdl-mestre-ye?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/pdl-mestre-ye?utm_source=DEX",
     "sintomas": ["dor_lombar", "dor_costas", "coluna"],
     "beneficios": [
       "Protocolo de 21 dias para eliminar dor lombar",
@@ -151,7 +151,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "nome": "Protocolo Intensivo Zumbido/Labirintite",
     "preco": 697,
     "de": 997,
-    "url": "https://curso.qigongbrasil.com/pay/mestre-ye-czl?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/mestre-ye-czl?utm_source=DEX",
     "sintomas": ["zumbido", "tontura", "labirintite"],
     "beneficios": [
       "Alivie ou elimine zumbido naturalmente",
@@ -163,7 +163,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "nome": "5 Elementos da Medicina Chinesa",
     "preco": 297,
     "de": 497,
-    "url": "https://curso.qigongbrasil.com/pay/elementos-medicina-tradicional-chinesa?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/elementos-medicina-tradicional-chinesa?utm_source=DEX",
     "categoria": "workshop",
     "elementos": ["todos"],
     "beneficios": [
@@ -176,7 +176,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "nome": "Toque da Cura: Os 7 Pontos da Vitalidade",
     "preco": 297,
     "de": 497,
-    "url": "https://curso.qigongbrasil.com/pay/toque-da-cura?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/toque-da-cura?utm_source=DEX",
     "categoria": "workshop",
     "beneficios": [
       "Curso de Tui Na (acupressão)",
@@ -188,7 +188,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "nome": "Sopro da Cura: Mantras & Respirações",
     "preco": 297,
     "de": 497,
-    "url": "https://curso.qigongbrasil.com/pay/mantra-e-respiracao?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/mantra-e-respiracao?utm_source=DEX",
     "categoria": "workshop",
     "elementos": ["CORACAO", "PULMAO"],
     "beneficios": [
@@ -201,7 +201,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "nome": "Diagnóstico MTC Completo",
     "preco": 29.90,
     "de": 197,
-    "url": "https://mestreye.com/diagnostico-mtc?utm_source=digital-mestre-ye",
+    "url": "https://mestreye.com/diagnostico-mtc?utm_source=DEX",
     "categoria": "front-end",
     "beneficios": [
       "Consulta de 45 minutos",
@@ -215,7 +215,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "preco": 29.90,
     "de": 129.90,
     "recorrente": true,
-    "url": "https://digital.mestreye.com/chat?utm_source=digital-mestre-ye",
+    "url": "https://digital.mestreye.com/chat?utm_source=DEX",
     "categoria": "front-end",
     "beneficios": [
       "IA treinada pelo Mestre Ye",
@@ -228,7 +228,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
     "nome": "Saúde Para Todos - Aulas Semanais",
     "preco": 97,
     "recorrente": true,
-    "url": "https://curso.qigongbrasil.com/pay/spt?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/spt?utm_source=DEX",
     "categoria": "front-end",
     "beneficios": [
       "Aulas ao vivo online 4x por semana",
@@ -240,7 +240,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
   "ebookLombar": {
     "nome": "E-book: Método Ye Xin para Lombar",
     "preco": 29,
-    "url": "https://curso.qigongbrasil.com/pay/ebook-mestre-ye?utm_source=digital-mestre-ye",
+    "url": "https://curso.qigongbrasil.com/pay/ebook-mestre-ye?utm_source=DEX",
     "sintomas": ["dor_lombar", "dor_costas"],
     "beneficios": [
       "Exercícios específicos para lombar",
@@ -251,7 +251,7 @@ INSERT INTO admin_config (config_key, config_value) VALUES ('produtos', '{
   "retiroQigong": {
     "nome": "Retiro de Qi Gong com Mestre Ye",
     "preco": 3997,
-    "url": "https://retiro.qigongbrasil.com/?utm_source=digital-mestre-ye",
+    "url": "https://retiro.qigongbrasil.com/?utm_source=DEX",
     "categoria": "evento-presencial",
     "data": "3 dias de imersão completa",
     "beneficios": [
