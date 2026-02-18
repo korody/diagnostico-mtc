@@ -14,7 +14,8 @@
   ],
   "rewrites": [
     { "source": "/api/admin/config", "destination": "/api/admin" },
-    { "source": "/api/admin/login", "destination": "/api/admin" }
+    { "source": "/api/admin/login", "destination": "/api/admin" },
+    { "source": "/admin", "destination": "/admin.html" }
   ],
   "headers": [
     {
