@@ -586,7 +586,7 @@ app.get('/api/leads/search', async (req, res) => {
 // ===== ROTA: SUBMIT QUIZ =====
 app.post('/api/submit', async (req, res) => {
   try {
-    const { lead, respostas, funil } = req.body;
+    const { lead, respostas, funil, utm_campaign } = req.body;
     
     console.log('\n📥 NOVO QUIZ:', lead.NOME);
     
@@ -663,7 +663,9 @@ app.post('/api/submit', async (req, res) => {
         0
       ) : null,
       // Tipo de funil (perpétuo ou lançamento)
-      funil: funil || 'perpetuo'
+      funil: funil || 'perpetuo',
+      // Rastreamento de campanha
+      utm_campaign: utm_campaign || null
     };
     
     // ============================================

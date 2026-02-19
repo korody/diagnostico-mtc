@@ -24,7 +24,8 @@ const QuizMTC = () => {
       email: getParam('email', 'e-mail', 'mail'),
       celular: getParam('celular', 'telefone', 'phone', 'whatsapp', 'tel'),
       leadId: getParam('leadId', 'lead_id', 'id'),
-      funil: getParam('funil', 'funnel') || 'perpetuo' // 'perpetuo' ou 'lancamento'
+      funil: getParam('funil', 'funnel') || 'perpetuo', // 'perpetuo' ou 'lancamento'
+      utm_campaign: getParam('utm_campaign') || null
     };
   };
 
@@ -35,6 +36,7 @@ const QuizMTC = () => {
 
   const [step, setStep] = useState(temDadosURL ? 'quiz' : 'identificacao');
   const [funil, setFunil] = useState(urlParams.funil); // 'perpetuo' ou 'lancamento'
+  const [utmCampaign] = useState(urlParams.utm_campaign); // capturado uma vez e persistido
   const [dadosLead, setDadosLead] = useState({
     NOME: urlParams.nome,
     EMAIL: urlParams.email,
@@ -55,7 +57,8 @@ const QuizMTC = () => {
   // URLs dos funis (carregadas do admin com fallback)
   const [funilUrls, setFunilUrls] = useState({
     perpetuo_url: '/resultados.html', // Fallback
-    lancamento_url: 'https://mestre-ye.vercel.app' // Fallback
+    lancamento_url: 'https://mestre-ye.vercel.app', // Fallback
+    campanhas: [] // Lista de campanhas com utm_campaign e url
   });
 
   // Carregar configuração de funis do painel admin
@@ -670,7 +673,8 @@ const QuizMTC = () => {
           CELULAR: celularE164 // Envia em formato E.164
         },
         respostas: respostas,
-        funil: funil // 'perpetuo' ou 'lancamento'
+        funil: funil, // 'perpetuo' ou 'lancamento'
+        utm_campaign: utmCampaign || null
       };
       
       console.log('📞 Telefone formatado para E.164:', celularE164);
@@ -719,18 +723,25 @@ const QuizMTC = () => {
         console.log('  Diagnóstico:', result.diagnostico);
         console.log('  Redirect URL:', result.redirect_url);
         
-        // Redirect baseado no funil (usando URLs do admin ou fallback)
+        // Redirect baseado em utm_campaign (prioridade) ou funil (fallback)
         const baseUrl = window.location.hostname === 'localhost'
           ? 'http://localhost:3001'
           : '';
 
         let redirectUrl;
-        if (funil === 'lancamento') {
-          // Funil de Lançamento - URL dinâmica do admin
+        const campanhas = funilUrls.campanhas || [];
+        const campanha = utmCampaign ? campanhas.find(c => c.utm_campaign === utmCampaign) : null;
+
+        if (campanha) {
+          // Campanha específica encontrada pelo utm_campaign
+          const url = campanha.url.startsWith('http') ? campanha.url : `${baseUrl}${campanha.url}`;
+          redirectUrl = `${url}?email=${encodeURIComponent(dadosLead.EMAIL)}`;
+        } else if (funil === 'lancamento') {
+          // Fallback: funil de lançamento
           const lancamentoUrl = funilUrls.lancamento_url || 'https://mestre-ye.vercel.app';
           redirectUrl = `${lancamentoUrl}?email=${encodeURIComponent(dadosLead.EMAIL)}`;
         } else {
-          // Funil Perpétuo - Página de resultados (dinâmica do admin)
+          // Fallback: funil perpétuo
           const perpetuoUrl = funilUrls.perpetuo_url || '/resultados.html';
           const fullPerpetuoUrl = perpetuoUrl.startsWith('http') ? perpetuoUrl : `${baseUrl}${perpetuoUrl}`;
           redirectUrl = `${fullPerpetuoUrl}?email=${encodeURIComponent(dadosLead.EMAIL)}`;

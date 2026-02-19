@@ -366,36 +366,36 @@
       <div id="tab-funis" class="tab-content">
         <div class="section">
           <h2>URLs dos Funis</h2>
+
           <div class="form-group">
-            <label>URL Funil Perpétuo</label>
+            <label>URL Padrão (sem campanha)</label>
             <input type="text" id="funil_perpetuo_url" placeholder="/resultados.html" />
-            <small>Página de resultados padrão (funil evergreen)</small>
+            <small>Usada quando nenhum utm_campaign é reconhecido (funil evergreen)</small>
           </div>
-          <div class="form-group">
-            <label>URL Funil Lançamento</label>
-            <input type="url" id="funil_lancamento_url" placeholder="https://mestre-ye.vercel.app" />
-            <small>Página VSL de lançamento (campanhas temporárias)</small>
+
+          <h3 style="margin-top: 28px; margin-bottom: 16px; color: #a5b4fc;">Campanhas por utm_campaign</h3>
+          <div id="campanhasList"></div>
+          <div class="btn-group" style="margin-top: 12px;">
+            <button onclick="addCampanha()">+ Nova Campanha</button>
+            <button onclick="saveFunis()" style="background: #22c55e;">💾 Salvar Funis</button>
           </div>
-          <button onclick="saveFunis()" style="background: #22c55e;">💾 Salvar Funis</button>
 
           <div style="margin-top: 32px; padding: 20px; background: #252836; border-radius: 12px; border-left: 4px solid #6366f1;">
-            <h3 style="color: #6366f1; margin-bottom: 12px; font-size: 16px;">📍 Como acionar cada funil</h3>
-            <div style="margin-bottom: 16px;">
-              <strong style="color: #e5e7eb;">Funil Perpétuo (padrão):</strong>
-              <code style="display: block; background: #1a1d27; padding: 8px 12px; border-radius: 6px; margin-top: 6px; color: #9ca3af; font-family: monospace;">
-                https://quiz.qigongbrasil.com/?email=teste@email.com
+            <h3 style="color: #6366f1; margin-bottom: 12px; font-size: 16px;">📍 Como funciona o roteamento</h3>
+            <p style="color: #9ca3af; font-size: 13px; margin-bottom: 12px;">O quiz lê o parâmetro <code style="background:#1a1d27;padding:2px 6px;border-radius:4px;">utm_campaign</code> da URL de entrada e redireciona para a URL configurada na campanha correspondente.</p>
+            <div style="margin-bottom: 12px;">
+              <strong style="color: #e5e7eb; font-size: 13px;">Exemplo com campanha DEX:</strong>
+              <code style="display: block; background: #1a1d27; padding: 8px 12px; border-radius: 6px; margin-top: 6px; color: #9ca3af; font-family: monospace; font-size: 12px;">
+                https://quiz.qigongbrasil.com/?email=...&utm_campaign=dex
+              </code>
+            </div>
+            <div>
+              <strong style="color: #e5e7eb; font-size: 13px;">Sem campanha (padrão):</strong>
+              <code style="display: block; background: #1a1d27; padding: 8px 12px; border-radius: 6px; margin-top: 6px; color: #9ca3af; font-family: monospace; font-size: 12px;">
+                https://quiz.qigongbrasil.com/?email=...
               </code>
               <small style="color: #6b7280; display: block; margin-top: 4px;">
                 ➜ Redireciona para: <span style="color: #9ca3af;" id="display_perpetuo_url">/resultados.html</span>
-              </small>
-            </div>
-            <div>
-              <strong style="color: #e5e7eb;">Funil Lançamento:</strong>
-              <code style="display: block; background: #1a1d27; padding: 8px 12px; border-radius: 6px; margin-top: 6px; color: #9ca3af; font-family: monospace;">
-                https://quiz.qigongbrasil.com/?email=teste@email.com&funil=lancamento
-              </code>
-              <small style="color: #6b7280; display: block; margin-top: 4px;">
-                ➜ Redireciona para: <span style="color: #9ca3af;" id="display_lancamento_url">https://mestre-ye.vercel.app</span>
               </small>
             </div>
           </div>
@@ -621,22 +621,74 @@
     function renderFunis() {
       const funis = configs.funis || {};
       const perpetuoUrl = funis.perpetuo_url || '/resultados.html';
-      const lancamentoUrl = funis.lancamento_url || 'https://mestre-ye.vercel.app';
 
       document.getElementById('funil_perpetuo_url').value = perpetuoUrl;
-      document.getElementById('funil_lancamento_url').value = lancamentoUrl;
 
-      // Atualizar displays informativos
       const displayPerpetuoEl = document.getElementById('display_perpetuo_url');
-      const displayLancamentoEl = document.getElementById('display_lancamento_url');
       if (displayPerpetuoEl) displayPerpetuoEl.textContent = perpetuoUrl;
-      if (displayLancamentoEl) displayLancamentoEl.textContent = lancamentoUrl;
+
+      renderCampanhas(funis.campanhas || []);
+    }
+
+    function renderCampanhas(campanhas) {
+      const container = document.getElementById('campanhasList');
+      if (!container) return;
+
+      if (campanhas.length === 0) {
+        container.innerHTML = '<p style="color:#6b7280;font-size:13px;">Nenhuma campanha cadastrada. Clique em "+ Nova Campanha" para adicionar.</p>';
+        return;
+      }
+
+      container.innerHTML = campanhas.map((c, idx) => `
+        <div class="product-card" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <strong style="color:#e5e7eb;">Campanha #${idx + 1}</strong>
+            <button class="danger" onclick="removeCampanha(${idx})">Remover</button>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Nome da campanha</label>
+              <input type="text" data-campanha="${idx}" data-field="nome" value="${c.nome || ''}" placeholder="Ex: Lançamento QGS 1" />
+            </div>
+            <div class="form-group">
+              <label>utm_campaign</label>
+              <input type="text" data-campanha="${idx}" data-field="utm_campaign" value="${c.utm_campaign || ''}" placeholder="Ex: qgs1" style="font-family:monospace;" />
+              <small>URL de entrada: <code style="color:#a5b4fc;">?utm_campaign=${c.utm_campaign || '...'}</code></small>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>URL de destino</label>
+            <input type="url" data-campanha="${idx}" data-field="url" value="${c.url || ''}" placeholder="https://..." style="width:100%;" />
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function addCampanha() {
+      if (!configs.funis) configs.funis = {};
+      if (!configs.funis.campanhas) configs.funis.campanhas = [];
+      configs.funis.campanhas.push({ nome: '', utm_campaign: '', url: '' });
+      renderFunis();
+    }
+
+    function removeCampanha(idx) {
+      if (!confirm('Remover esta campanha?')) return;
+      configs.funis.campanhas.splice(idx, 1);
+      renderFunis();
     }
 
     async function saveFunis() {
+      const campanhas = [];
+      document.querySelectorAll('[data-campanha]').forEach(input => {
+        const idx = parseInt(input.dataset.campanha);
+        const field = input.dataset.field;
+        if (!campanhas[idx]) campanhas[idx] = {};
+        campanhas[idx][field] = input.value.trim();
+      });
+
       const funis = {
         perpetuo_url: document.getElementById('funil_perpetuo_url').value,
-        lancamento_url: document.getElementById('funil_lancamento_url').value
+        campanhas: campanhas.filter(c => c && c.utm_campaign)
       };
       await saveConfig('funis', funis);
     }

@@ -64,7 +64,7 @@ module.exports = async (req, res) => {
     const reqId = (logger && typeof logger.mkid === 'function') ? logger.mkid() : `req-${Date.now()}`;
     logger && logger.info && logger.info(reqId, '📥 Requisição recebida em /api/submit', { env: { SUPABASE_URL: !!process.env.SUPABASE_URL, SUPABASE_KEY: !!process.env.SUPABASE_KEY } });
     
-    const { lead, respostas } = req.body;
+    const { lead, respostas, utm_campaign } = req.body;
 
     // Validações básicas
     if (!lead || !lead.NOME || !lead.EMAIL || !lead.CELULAR) {
@@ -162,6 +162,8 @@ module.exports = async (req, res) => {
       objecao_principal: dadosArquetipo.objecao_principal,
       autonomia_decisao: dadosArquetipo.autonomia_decisao,
       investimento_mensal_atual: dadosArquetipo.investimento_mensal_atual,
+      // Rastreamento de campanha
+      utm_campaign: utm_campaign || null,
       // Novos campos de segmentação e qualificação
       estado: respostas.P17 || null,
       custo_mensal_problema: respostas.P21 ? (
