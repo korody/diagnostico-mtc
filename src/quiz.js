@@ -783,7 +783,7 @@ if (step === 'identificacao') {
           
           {/* Botão de Suporte - Discreto no canto */}
           <a
-            href="https://wa.me/5511998457676?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
+            href="https://wa.me/5511950879456?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-3 right-3 flex items-center gap-1.5 text-slate-400 hover:text-green-500 transition-colors duration-200 group"
@@ -1015,7 +1015,7 @@ if (step === 'quiz') {
           
           {/* Botão de Suporte - Discreto no canto */}
           <a
-            href="https://wa.me/5511998457676?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
+            href="https://wa.me/5511950879456?text=Olá!%20Estou%20com%20problema%20no%20quiz%20de%20diagnóstico"
             target="_blank"
             rel="noopener noreferrer"
             className="absolute top-3 right-3 flex items-center gap-1.5 text-slate-400 hover:text-green-500 transition-colors duration-200 group"
@@ -1611,7 +1611,7 @@ if (step === 'resultado') {
           </a>
 
           <a
-            href="https://wa.me/5511998457676?text=Olá!%20Finalizei%20meu%20diagnóstico%20e%20gostaria%20de%20falar%20com%20um%20especialista"
+            href="https://wa.me/5511950879456?text=Olá!%20Finalizei%20meu%20diagnóstico%20e%20gostaria%20de%20falar%20com%20um%20especialista"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-6 px-8 rounded-xl transition-all duration-200 border-2 border-slate-300 hover:border-slate-400 shadow-lg flex items-center justify-center gap-3 transform hover:scale-[1.02]"
