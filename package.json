@@ -49,6 +49,7 @@
     "audio:prod": "cross-env NODE_ENV=production node mensagem-voz-personalizada.js"
   },
   "dependencies": {
+    "@supabase/storage-js": "^2.109.0",
     "@supabase/supabase-js": "^2.76.0",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
