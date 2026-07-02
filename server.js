@@ -1321,12 +1321,13 @@ app.post('/api/referral-link', (req, res) => require('./api/referral-link')(req,
 // ========================================
 // ROTAS ADMIN
 // ========================================
-const adminConfigHandler = require('./api/admin/config');
-const adminLoginHandler = require('./api/admin/login');
+// Handler unificado (mesmo arquivo usado pelas serverless functions no Vercel);
+// detecta login vs config pelo caminho da requisição (req.url).
+const adminHandler = require('./api/admin');
 
-app.post('/api/admin/login', (req, res) => adminLoginHandler(req, res));
-app.get('/api/admin/config', (req, res) => adminConfigHandler(req, res));
-app.post('/api/admin/config', (req, res) => adminConfigHandler(req, res));
+app.post('/api/admin/login', (req, res) => adminHandler(req, res));
+app.get('/api/admin/config', (req, res) => adminHandler(req, res));
+app.post('/api/admin/config', (req, res) => adminHandler(req, res));
 
 const PORT = process.env.PORT || 3001;
 
