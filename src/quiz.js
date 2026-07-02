@@ -732,9 +732,16 @@ const QuizMTC = () => {
         const campanhas = funilUrls.campanhas || [];
         const campanha = utmCampaign ? campanhas.find(c => c.utm_campaign === utmCampaign) : null;
 
-        if (campanha) {
+        // Elemento diagnosticado (RIM, FÍGADO, BAÇO, CORAÇÃO, PULMÃO) para URL específica
+        const elemento = result.diagnostico && result.diagnostico.elemento;
+        // URL específica do elemento → senão URL de destino padrão da campanha
+        const urlCampanha = campanha
+          ? ((campanha.urls_por_elemento && elemento && campanha.urls_por_elemento[elemento]) || campanha.url)
+          : null;
+
+        if (campanha && urlCampanha) {
           // Campanha específica encontrada pelo utm_campaign
-          const url = campanha.url.startsWith('http') ? campanha.url : `${baseUrl}${campanha.url}`;
+          const url = urlCampanha.startsWith('http') ? urlCampanha : `${baseUrl}${urlCampanha}`;
           redirectUrl = `${url}?email=${encodeURIComponent(dadosLead.EMAIL)}`;
         } else if (funil === 'lancamento') {
           // Fallback: funil de lançamento

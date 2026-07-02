@@ -633,6 +633,15 @@
       renderCampanhas(funis.campanhas || []);
     }
 
+    // Tipos de diagnóstico (5 elementos da MTC) — chaves iguais às do api/diagnosticos.json
+    const ELEMENTOS_DIAGNOSTICO = [
+      { key: 'RIM', emoji: '🌊', nome: 'Água (Rins)' },
+      { key: 'FÍGADO', emoji: '🌳', nome: 'Madeira (Fígado)' },
+      { key: 'BAÇO', emoji: '🌍', nome: 'Terra (Baço)' },
+      { key: 'CORAÇÃO', emoji: '🔥', nome: 'Fogo (Coração)' },
+      { key: 'PULMÃO', emoji: '💨', nome: 'Metal (Pulmões)' }
+    ];
+
     function renderCampanhas(campanhas) {
       const container = document.getElementById('campanhasList');
       if (!container) return;
@@ -642,7 +651,17 @@
         return;
       }
 
-      container.innerHTML = campanhas.map((c, idx) => `
+      container.innerHTML = campanhas.map((c, idx) => {
+        const urlsElem = c.urls_por_elemento || {};
+        const preenchidos = ELEMENTOS_DIAGNOSTICO.filter(e => urlsElem[e.key]).length;
+        const camposElemento = ELEMENTOS_DIAGNOSTICO.map(e => `
+          <div class="form-group">
+            <label>${e.emoji} ${e.nome}</label>
+            <input type="url" data-campanha="${idx}" data-elemento="${e.key}" value="${urlsElem[e.key] || ''}" placeholder="Usa a URL padrão se vazio" style="width:100%;" />
+          </div>
+        `).join('');
+
+        return `
         <div class="product-card" style="margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
             <strong style="color:#e5e7eb;">Campanha #${idx + 1}</strong>
@@ -660,11 +679,20 @@
             </div>
           </div>
           <div class="form-group">
-            <label>URL de destino</label>
+            <label>URL de destino padrão</label>
             <input type="url" data-campanha="${idx}" data-field="url" value="${c.url || ''}" placeholder="https://..." style="width:100%;" />
+            <small>Usada quando não houver URL específica para o elemento diagnosticado.</small>
           </div>
+          <details style="margin-top:8px;border:1px solid #2a2f3a;border-radius:8px;padding:0 12px;">
+            <summary style="cursor:pointer;padding:12px 0;color:#a5b4fc;font-size:13px;font-weight:600;">
+              URLs por diagnóstico (opcional)${preenchidos ? ` — ${preenchidos} configurada(s)` : ''}
+            </summary>
+            <p style="color:#9ca3af;font-size:12px;margin:0 0 12px;">Se preenchido, o lead com esse diagnóstico é redirecionado para a URL abaixo. Caso contrário, cai na URL de destino padrão acima.</p>
+            <div class="grid-2">${camposElemento}</div>
+          </details>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function addCampanha() {
@@ -684,9 +712,17 @@
       const campanhas = [];
       document.querySelectorAll('[data-campanha]').forEach(input => {
         const idx = parseInt(input.dataset.campanha);
-        const field = input.dataset.field;
         if (!campanhas[idx]) campanhas[idx] = {};
-        campanhas[idx][field] = input.value.trim();
+        const val = input.value.trim();
+        if (input.dataset.elemento) {
+          // URL específica por diagnóstico — só grava se preenchida
+          if (val) {
+            if (!campanhas[idx].urls_por_elemento) campanhas[idx].urls_por_elemento = {};
+            campanhas[idx].urls_por_elemento[input.dataset.elemento] = val;
+          }
+        } else if (input.dataset.field) {
+          campanhas[idx][input.dataset.field] = val;
+        }
       });
 
       const funis = {
