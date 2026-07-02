@@ -189,6 +189,73 @@ if (funil === 'lancamento') {
 }
 ```
 
+## URLs por Diagnóstico (por Campanha)
+
+Além da URL de destino única por campanha, cada campanha (identificada por
+`utm_campaign`) pode ter uma **URL de destino específica para cada tipo de
+diagnóstico** (elemento da MTC). Configurável no painel admin, sem editar código.
+
+### Tipos de diagnóstico (elementos)
+
+As chaves são as mesmas de `api/diagnosticos.json`:
+
+| Chave | Elemento |
+|-------|----------|
+| `RIM` | Água 🌊 (Rins) |
+| `FÍGADO` | Madeira 🌳 (Fígado) |
+| `BAÇO` | Terra 🌍 (Baço) |
+| `CORAÇÃO` | Fogo 🔥 (Coração) |
+| `PULMÃO` | Metal 💨 (Pulmões) |
+
+### Regra de redirecionamento (cascata)
+
+Ao finalizar o quiz, o destino é escolhido nesta ordem de prioridade:
+
+1. **URL do elemento diagnosticado** — se a campanha tiver uma URL cadastrada
+   para o elemento resultante (`urls_por_elemento[ELEMENTO]`).
+2. **URL de destino padrão da campanha** — usada quando não há URL específica
+   para aquele elemento (campo `url` da campanha).
+3. **URL Padrão global (perpétuo)** — fallback quando nenhuma campanha bate com
+   o `utm_campaign` (`perpetuo_url`).
+
+É retrocompatível: campanhas antigas (sem `urls_por_elemento`) continuam usando
+apenas a URL de destino padrão.
+
+### Como configurar (painel admin)
+
+1. Aba **Funis e URLs** → localize a campanha desejada.
+2. Preencha a **URL de destino padrão** (obrigatória — é o fallback).
+3. Abra **"URLs por diagnóstico (opcional)"** e preencha só os elementos que
+   precisam de destino próprio. Os vazios caem na URL padrão.
+4. **Salvar Funis**.
+
+### Estrutura salva no Supabase (config `funis`)
+
+```json
+{
+  "perpetuo_url": "/resultados.html",
+  "campanhas": [
+    {
+      "nome": "Qi Gong toda Semana",
+      "utm_campaign": "QGS3",
+      "url": "https://qigongtodasemana.mestreye.com/diagnostico",
+      "urls_por_elemento": {
+        "RIM": "https://.../agua",
+        "CORAÇÃO": "https://.../fogo"
+      }
+    }
+  ]
+}
+```
+
+### Implementação técnica
+
+- **Admin** (`public/admin.html`): `renderCampanhas` desenha a seção recolhível
+  por elemento; `saveFunis` grava só os campos preenchidos em `urls_por_elemento`.
+- **Frontend** (`src/quiz.js`): no redirect, usa `result.diagnostico.elemento`
+  para escolher `campanha.urls_por_elemento[elemento]` com fallback para
+  `campanha.url`.
+
 ## Suporte
 
 Se precisar de ajuda ou tiver dúvidas, consulte:
