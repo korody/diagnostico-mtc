@@ -1,0 +1,366 @@
+{
+  "agua": {
+    "label": "ÁGUA",
+    "organ": "Rins",
+    "estacao": "Inverno",
+    "emocao": "Medo, insegurança",
+    "color": "#0b518d",
+    "deep": "#062f52",
+    "wash": "#e5f1fd",
+    "decor": "#57a9ef",
+    "tagline": "A água guarda a sua reserva de energia vital. Quando ela baixa, o corpo avisa primeiro pela lombar e pelo sono.",
+    "titulo": "A raiz da sua energia está pedindo cuidado",
+    "intro": [
+      "Na Medicina Tradicional Chinesa, a Água é o elemento da reserva. É a energia que você recebeu ao nascer e que gasta a vida inteira — nos Rins fica guardado o que a MTC chama de essência, a base da vitalidade, dos ossos, dos dentes, da audição e da força das pernas.",
+      "Quando essa reserva se esvazia, o corpo não grita: ele sussurra. Aparece um cansaço que o descanso não resolve, uma lombar que dói mais no fim do dia, frio nos pés, urina noturna, medo sem motivo claro. Nada disso é 'coisa da idade'. É a Água pedindo para ser reabastecida.",
+      "A boa notícia da MTC é que a essência se preserva e se nutre: respiração profunda, movimento suave da coluna e calor na região lombar fazem essa energia voltar a circular."
+    ],
+    "padroes": [
+      "Dor lombar que piora ao fim do dia e ao ficar muito tempo em pé",
+      "Cansaço que não passa com o descanso, principalmente pela manhã",
+      "Sono interrompido — você acorda de madrugada e demora a voltar a dormir",
+      "Pés e mãos frios, sensação de friagem na região dos rins",
+      "Medo do que vem, insegurança sobre a própria autonomia"
+    ],
+    "orgaos": [
+      {
+        "nome": "Rins",
+        "funcao": "Guardam a essência e comandam ossos, dentes, audição e a força das pernas. São a fonte de calor e de vontade do organismo.",
+        "sinal": "lombar dolorida, joelhos fracos, zumbido, cabelos ressecados e queda de disposição."
+      },
+      {
+        "nome": "Bexiga",
+        "funcao": "Elimina o que o corpo não usa mais e responde pelo canal energético que percorre toda a coluna, das costas às pernas.",
+        "sinal": "urina noturna, rigidez ao longo da coluna, dor que desce pela parte de trás da perna."
+      }
+    ],
+    "causas": [
+      {
+        "titulo": "Anos de esforço sem reposição",
+        "texto": "Trabalho, casa, filhos, netos. Você gastou reserva por décadas sem parar para repor — e a Água é justamente o elemento que precisa de pausa para se refazer."
+      },
+      {
+        "titulo": "Frio e imobilidade na região lombar",
+        "texto": "Muitas horas sentada esfriam e travam a região dos rins. Sem movimento, o Qi para ali, e onde o Qi para a dor aparece."
+      },
+      {
+        "titulo": "Sono curto e preocupação constante",
+        "texto": "A noite é a hora em que a Água se recompõe. Dormir pouco ou acordar preocupada interrompe justamente a reposição da sua energia de base."
+      }
+    ],
+    "recomendacoes": [
+      {
+        "n": "1",
+        "titulo": "Aqueça a lombar todos os dias",
+        "texto": "Frite as mãos uma na outra até esquentarem e massageie a região dos rins, na altura da cintura, por um minuto. Faça de manhã e antes de dormir."
+      },
+      {
+        "n": "2",
+        "titulo": "Respire pelo abdômen, 5 minutos",
+        "texto": "Sentada, mão sobre o baixo ventre. Inspire pelo nariz deixando a barriga crescer, solte devagar pela boca. Isso alimenta diretamente a energia dos Rins."
+      },
+      {
+        "n": "3",
+        "titulo": "Beba água morna e evite gelado",
+        "texto": "A Água gosta de calor. Troque bebidas geladas por água morna ou chá durante o dia; seu corpo gasta menos energia para se aquecer."
+      }
+    ],
+    "harmoniaTexto": "Seu índice indica desequilíbrio moderado na energia da Água. Os sinais já aparecem no dia a dia, mas o quadro responde bem a prática constante — é exatamente o momento de agir, antes que a dor se torne rotina.",
+    "video_elemento": "",
+    "video_aula": ""
+  },
+  "madeira": {
+    "label": "MADEIRA",
+    "organ": "Fígado",
+    "estacao": "Primavera",
+    "emocao": "Irritação, raiva contida",
+    "color": "#3f8248",
+    "deep": "#2b5d33",
+    "wash": "#e9f2e6",
+    "decor": "#90d9d5",
+    "tagline": "A madeira precisa de espaço para crescer. Quando a sua energia fica presa, o corpo endurece e o humor pesa.",
+    "titulo": "A sua energia está represada, não perdida",
+    "intro": [
+      "Na Medicina Tradicional Chinesa, a Madeira é o elemento do movimento livre. O Fígado tem a função de distribuir o Qi por todo o corpo — como galhos que se espalham buscando luz. Ele também governa tendões, ligamentos e a visão.",
+      "Quando esse fluxo trava, tudo endurece: ombros e nuca tensos, articulações rígidas ao acordar, dor que muda de lugar. Emocionalmente, aparece a irritação com coisas pequenas, aquele suspiro fundo sem motivo, o sono que vem por volta das duas da manhã.",
+      "Madeira travada é energia parada, não energia perdida. Ela volta a circular com alongamento suave, respiração e movimento diário — é o que a prática de Qi Gong faz."
+    ],
+    "padroes": [
+      "Rigidez ao acordar, sobretudo nos ombros, nuca e quadris",
+      "Dor que muda de lugar e piora nos dias de tensão",
+      "Irritação com coisas pequenas, pavio mais curto do que você gostaria",
+      "Sono que quebra na madrugada, entre uma e três da manhã",
+      "Vista cansada, olhos secos, sensação de peso nas laterais do corpo"
+    ],
+    "orgaos": [
+      {
+        "nome": "Fígado",
+        "funcao": "Distribui o Qi e o sangue para todo o corpo, nutre tendões e ligamentos e mantém a visão clara. É o grande regulador do humor.",
+        "sinal": "tensão nos ombros, dor migratória, irritabilidade, olhos secos e unhas quebradiças."
+      },
+      {
+        "nome": "Vesícula biliar",
+        "funcao": "Responde pela decisão e pela coragem de agir, e pelo canal energético que passa pela laterais do corpo e do quadril.",
+        "sinal": "dor lateral no quadril, indecisão, gosto amargo na boca, dor de cabeça nas têmporas."
+      }
+    ],
+    "causas": [
+      {
+        "titulo": "Emoção guardada por muito tempo",
+        "texto": "Você aprendeu a engolir o incômodo para não incomodar ninguém. Na MTC, raiva contida é a maneira mais direta de travar a Madeira."
+      },
+      {
+        "titulo": "Corpo parado, mente acelerada",
+        "texto": "A Madeira precisa se esticar. Passar o dia sentada com a cabeça a mil deixa os tendões curtos e o Qi acumulado no alto do corpo."
+      },
+      {
+        "titulo": "Rotina sem pausa nem respiração",
+        "texto": "Sem momentos de soltar, a tensão vira o estado normal do corpo — e o corpo esquece como é ficar solto."
+      }
+    ],
+    "recomendacoes": [
+      {
+        "n": "1",
+        "titulo": "Estique as laterais do corpo",
+        "texto": "De pé, entrelace os dedos acima da cabeça e incline devagar para um lado, respirando. Cinco respirações de cada lado, todas as manhãs."
+      },
+      {
+        "n": "2",
+        "titulo": "Solte o suspiro de propósito",
+        "texto": "Três vezes ao dia: inspire pelo nariz e solte o ar pela boca com som, ombros caindo. Parece pouco, mas destrava o Qi do Fígado."
+      },
+      {
+        "n": "3",
+        "titulo": "Descanse a vista de hora em hora",
+        "texto": "Olhe para longe por vinte segundos, depois cubra os olhos com as palmas aquecidas. O Fígado se nutre pelo olhar em repouso."
+      }
+    ],
+    "harmoniaTexto": "Seu índice indica desequilíbrio moderado na energia da Madeira. O fluxo está travado, não esgotado — e energia travada responde rápido a movimento suave e constante.",
+    "video_elemento": "",
+    "video_aula": ""
+  },
+  "terra": {
+    "label": "TERRA",
+    "organ": "Baço",
+    "estacao": "Fim do verão",
+    "emocao": "Preocupação, excesso de pensamento",
+    "color": "#9b5e04",
+    "deep": "#7a4a03",
+    "wash": "#fdf0e3",
+    "decor": "#f3b77e",
+    "tagline": "A terra transforma o que você recebe em energia. Quando ela cansa, tudo fica pesado — o corpo e o pensamento.",
+    "titulo": "O seu centro está cansado de transformar",
+    "intro": [
+      "Na Medicina Tradicional Chinesa, a Terra é o elemento do centro. O Baço e o Estômago transformam comida e ar em Qi e sangue: são a cozinha do corpo. É também a Terra que sustenta os músculos e mantém as coisas no lugar.",
+      "Quando essa função cansa, aparece peso: pernas pesadas, inchaço, sono depois do almoço, cabeça enevoada, digestão lenta. Emocionalmente, é o pensamento que gira sem parar — a preocupação que rói.",
+      "A Terra se recupera com regularidade, não com esforço. Horários, comida morna, movimento moderado e respiração no centro do corpo devolvem firmeza."
+    ],
+    "padroes": [
+      "Sensação de peso no corpo, principalmente nas pernas",
+      "Inchaço e digestão lenta, barriga estufada depois de comer",
+      "Sonolência e queda de energia à tarde",
+      "Pensamento que gira, preocupação difícil de desligar",
+      "Músculos flácidos, sensação de falta de sustentação nas pernas"
+    ],
+    "orgaos": [
+      {
+        "nome": "Baço",
+        "funcao": "Transforma alimento em Qi e sangue, sustenta os músculos e mantém os líquidos circulando em vez de acumular.",
+        "sinal": "cansaço após comer, inchaço, peso nas pernas, hematomas fáceis, pensamento repetitivo."
+      },
+      {
+        "nome": "Estômago",
+        "funcao": "Recebe e amadurece o alimento, e faz a energia descer no sentido correto do corpo.",
+        "sinal": "estufamento, azia, falta de apetite ou fome desregulada, sensação de nó no estômago."
+      }
+    ],
+    "causas": [
+      {
+        "titulo": "Horários irregulares e refeições frias",
+        "texto": "A Terra funciona com rotina. Comer em horários variados e alimentos crus ou geladinhos obriga o corpo a gastar energia extra para aquecer e transformar."
+      },
+      {
+        "titulo": "Preocupação constante",
+        "texto": "Na MTC, pensar demais consome diretamente a energia do Baço. Cuidar de todo mundo mentalmente cansa tanto quanto trabalho físico."
+      },
+      {
+        "titulo": "Pouco movimento no dia",
+        "texto": "Músculo é o tecido da Terra. Sem uso, ele afrouxa, e o corpo perde a sustentação que evitaria muita dor."
+      }
+    ],
+    "recomendacoes": [
+      {
+        "n": "1",
+        "titulo": "Coma morno e no mesmo horário",
+        "texto": "Sopa, legumes cozidos, chá. Por sete dias, faça as refeições sempre nos mesmos horários — só isso já alivia o peso."
+      },
+      {
+        "n": "2",
+        "titulo": "Caminhe dez minutos após o almoço",
+        "texto": "Passo lento, sem pressa. Ajuda o Estômago a fazer a energia descer e corta a sonolência da tarde."
+      },
+      {
+        "n": "3",
+        "titulo": "Respire com as mãos no centro",
+        "texto": "Sentada, mãos sobre a barriga, na altura do estômago. Vinte respirações lentas. Aquecer o centro é o cuidado mais direto com a Terra."
+      }
+    ],
+    "harmoniaTexto": "Seu índice indica desequilíbrio moderado na energia da Terra. O corpo está pedindo regularidade — e regularidade é justamente o que uma aula na mesma hora, toda semana, constrói.",
+    "video_elemento": "",
+    "video_aula": ""
+  },
+  "fogo": {
+    "label": "FOGO",
+    "organ": "Coração",
+    "estacao": "Verão",
+    "emocao": "Ansiedade, agitação",
+    "color": "#b03d2b",
+    "deep": "#872c1d",
+    "wash": "#fbeae4",
+    "decor": "#f3b77e",
+    "tagline": "O fogo aquece e ilumina. Quando ele fica agitado, o sono foge e o peito não descansa.",
+    "titulo": "O seu fogo está agitado, e não forte",
+    "intro": [
+      "Na Medicina Tradicional Chinesa, o Fogo é o elemento da consciência e da alegria. O Coração comanda o sangue e abriga o que os chineses chamam de Shen — a mente serena, o brilho no olhar, a clareza.",
+      "Quando o Fogo se desregula, ele não aumenta: ele se agita. Aparece coração acelerado sem esforço, calor no rosto, palmas suadas, sono que não vem, sonhos demais, uma inquietação no peito que não tem endereço.",
+      "Fogo agitado se acalma com respiração longa, movimento lento e silêncio — nunca com mais estímulo. É por isso que o Qi Gong funciona tão bem aqui."
+    ],
+    "padroes": [
+      "Coração acelerado ou palpitação sem esforço físico",
+      "Dificuldade para pegar no sono, mente que não desliga na cama",
+      "Calor no rosto e no peito, suor nas mãos",
+      "Ansiedade e inquietação, sensação de aperto no peito",
+      "Sonhos agitados e sono que não descansa"
+    ],
+    "orgaos": [
+      {
+        "nome": "Coração",
+        "funcao": "Governa o sangue e abriga a mente serena. Responde pela alegria estável, pelo sono tranquilo e pela clareza de pensamento.",
+        "sinal": "palpitação, insônia, ansiedade, memória curta, língua avermelhada nas pontas."
+      },
+      {
+        "nome": "Intestino delgado",
+        "funcao": "Separa o que aproveitar do que descartar — no alimento e, simbolicamente, também nas informações e emoções do dia.",
+        "sinal": "dificuldade de discernir, intestino irregular, sensação de sobrecarga mental."
+      }
+    ],
+    "causas": [
+      {
+        "titulo": "Excesso de estímulo até tarde",
+        "texto": "Notícias, telefone, televisão à noite. O Fogo precisa esfriar ao anoitecer e a tela mantém ele aceso."
+      },
+      {
+        "titulo": "Anos de preocupação e sustos",
+        "texto": "Sustos e perdas acumuladas deixam o Coração em estado de alerta, mesmo quando a vida já se acalmou."
+      },
+      {
+        "titulo": "Respiração curta e no alto do peito",
+        "texto": "Respirar raso mantém o corpo em modo de emergência. O Coração nunca recebe o sinal de que pode descansar."
+      }
+    ],
+    "recomendacoes": [
+      {
+        "n": "1",
+        "titulo": "Respiração 4-6, três vezes ao dia",
+        "texto": "Inspire contando até quatro, solte contando até seis. Dez ciclos. A expiração mais longa é o que avisa o Coração de que está tudo bem."
+      },
+      {
+        "n": "2",
+        "titulo": "Desligue as telas uma hora antes de dormir",
+        "texto": "Troque por chá morno e luz baixa. O Fogo precisa de anoitecer para apagar as brasas em paz."
+      },
+      {
+        "n": "3",
+        "titulo": "Palmas no peito, um minuto",
+        "texto": "Sentada, uma mão sobre a outra no centro do peito. Sinta o calor e respire devagar. Simples, e acalma o Shen."
+      }
+    ],
+    "harmoniaTexto": "Seu índice indica desequilíbrio moderado na energia do Fogo. O corpo está em alerta há tempo demais — e ele reaprende a descansar mais rápido do que você imagina, com prática guiada.",
+    "video_elemento": "",
+    "video_aula": ""
+  },
+  "metal": {
+    "label": "METAL",
+    "organ": "Pulmões",
+    "estacao": "Outono",
+    "emocao": "Tristeza, sensação de perda",
+    "color": "#5c6b78",
+    "deep": "#3a4650",
+    "wash": "#eef1f5",
+    "decor": "#57a9ef",
+    "tagline": "O metal governa o respirar e o soltar. Quando ele enfraquece, falta ar, falta defesa e sobra tristeza.",
+    "titulo": "A sua respiração está pedindo mais espaço",
+    "intro": [
+      "Na Medicina Tradicional Chinesa, o Metal é o elemento da respiração e dos limites. Os Pulmões recebem o Qi do ar, distribuem energia para a pele e formam a camada de defesa do corpo — o que a MTC chama de Qi protetor.",
+      "Quando o Metal enfraquece, o ar parece pouco: cansaço ao subir escada, voz baixa, resfriados frequentes, pele seca, ombros curvados para dentro. Emocionalmente, é a tristeza que fica, o luto que não terminou de ser respirado.",
+      "O Metal se fortalece do jeito mais direto que existe: aprendendo a respirar por inteiro outra vez, com o peito aberto e a postura erguida."
+    ],
+    "padroes": [
+      "Falta de ar em esforços leves, como subir um andar de escada",
+      "Resfriados e gripes com frequência, imunidade baixa",
+      "Ombros curvados para frente, peito fechado, respiração curta",
+      "Pele e mucosas secas, tosse seca que insiste",
+      "Tristeza de fundo, sensação de perda que não passou"
+    ],
+    "orgaos": [
+      {
+        "nome": "Pulmões",
+        "funcao": "Recebem o Qi do ar, distribuem energia para a pele e comandam a defesa do organismo. Regem também a voz e a postura do peito.",
+        "sinal": "falta de ar, voz fraca, resfriados repetidos, pele seca, tristeza persistente."
+      },
+      {
+        "nome": "Intestino grosso",
+        "funcao": "Completa a eliminação — solta o que já não serve. É o par do Pulmão no movimento de receber e deixar ir.",
+        "sinal": "intestino preso ou irregular, sensação de estar carregando o que já passou."
+      }
+    ],
+    "causas": [
+      {
+        "titulo": "Respiração curta virou hábito",
+        "texto": "Décadas respirando só a parte de cima do pulmão deixam a capacidade adormecida. Ela volta, mas precisa ser convidada todos os dias."
+      },
+      {
+        "titulo": "Postura fechada e ombros para dentro",
+        "texto": "Trabalho, celular, frio, tristeza. O peito se fecha e o pulmão perde espaço físico para se encher."
+      },
+      {
+        "titulo": "Perdas que não foram respiradas",
+        "texto": "Na MTC, a tristeza não elaborada se instala no Pulmão. Chorar, suspirar e respirar fundo são a maneira do corpo devolver isso."
+      }
+    ],
+    "recomendacoes": [
+      {
+        "n": "1",
+        "titulo": "Abra o peito ao acordar",
+        "texto": "De pé, leve os braços para trás abrindo o peito enquanto inspira, feche soltando o ar. Dez vezes, devagar, todas as manhãs."
+      },
+      {
+        "n": "2",
+        "titulo": "Respire contando até seis",
+        "texto": "Inspire em quatro tempos, solte em seis, três vezes ao dia. Amplia a capacidade sem cansar."
+      },
+      {
+        "n": "3",
+        "titulo": "Proteja a nuca do vento frio",
+        "texto": "Um lenço ao sair, sobretudo de manhã. O Qi protetor do Pulmão entra em cheque justamente pela nuca."
+      }
+    ],
+    "harmoniaTexto": "Seu índice indica desequilíbrio moderado na energia do Metal. A capacidade respiratória não desapareceu, ela está adormecida — e volta com prática diária e gentil.",
+    "video_elemento": "",
+    "video_aula": ""
+  },
+  "produto": {
+    "nome": "Qi Gong Toda Semana",
+    "subtitulo": "com Mestre Ye",
+    "preco_original": 297,
+    "preco_oferta": 97,
+    "url_checkout": "https://curso.qigongbrasil.com/pay/qigong-toda-semana",
+    "beneficios": [
+      "Uma aula AO VIVO comigo todas as semanas",
+      "Uma aula exclusiva por mês com câmera aberta",
+      "Comunidade exclusiva de alunos",
+      "Todas as aulas gravadas para assistir quando quiser"
+    ],
+    "garantia": "7 dias de garantia incondicional"
+  }
+}
