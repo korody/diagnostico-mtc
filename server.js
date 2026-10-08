@@ -33,9 +33,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Servir arquivos estáticos da pasta public
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir arquivos estáticos - build primeiro para React funcionar
 app.use(express.static(path.join(__dirname, 'build')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Carregar credenciais do ambiente
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -80,91 +80,21 @@ if (DEBUG) {
 // ========================================
 // FUNÇÕES MTC
 // ========================================
+// Toda a lógica de cálculo vem de lib/calculos.js (fonte única).
+// Não reimplemente nada aqui: o server local e os serverless de /api
+// precisam produzir exatamente o mesmo diagnóstico.
 
-const MAPEAMENTO_ELEMENTOS = {
-  P2: { A: 'RIM', B: 'RIM', C: 'FÍGADO', D: 'BAÇO', E: 'CORAÇÃO', F: 'PULMÃO', G: 'RIM' },
-  P4: { A: 'RIM', B: 'RIM', C: 'CORAÇÃO', D: 'BAÇO', E: 'FÍGADO', F: 'RIM', G: null },
-  P5: { A: 'FÍGADO', B: 'BAÇO', C: 'PULMÃO', D: 'RIM', E: 'CORAÇÃO', F: null }
-};
-
-function contarElementos(respostas) {
-  const contagem = { RIM: 0, FÍGADO: 0, BAÇO: 0, CORAÇÃO: 0, PULMÃO: 0 };
-  
-  if (respostas.P2 && Array.isArray(respostas.P2)) {
-    respostas.P2.forEach(opcao => {
-      const elemento = MAPEAMENTO_ELEMENTOS.P2[opcao];
-      if (elemento) contagem[elemento] += 3;
-    });
-  }
-  
-  if (respostas.P4 && Array.isArray(respostas.P4)) {
-    respostas.P4.forEach(opcao => {
-      const elemento = MAPEAMENTO_ELEMENTOS.P4[opcao];
-      if (elemento) contagem[elemento] += 2;
-    });
-  }
-  
-  if (respostas.P5) {
-    const elemento = MAPEAMENTO_ELEMENTOS.P5[respostas.P5];
-    if (elemento) contagem[elemento] += 1;
-  }
-  
-  return contagem;
-}
-
-function determinarElementoPrincipal(contagem) {
-  let maxValor = 0;
-  let elementoEscolhido = 'BAÇO';
-  
-  for (const [elemento, valor] of Object.entries(contagem)) {
-    if (valor > maxValor) {
-      maxValor = valor;
-      elementoEscolhido = elemento;
-    }
-  }
-  
-  return elementoEscolhido;
-}
-
-function calcularIntensidade(respostas) {
-  const pesos = { 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'E': 1 };
-  return pesos[respostas.P1] || 3;
-}
-
-function calcularUrgencia(respostas) {
-  const pesos = { 'A': 5, 'B': 4, 'C': 3, 'D': 2, 'E': 1 };
-  return pesos[respostas.P8] || 3;
-}
-
-function determinarQuadrante(intensidade, urgencia) {
-  if (intensidade >= 4 && urgencia >= 4) return 1;
-  if (intensidade >= 4 && urgencia <= 3) return 2;
-  if (intensidade <= 3 && urgencia >= 4) return 3;
-  return 4;
-}
-
-function calcularLeadScore(respostas) {
-  let score = 0;
-  
-  const pesoP1 = { 'A': 20, 'B': 16, 'C': 12, 'D': 8, 'E': 4 };
-  score += pesoP1[respostas.P1] || 0;
-  
-  const pesoP3 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
-  score += pesoP3[respostas.P3] || 0;
-  
-  const pesoP7 = { 'A': 15, 'B': 12, 'C': 9, 'D': 6, 'E': 3 };
-  score += pesoP7[respostas.P7] || 0;
-  
-  const pesoP8 = { 'A': 20, 'B': 16, 'C': 12, 'D': 8, 'E': 4 };
-  score += pesoP8[respostas.P8] || 0;
-  
-  const pesoP11 = { 'A': 2, 'B': 3, 'C': 4, 'D': 5, 'E': 6, 'F': 7, 'G': 8, 'H': 9, 'I': 10, 'J': 10 };
-  score += pesoP11[respostas.P11] || 0;
-  
-  if (respostas.P12 === 'A') score += 5;
-  
-  return Math.min(score, 100);
-}
+const {
+  contarElementos,
+  determinarElementoPrincipal,
+  calcularIntensidade,
+  calcularUrgencia,
+  determinarQuadrante,
+  calcularLeadScore,
+  determinarPrioridade,
+  verificarHotLeadVIP,
+  calcularIndiceHarmonia
+} = require('./lib/calculos');
 
 // ========================================
 // ROTAS
@@ -612,8 +542,9 @@ app.post('/api/submit', async (req, res) => {
     const urgencia = calcularUrgencia(respostas);
     const quadrante = determinarQuadrante(intensidade, urgencia);
     const leadScore = calcularLeadScore(respostas);
-    const prioridade = leadScore >= 70 ? 'ALTA' : leadScore >= 40 ? 'MÉDIA' : 'BAIXA';
-    const isHotLeadVIP = leadScore >= 80 || quadrante === 1 || respostas.P8 === 'A';
+    const prioridade = determinarPrioridade(leadScore);
+    const isHotLeadVIP = verificarHotLeadVIP(leadScore, quadrante, respostas);
+    const indiceHarmonia = calcularIndiceHarmonia(contagem, intensidade, urgencia);
     
     // Calcular arquétipo comportamental
     const dadosArquetipo = calcularArquetipo(respostas);
@@ -639,6 +570,7 @@ app.post('/api/submit', async (req, res) => {
       diagnostico_completo: diagnosticoCompleto,
       script_abertura: scriptAbertura,
       lead_score: leadScore,
+      indice_harmonia: indiceHarmonia,
       prioridade: prioridade,
       is_hot_lead_vip: isHotLeadVIP,
       // Campos calculados adicionais
@@ -652,14 +584,15 @@ app.post('/api/submit', async (req, res) => {
       objecao_principal: dadosArquetipo.objecao_principal,
       autonomia_decisao: dadosArquetipo.autonomia_decisao,
       investimento_mensal_atual: dadosArquetipo.investimento_mensal_atual,
-      // Novos campos de segmentação e qualificação
-      estado: respostas.P17 || null,
-      custo_mensal_problema: respostas.P21 ? (
-        respostas.P21 === 'A' ? 50 :
-        respostas.P21 === 'B' ? 200 :
-        respostas.P21 === 'C' ? 400 :
-        respostas.P21 === 'D' ? 750 :
-        respostas.P21 === 'E' ? 1200 :
+      // Estado/UF onde mora (P14 na estrutura nova; era P17 na antiga)
+      estado: respostas.P14 || null,
+      // Custo mensal atual com o problema (P12)
+      custo_mensal_problema: respostas.P12 ? (
+        respostas.P12 === 'A' ? 50 :
+        respostas.P12 === 'B' ? 200 :
+        respostas.P12 === 'C' ? 400 :
+        respostas.P12 === 'D' ? 750 :
+        respostas.P12 === 'E' ? 1200 :
         0
       ) : null,
       // Tipo de funil (perpétuo ou lançamento)

@@ -13,18 +13,28 @@ async function testarCalculos() {
   console.log('   TESTE DE CÁLCULOS DO QUIZ');
   console.log('========================================\n');
 
-  // Respostas de exemplo
+  // Respostas de exemplo (estrutura nova: 20 perguntas em 6 etapas)
   const respostasExemplo = {
-    P1: 'A',  // Intensidade máxima
-    P2: ['A', 'B'],  // Dores lombar + pernas (RIM)
-    P3: 'A',  // Mais de 1 ano
-    P4: ['A', 'C'],  // Costas + insônia
-    P5: 'D',  // Com medo (RIM)
-    P6: 'B',  // Já tentou tudo
-    P8: 'A',  // Urgência máxima
-    P9: 'A',  // Muito comprometida
-    P11: 'H', // Renda alta
-    P12: 'A'  // Conhece Mestre Ye
+    P1: 'A',              // Dores limitam bastante o dia (intensidade máxima)
+    P2: ['A', 'B'],       // Lombar/coluna + joelhos/articulações (RIM)
+    P3: 'A',              // Há mais de 5 anos
+    P4: ['A', 'C'],       // Muito cansaço (RIM) + sono ruim (CORAÇÃO)
+    P5: 'C',              // Menos energia depois do almoço
+    P6: 'A',              // O que mais incomoda: dor
+    P7: 'D',              // Medo (RIM)
+    P8: 'B',              // Acorda ainda cansada
+    P9: 'A',              // Gostaria de voltar a caminhar
+    P10: 'A',             // Medo de perder a autonomia (urgência máxima)
+    P11: ['A', 'D'],      // Já tentou fisioterapia + acupuntura
+    P12: 'D',             // Gasta R$ 500-1000/mês
+    P13: 'F',             // 55-64 anos
+    P14: 'SP',            // Mora em São Paulo
+    P15: 'E',             // Conhece o Mestre Ye há mais de 1 ano
+    P16: 'B',             // Já foi aluna de curso pago
+    P17: 'D',             // Reflete sobre as causas (FÊNIX)
+    P18: 'A',             // Decide por resultados comprovados (CIENTISTA/DESCRENÇA)
+    P19: 'H',             // Renda até R$ 10.000
+    P20: 'A'              // Decide sozinha (autonomia ALTA)
   };
 
   console.log('📝 Respostas do quiz:');
@@ -38,7 +48,8 @@ async function testarCalculos() {
   console.log('Elemento Principal:', resultado.elemento_principal);
   console.log('Código Perfil:', resultado.codigo_perfil);
   console.log('Nome Perfil:', resultado.nome_perfil);
-  console.log('Arquétipo:', resultado.arquetipo);
+  console.log('Arquétipo:', resultado.arquetipo_principal);
+  console.log('Índice Harmonia:', resultado.indice_harmonia);
   console.log('Quadrante:', resultado.quadrante);
   console.log('Lead Score:', resultado.lead_score);
   console.log('Prioridade:', resultado.prioridade);

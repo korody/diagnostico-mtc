@@ -7,6 +7,7 @@ let supabase, formatToE164, isValidE164, getDiagnosticos;
 let addLeadTags, TAGS;
 let contarElementos, determinarElementoPrincipal, calcularIntensidade;
 let calcularUrgencia, determinarQuadrante, calcularLeadScore;
+let determinarPrioridade, verificarHotLeadVIP, calcularIndiceHarmonia;
 let calcularArquetipo;
 let diagnosticosData;
 
@@ -21,7 +22,10 @@ try {
     calcularIntensidade,
     calcularUrgencia,
     determinarQuadrante,
-    calcularLeadScore
+    calcularLeadScore,
+    determinarPrioridade,
+    verificarHotLeadVIP,
+    calcularIndiceHarmonia
   } = require('../lib/tcm'));
   ({ calcularArquetipo } = require('../lib/calcularArquetipo'));
 
@@ -105,8 +109,9 @@ module.exports = async (req, res) => {
     const urgencia = calcularUrgencia(respostas);
     const quadrante = determinarQuadrante(intensidade, urgencia);
     const leadScore = calcularLeadScore(respostas);
-    const prioridade = leadScore >= 70 ? 'ALTA' : leadScore >= 40 ? 'MÉDIA' : 'BAIXA';
-    const isHotLeadVIP = leadScore >= 80 || quadrante === 1 || respostas.P8 === 'A';
+    const prioridade = determinarPrioridade(leadScore);
+    const isHotLeadVIP = verificarHotLeadVIP(leadScore, quadrante, respostas);
+    const indiceHarmonia = calcularIndiceHarmonia(contagem, intensidade, urgencia);
     
     // Calcular arquétipo comportamental
     const dadosArquetipo = calcularArquetipo ? calcularArquetipo(respostas) : {
@@ -149,6 +154,7 @@ module.exports = async (req, res) => {
       diagnostico_completo: diagnosticoCompleto,
       script_abertura: scriptAbertura,
       lead_score: leadScore,
+      indice_harmonia: indiceHarmonia,
       prioridade: prioridade,
       is_hot_lead_vip: isHotLeadVIP,
       // Campos calculados adicionais
@@ -164,14 +170,15 @@ module.exports = async (req, res) => {
       investimento_mensal_atual: dadosArquetipo.investimento_mensal_atual,
       // Rastreamento de campanha
       utm_campaign: utm_campaign || null,
-      // Novos campos de segmentação e qualificação
-      estado: respostas.P17 || null,
-      custo_mensal_problema: respostas.P21 ? (
-        respostas.P21 === 'A' ? 50 :
-        respostas.P21 === 'B' ? 200 :
-        respostas.P21 === 'C' ? 400 :
-        respostas.P21 === 'D' ? 750 :
-        respostas.P21 === 'E' ? 1200 :
+      // Segmentação e qualificação (estrutura nova de perguntas)
+      // estado: era P17, agora P14 | custo mensal: era P21, agora P12
+      estado: respostas.P14 || null,
+      custo_mensal_problema: respostas.P12 ? (
+        respostas.P12 === 'A' ? 50 :
+        respostas.P12 === 'B' ? 200 :
+        respostas.P12 === 'C' ? 400 :
+        respostas.P12 === 'D' ? 750 :
+        respostas.P12 === 'E' ? 1200 :
         0
       ) : null
     };

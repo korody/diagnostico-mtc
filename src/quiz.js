@@ -34,9 +34,15 @@ const QuizMTC = () => {
   // Se tem dados na URL, pula identificação e vai direto pro quiz
   const temDadosURL = urlParams.nome && urlParams.email && urlParams.celular;
 
-  const [step, setStep] = useState(temDadosURL ? 'quiz' : 'identificacao');
+  // Estados principais - agora com tela de intro
+  const [step, setStep] = useState(temDadosURL ? 'intro' : 'identificacao');
   const [funil, setFunil] = useState(urlParams.funil); // 'perpetuo' ou 'lancamento'
   const [utmCampaign] = useState(urlParams.utm_campaign); // capturado uma vez e persistido
+
+  // Estados para controle de etapas e transições
+  const [etapaAtual, setEtapaAtual] = useState(0);
+  const [mostrandoTransicao, setMostrandoTransicao] = useState(false);
+
   const [dadosLead, setDadosLead] = useState({
     NOME: urlParams.nome,
     EMAIL: urlParams.email,
@@ -51,8 +57,96 @@ const QuizMTC = () => {
   const [perguntaAtual, setPerguntaAtual] = useState(0);
   const [respostas, setRespostas] = useState({});
   const [processando, setProcessando] = useState(false);
+  const [etapaProcessamento, setEtapaProcessamento] = useState(0);
   const [erro, setErro] = useState('');
   const [resultadoDiagnostico, setResultadoDiagnostico] = useState(null);
+
+  // Estados para campo aberto opcional
+  const [campoAberto, setCampoAberto] = useState('');
+  const [mostrarCampoAberto, setMostrarCampoAberto] = useState(false);
+
+  // Estado para modal de retomar progresso
+  const [mostrarResumeModal, setMostrarResumeModal] = useState(false);
+  const [progressoSalvo, setProgressoSalvo] = useState(null);
+
+  // Chave do localStorage
+  const STORAGE_KEY = 'quiz_mtc_progress';
+
+  // Carregar progresso salvo ao montar (apenas se não tem dados na URL)
+  useEffect(() => {
+    if (temDadosURL) return; // Se veio da URL, não carrega localStorage
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Verificar se o progresso é recente (menos de 24h)
+        const agora = Date.now();
+        const limite = 24 * 60 * 60 * 1000; // 24 horas
+
+        if (parsed.timestamp && (agora - parsed.timestamp) < limite) {
+          // Só mostra modal se já passou da identificação
+          if (parsed.step === 'quiz' || parsed.step === 'intro') {
+            setProgressoSalvo(parsed);
+            setMostrarResumeModal(true);
+          }
+        } else {
+          // Progresso expirado, limpar
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar progresso:', e);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [temDadosURL]);
+
+  // Salvar progresso a cada mudança relevante
+  useEffect(() => {
+    // Só salva se estiver no quiz ou intro
+    if (step === 'identificacao' || step === 'resultado') return;
+
+    const progresso = {
+      step,
+      perguntaAtual,
+      etapaAtual,
+      respostas,
+      dadosLead,
+      mostrandoTransicao,
+      timestamp: Date.now()
+    };
+
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(progresso));
+    } catch (e) {
+      console.warn('Erro ao salvar progresso:', e);
+    }
+  }, [step, perguntaAtual, etapaAtual, respostas, dadosLead, mostrandoTransicao]);
+
+  // Função para continuar de onde parou
+  const handleContinuarProgresso = () => {
+    if (progressoSalvo) {
+      setStep(progressoSalvo.step);
+      setPerguntaAtual(progressoSalvo.perguntaAtual);
+      setEtapaAtual(progressoSalvo.etapaAtual);
+      setRespostas(progressoSalvo.respostas || {});
+      setDadosLead(progressoSalvo.dadosLead);
+      setMostrandoTransicao(progressoSalvo.mostrandoTransicao || false);
+    }
+    setMostrarResumeModal(false);
+  };
+
+  // Função para recomeçar do zero
+  const handleRecomecarQuiz = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setMostrarResumeModal(false);
+    // Mantém na tela de identificação (estado inicial)
+  };
+
+  // Limpar progresso quando finaliza o quiz
+  const limparProgressoSalvo = () => {
+    localStorage.removeItem(STORAGE_KEY);
+  };
 
   // URLs dos funis (carregadas do admin com fallback)
   const [funilUrls, setFunilUrls] = useState({
@@ -86,104 +180,304 @@ const QuizMTC = () => {
     carregarConfigFunis();
   }, []);
 
-  // Perguntas do quiz
+  // Animação progressiva da tela de processamento
+  useEffect(() => {
+    if (processando) {
+      setEtapaProcessamento(0);
+      const intervalo = setInterval(() => {
+        setEtapaProcessamento(prev => {
+          if (prev >= 10) {
+            clearInterval(intervalo);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 700); // Cada item aparece a cada 700ms
+
+      return () => clearInterval(intervalo);
+    } else {
+      setEtapaProcessamento(0);
+    }
+  }, [processando]);
+
+  // ========================================
+  // ESTRUTURA DE ETAPAS E TRANSIÇÕES
+  // ========================================
+
+  const etapas = [
+    {
+      id: 'etapa1',
+      titulo: 'Sinais do corpo',
+      header: 'Vamos entender quais sinais seu corpo está enviando.',
+      subtexto: 'Na Medicina Tradicional Chinesa, toda avaliação começa observando como os sintomas afetam a vida da pessoa.',
+      perguntas: ['P1', 'P2', 'P3'],
+      transicao: {
+        texto: 'Primeira etapa concluída.',
+        checklist: ['Intensidade dos sintomas', 'Regiões afetadas', 'Tempo de evolução'],
+        proximo: 'Agora vou investigar como sua energia está funcionando.'
+      }
+    },
+    {
+      id: 'etapa2',
+      titulo: 'Energia e órgãos',
+      header: 'Energia e funcionamento dos órgãos',
+      subtexto: 'Na Medicina Tradicional Chinesa, diferentes órgãos influenciam energia, digestão, sono, emoções e disposição.',
+      perguntas: ['P4', 'P5', 'P6'],
+      transicao: {
+        texto: 'Na Medicina Tradicional Chinesa, sintomas diferentes podem ter a mesma origem.',
+        destaque: 'É por isso que analisamos o conjunto dos sinais, e não apenas um sintoma isolado.',
+        icone: '💡'
+      }
+    },
+    {
+      id: 'etapa3',
+      titulo: 'Emoções',
+      header: 'Emoções e energia',
+      subtexto: 'Para a Medicina Tradicional Chinesa, emoções também fazem parte da saúde. Elas ajudam a mostrar quais órgãos podem estar sobrecarregados.',
+      perguntas: ['P7', 'P8', 'P9'],
+      transicao: {
+        texto: 'Já conseguimos identificar padrões importantes.',
+        proximo: 'Agora preciso entender como isso tem impactado sua vida para personalizar sua orientação.'
+      }
+    },
+    {
+      id: 'etapa4',
+      titulo: 'Impacto e cuidados',
+      header: 'Impacto na sua vida',
+      subtexto: 'Entender o que você já tentou e quanto investe nos ajuda a personalizar suas recomendações.',
+      perguntas: ['P10', 'P11', 'P12'],
+      transicao: {
+        texto: 'Quase lá!',
+        proximo: 'Mais algumas informações para personalizar seu resultado...'
+      }
+    },
+    {
+      id: 'etapa5',
+      titulo: 'Seu perfil',
+      header: 'Informações do seu perfil',
+      subtexto: 'Essas informações nos ajudam a personalizar sua experiência.',
+      perguntas: ['P13', 'P14', 'P15', 'P16', 'P17', 'P18'],
+      transicao: {
+        texto: 'Estamos quase lá!',
+        proximo: 'As próximas 2 perguntas vão me ajudar a personalizar melhor minhas recomendações para você.'
+      }
+    },
+    {
+      id: 'etapa6',
+      titulo: 'Personalização',
+      header: 'Finalizando sua consulta',
+      subtexto: null,
+      perguntas: ['P19', 'P20'],
+      transicao: null
+    }
+  ];
+
+  // ========================================
+  // PERGUNTAS DO QUIZ (Nova Estrutura)
+  // ========================================
+
   const perguntas = [
+    // ===== ETAPA 1: Sinais do corpo =====
     {
       id: 'P1',
-      texto: 'Como você descreveria a intensidade das suas dores ou desconfortos?',
+      etapa: 'etapa1',
+      texto: 'Pensando na sua rotina de hoje...',
+      textoDestaque: 'Como esses sintomas afetam sua vida?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Dores constantes que limitam MUITO a vida diária', peso: 5 },
-        { valor: 'B', texto: 'Dores frequentes que incomodam bastante', peso: 4 },
-        { valor: 'C', texto: 'Desconfortos ocasionais que preocupam', peso: 3 },
-        { valor: 'D', texto: 'Rigidez ou cansaço, mas nada grave', peso: 2 },
-        { valor: 'E', texto: 'Sem dores, busco prevenção', peso: 1 }
+        { valor: 'A', texto: 'As dores ou desconfortos já limitam bastante meu dia', peso: 5 },
+        { valor: 'B', texto: 'Convivo com eles quase todos os dias', peso: 4 },
+        { valor: 'C', texto: 'Eles aparecem com frequência e me preocupam', peso: 3 },
+        { valor: 'D', texto: 'São leves, mas percebo que meu corpo mudou', peso: 2 },
+        { valor: 'E', texto: 'Hoje não tenho sintomas. Quero prevenir problemas futuros', peso: 1 }
       ]
     },
     {
       id: 'P2',
-      texto: 'Onde você sente MAIS desconforto ou dor? (Selecione até 2 opções)',
+      etapa: 'etapa1',
+      texto: 'Em quais regiões seu corpo costuma chamar mais sua atenção?',
       tipo: 'multiple',
       max: 2,
+      layout: 'grid',
       opcoes: [
-        { valor: 'A', texto: 'Lombar, costas ou coluna', elemento: 'RIM' },
-        { valor: 'B', texto: 'Joelhos, pernas ou articulações', elemento: 'RIM' },
-        { valor: 'C', texto: 'Pescoço, ombros ou tensão muscular', elemento: 'FÍGADO' },
-        { valor: 'D', texto: 'Digestão, estômago ou cansaço extremo', elemento: 'BAÇO' },
-        { valor: 'E', texto: 'Insônia, palpitações ou ansiedade', elemento: 'CORAÇÃO' },
-        { valor: 'F', texto: 'Respiração curta ou resfriados frequentes', elemento: 'PULMÃO' },
-        { valor: 'G', texto: 'Zumbido, tontura ou labirintite', elemento: 'RIM' }
+        { valor: 'A', texto: 'Lombar e coluna', elemento: 'RIM' },
+        { valor: 'B', texto: 'Joelhos e articulações', elemento: 'RIM' },
+        { valor: 'C', texto: 'Pescoço e ombros', elemento: 'FÍGADO' },
+        { valor: 'D', texto: 'Digestão ou intestino', elemento: 'BAÇO' },
+        { valor: 'E', texto: 'Sono, coração ou ansiedade', elemento: 'CORAÇÃO' },
+        { valor: 'F', texto: 'Respiração', elemento: 'PULMÃO' },
+        { valor: 'G', texto: 'Zumbido, tontura ou equilíbrio', elemento: 'RIM' }
       ]
     },
     {
       id: 'P3',
-      texto: 'Há quanto tempo você convive com esses sintomas?',
+      etapa: 'etapa1',
+      texto: 'Há quanto tempo seu corpo vem dando esses sinais?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Mais de 5 anos', peso: 5 },
+        { valor: 'A', texto: 'Há mais de 5 anos', peso: 5 },
         { valor: 'B', texto: 'Entre 2 e 5 anos', peso: 4 },
         { valor: 'C', texto: 'Entre 6 meses e 2 anos', peso: 3 },
-        { valor: 'D', texto: 'Menos de 6 meses', peso: 2 },
-        { valor: 'E', texto: 'Não tenho sintomas, busco prevenção', peso: 1 }
+        { valor: 'D', texto: 'Há poucos meses', peso: 2 },
+        { valor: 'E', texto: 'Ainda não tenho sintomas', peso: 1 }
       ]
     },
+
+    // ===== ETAPA 2: Energia e órgãos =====
     {
       id: 'P4',
-      texto: 'Quais destes sintomas físicos você também percebe? (Selecione até 3)',
+      etapa: 'etapa2',
+      texto: 'Quais destes sinais você também percebe?',
       tipo: 'multiple',
       max: 3,
+      layout: 'grid',
       opcoes: [
-        { valor: 'A', texto: 'Cansaço extremo ou falta de energia', elemento: 'RIM' },
-        { valor: 'B', texto: 'Sensação de frio ou mãos/pés gelados', elemento: 'RIM' },
-        { valor: 'C', texto: 'Insônia, ansiedade ou mente agitada', elemento: 'CORAÇÃO' },
-        { valor: 'D', texto: 'Digestão ruim, inchaço ou peso nas pernas', elemento: 'BAÇO' },
-        { valor: 'E', texto: 'Tensão muscular ou irritabilidade', elemento: 'FÍGADO' },
-        { valor: 'F', texto: 'Zumbido, tontura ou labirintite', elemento: 'RIM' },
-        { valor: 'G', texto: 'Nenhum desses', elemento: null }
+        { valor: 'A', texto: 'Muito cansaço', elemento: 'RIM' },
+        { valor: 'B', texto: 'Mãos e pés frios', elemento: 'RIM' },
+        { valor: 'C', texto: 'Sono ruim', elemento: 'CORAÇÃO' },
+        { valor: 'D', texto: 'Ansiedade', elemento: 'CORAÇÃO' },
+        { valor: 'E', texto: 'Digestão lenta', elemento: 'BAÇO' },
+        { valor: 'F', texto: 'Inchaço', elemento: 'BAÇO' },
+        { valor: 'G', texto: 'Irritabilidade', elemento: 'FÍGADO' },
+        { valor: 'H', texto: 'Zumbido', elemento: 'RIM' },
+        { valor: 'I', texto: 'Tontura', elemento: 'RIM' },
+        { valor: 'J', texto: 'Nenhum', elemento: null }
       ]
     },
     {
       id: 'P5',
-      texto: 'Quando pensa nos seus problemas de saúde, como você se sente emocionalmente?',
+      etapa: 'etapa2',
+      texto: 'Em qual período do dia você sente menos energia?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Frustrada e irritada', elemento: 'FÍGADO' },
-        { valor: 'B', texto: 'Preocupada e ansiosa', elemento: 'BAÇO' },
-        { valor: 'C', texto: 'Triste e desanimada', elemento: 'PULMÃO' },
-        { valor: 'D', texto: 'Com medo', elemento: 'RIM' },
-        { valor: 'E', texto: 'Sem esperança', elemento: 'CORAÇÃO' },
-        { valor: 'F', texto: 'Normal, não me abala muito', elemento: null }
+        { valor: 'A', texto: 'Logo ao acordar' },
+        { valor: 'B', texto: 'Durante a manhã' },
+        { valor: 'C', texto: 'Depois do almoço' },
+        { valor: 'D', texto: 'No fim da tarde' },
+        { valor: 'E', texto: 'À noite' },
+        { valor: 'F', texto: 'Minha energia costuma ser estável' }
       ]
     },
     {
+      id: 'P6',
+      etapa: 'etapa2',
+      texto: 'O que mais incomoda você atualmente?',
+      tipo: 'single',
+      layout: 'grid',
+      opcoes: [
+        { valor: 'A', texto: 'Dor' },
+        { valor: 'B', texto: 'Cansaço' },
+        { valor: 'C', texto: 'Falta de disposição' },
+        { valor: 'D', texto: 'Sono ruim' },
+        { valor: 'E', texto: 'Ansiedade' },
+        { valor: 'F', texto: 'Digestão' },
+        { valor: 'G', texto: 'Rigidez' },
+        { valor: 'H', texto: 'Outro' }
+      ]
+    },
+
+    // ===== ETAPA 3: Emoções =====
+    {
       id: 'P7',
-      texto: 'Qual é a sua maior preocupação em relação à sua saúde?',
-      subtexto: 'Queremos focar no que mais importa para você',
+      etapa: 'etapa3',
+      texto: 'Nos últimos meses...',
+      textoDestaque: 'Qual emoção mais tem acompanhado você?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Perder minha autonomia e depender dos meus filhos', peso: 5 },
-        { valor: 'B', texto: 'Não conseguir mais fazer as coisas que gosto', peso: 4 },
-        { valor: 'C', texto: 'Ficar cada vez pior se não cuidar agora', peso: 4 },
-        { valor: 'D', texto: 'Não estar bem para cuidar da família', peso: 3 },
-        { valor: 'E', texto: 'Não conseguir realizar meus sonhos', peso: 3 }
+        { valor: 'A', texto: 'Preocupação constante', elemento: 'BAÇO' },
+        { valor: 'B', texto: 'Irritação fácil', elemento: 'FÍGADO' },
+        { valor: 'C', texto: 'Tristeza', elemento: 'PULMÃO' },
+        { valor: 'D', texto: 'Medo', elemento: 'RIM' },
+        { valor: 'E', texto: 'Ansiedade', elemento: 'CORAÇÃO' },
+        { valor: 'F', texto: 'Nenhuma dessas', elemento: null }
       ]
     },
     {
       id: 'P8',
-      texto: 'Como você avalia sua urgência em resolver esse problema?',
+      etapa: 'etapa3',
+      texto: 'Quando acorda...',
+      textoDestaque: 'Como normalmente você se sente?',
       tipo: 'single',
       opcoes: [
-        { valor: 'A', texto: 'Não aguento mais, preciso de ajuda URGENTE', peso: 5 },
-        { valor: 'B', texto: 'Estou muito incomodada, chegou a hora de agir', peso: 4 },
-        { valor: 'C', texto: 'Quero melhorar e estou aberta a soluções', peso: 3 },
-        { valor: 'D', texto: 'Estou buscando alternativas e pesquisando', peso: 2 },
-        { valor: 'E', texto: 'Só estou curiosa, sem urgência real', peso: 1 }
+        { valor: 'A', texto: 'Descansada' },
+        { valor: 'B', texto: 'Ainda cansada' },
+        { valor: 'C', texto: 'Sem vontade de levantar' },
+        { valor: 'D', texto: 'Já preocupada' },
+        { valor: 'E', texto: 'Depende do dia' }
       ]
     },
     {
+      id: 'P9',
+      etapa: 'etapa3',
+      texto: 'Se sua saúde estivesse melhor...',
+      textoDestaque: 'O que você voltaria a fazer?',
+      tipo: 'single',
+      opcoes: [
+        { valor: 'A', texto: 'Caminhar' },
+        { valor: 'B', texto: 'Viajar' },
+        { valor: 'C', texto: 'Brincar com meus netos' },
+        { valor: 'D', texto: 'Trabalhar melhor' },
+        { valor: 'E', texto: 'Dormir melhor' },
+        { valor: 'F', texto: 'Ter mais disposição' }
+      ]
+    },
+
+    // ===== ETAPA 4: Impacto e cuidados =====
+    {
       id: 'P10',
+      etapa: 'etapa4',
+      texto: 'Se nada mudar...',
+      textoDestaque: 'Qual dessas situações mais preocupa você?',
+      tipo: 'single',
+      opcoes: [
+        { valor: 'A', texto: 'Perder minha autonomia', peso: 5 },
+        { valor: 'B', texto: 'Continuar convivendo com dor', peso: 4 },
+        { valor: 'C', texto: 'Precisar depender da minha família', peso: 4 },
+        { valor: 'D', texto: 'Ver minha saúde piorar aos poucos', peso: 3 },
+        { valor: 'E', texto: 'Não conseguir aproveitar a aposentadoria', peso: 3 }
+      ]
+    },
+    {
+      id: 'P11',
+      etapa: 'etapa4',
+      texto: 'O que você já tentou fazer para melhorar sua saúde?',
+      tipo: 'multiple',
+      max: 3,
+      layout: 'grid',
+      opcoes: [
+        { valor: 'A', texto: 'Fisioterapia' },
+        { valor: 'B', texto: 'Academia' },
+        { valor: 'C', texto: 'Pilates' },
+        { valor: 'D', texto: 'Acupuntura' },
+        { valor: 'E', texto: 'Massagem' },
+        { valor: 'F', texto: 'Suplementos' },
+        { valor: 'G', texto: 'Consultas' },
+        { valor: 'H', texto: 'Ainda não consegui começar' }
+      ]
+    },
+    {
+      id: 'P12',
+      etapa: 'etapa4',
+      texto: 'Para tentar aliviar esses sintomas, quanto você acredita investir por mês entre consultas, exames, medicamentos, suplementos ou outros cuidados?',
+      subtexto: 'Considere remédios, consultas, exames, tratamentos, etc.',
+      tipo: 'single',
+      opcoes: [
+        { valor: 'A', texto: 'Menos de R$ 100', custo: 50 },
+        { valor: 'B', texto: 'Entre R$ 100 e R$ 300', custo: 200 },
+        { valor: 'C', texto: 'Entre R$ 300 e R$ 500', custo: 400 },
+        { valor: 'D', texto: 'Entre R$ 500 e R$ 1.000', custo: 750 },
+        { valor: 'E', texto: 'Mais de R$ 1.000', custo: 1200 },
+        { valor: 'F', texto: 'Não gasto nada (só uso o plano de saúde)', custo: 0 }
+      ]
+    },
+
+    // ===== ETAPA 5: Perfil =====
+    {
+      id: 'P13',
+      etapa: 'etapa5',
       texto: 'Qual é a sua faixa etária?',
       tipo: 'single',
+      layout: 'grid',
       opcoes: [
         { valor: 'A', texto: 'Menos de 18 anos' },
         { valor: 'B', texto: '18-24 anos' },
@@ -196,50 +490,12 @@ const QuizMTC = () => {
       ]
     },
     {
-      id: 'P11',
-      texto: 'Qual é a sua renda mensal aproximada?',
-      subtexto: 'Essa pergunta é importante para eu poder adaptar nosso treinamento à renda da maioria durante o curso ;)',
-      tipo: 'single',
-      opcoes: [
-        { valor: 'A', texto: 'Sem renda no momento' },
-        { valor: 'B', texto: 'Até R$ 1.000' },
-        { valor: 'C', texto: 'Até R$ 2.000' },
-        { valor: 'D', texto: 'Até R$ 3.000' },
-        { valor: 'E', texto: 'Até R$ 4.000' },
-        { valor: 'F', texto: 'Até R$ 5.000' },
-        { valor: 'G', texto: 'Até R$ 7.000' },
-        { valor: 'H', texto: 'Até R$ 10.000' },
-        { valor: 'I', texto: 'Até R$ 15.000' },
-        { valor: 'J', texto: 'Mais de R$ 20.000' }
-      ]
-    },
-    {
-      id: 'P12',
-      texto: 'Você já é ou foi aluno(a) de algum curso ou evento pago do Mestre Ye?',
-      subtexto: 'Cursos online, eventos presenciais, mentorias, etc.',
-      tipo: 'single',
-      opcoes: [
-        { valor: 'A', texto: 'Ainda não sou aluno(a)' },
-        { valor: 'B', texto: 'Sim, já fiz curso ou evento pago' }
-      ]
-    },
-    {
-      id: 'P13',
-      texto: 'Há quanto tempo você conhece o trabalho do Mestre Ye?',
-      tipo: 'single',
-      opcoes: [
-        { valor: 'A', texto: 'Conheci agora através de amigos ou familiares' },
-        { valor: 'B', texto: 'Conheci agora através de anúncios' },
-        { valor: 'C', texto: 'Há pouco tempo (1-3 meses)' },
-        { valor: 'D', texto: 'Há cerca de 6 meses' },
-        { valor: 'E', texto: 'Há bastante tempo (mais de 1 ano)' }
-      ]
-    },
-    {
-      id: 'P17',
+      id: 'P14',
+      etapa: 'etapa5',
       texto: 'Em qual região você mora?',
       subtexto: 'Isso nos ajuda a personalizar eventos e conteúdos regionais',
       tipo: 'single',
+      layout: 'grid',
       opcoes: [
         { valor: 'SP', texto: 'São Paulo' },
         { valor: 'RJ', texto: 'Rio de Janeiro' },
@@ -272,148 +528,87 @@ const QuizMTC = () => {
       ]
     },
     {
-      id: 'P14',
-      texto: 'Quando você tem um problema de saúde, geralmente o que você FAZ primeiro?',
+      id: 'P15',
+      etapa: 'etapa5',
+      texto: 'Há quanto tempo você conhece o trabalho do Mestre Ye?',
       tipo: 'single',
       opcoes: [
-        { 
-          valor: 'A', 
-          texto: 'Espero alguns dias para ver se melhora naturalmente'
-        },
-        { 
-          valor: 'B', 
-          texto: 'Procuro informações online e leio sobre o assunto'
-        },
-        { 
-          valor: 'C', 
-          texto: 'Continuo com minha rotina normal e deixo para depois'
-        },
-        { 
-          valor: 'D', 
-          texto: 'Paro para refletir sobre o que pode estar causando'
-        }
+        { valor: 'A', texto: 'Conheci agora através de amigos ou familiares' },
+        { valor: 'B', texto: 'Conheci agora através de anúncios' },
+        { valor: 'C', texto: 'Há pouco tempo (1-3 meses)' },
+        { valor: 'D', texto: 'Há cerca de 6 meses' },
+        { valor: 'E', texto: 'Há bastante tempo (mais de 1 ano)' }
       ]
     },
     {
       id: 'P16',
+      etapa: 'etapa5',
+      texto: 'Você já é ou foi aluno(a) de algum curso ou evento pago do Mestre Ye?',
+      subtexto: 'Cursos online, eventos presenciais, mentorias, etc.',
+      tipo: 'single',
+      opcoes: [
+        { valor: 'A', texto: 'Ainda não sou aluno(a)' },
+        { valor: 'B', texto: 'Sim, já fiz curso ou evento pago' }
+      ]
+    },
+    {
+      id: 'P17',
+      etapa: 'etapa5',
+      texto: 'Quando você tem um problema de saúde, o que você costuma fazer primeiro?',
+      tipo: 'single',
+      opcoes: [
+        { valor: 'A', texto: 'Espero alguns dias para ver se melhora naturalmente' },
+        { valor: 'B', texto: 'Procuro informações online e leio sobre o assunto' },
+        { valor: 'C', texto: 'Continuo com minha rotina normal e deixo para depois' },
+        { valor: 'D', texto: 'Paro para refletir sobre o que pode estar causando' }
+      ]
+    },
+    {
+      id: 'P18',
+      etapa: 'etapa5',
       texto: 'Ao considerar um novo cuidado com sua saúde, o que mais pesa na sua decisão?',
       subtexto: 'Queremos entender o que é mais importante para você',
       tipo: 'single',
       opcoes: [
-        { 
-          valor: 'A', 
-          texto: 'Ver resultados comprovados e experiências de outras pessoas'
-        },
-        { 
-          valor: 'B', 
-          texto: 'Conseguir encaixar na rotina sem prejuízo das outras atividades'
-        },
-        { 
-          valor: 'C', 
-          texto: 'Ter flexibilidade para fazer no meu tempo e do meu jeito'
-        },
-        { 
-          valor: 'D', 
-          texto: 'Sentir que vai realmente fazer diferença duradoura'
-        },
-        { 
-          valor: 'E', 
-          texto: 'Estar alinhado com o momento que estou vivendo'
-        }
+        { valor: 'A', texto: 'Ver resultados comprovados e experiências de outras pessoas' },
+        { valor: 'B', texto: 'Conseguir encaixar na rotina sem prejuízo das outras atividades' },
+        { valor: 'C', texto: 'Ter flexibilidade para fazer no meu tempo e do meu jeito' },
+        { valor: 'D', texto: 'Sentir que vai realmente fazer diferença duradoura' },
+        { valor: 'E', texto: 'Estar alinhado com o momento que estou vivendo' }
       ]
     },
+
+    // ===== ETAPA 6: Personalização =====
     {
       id: 'P19',
-      texto: 'Quando você decide investir em algo importante (como sua saúde), você:',
+      etapa: 'etapa6',
+      texto: 'Qual é a sua renda mensal aproximada?',
+      subtexto: 'Essa pergunta é importante para eu poder adaptar melhor minhas recomendações para você.',
       tipo: 'single',
+      layout: 'grid',
       opcoes: [
-        { 
-          valor: 'A', 
-          texto: 'Decido sozinha, não preciso consultar ninguém'
-        },
-        { 
-          valor: 'B', 
-          texto: 'Gosto de ouvir opinião do marido/filhos mas a decisão final é minha'
-        },
-        { 
-          valor: 'C', 
-          texto: 'Preciso conversar com a família antes de decidir'
-        },
-        { 
-          valor: 'D', 
-          texto: 'Depende da aprovação/ajuda financeira da família'
-        }
+        { valor: 'A', texto: 'Sem renda no momento' },
+        { valor: 'B', texto: 'Até R$ 1.000' },
+        { valor: 'C', texto: 'Até R$ 2.000' },
+        { valor: 'D', texto: 'Até R$ 3.000' },
+        { valor: 'E', texto: 'Até R$ 4.000' },
+        { valor: 'F', texto: 'Até R$ 5.000' },
+        { valor: 'G', texto: 'Até R$ 7.000' },
+        { valor: 'H', texto: 'Até R$ 10.000' },
+        { valor: 'I', texto: 'Até R$ 15.000' },
+        { valor: 'J', texto: 'Mais de R$ 20.000' }
       ]
     },
     {
       id: 'P20',
-      texto: 'Atualmente, você já investe em cuidados com sua saúde além do plano de saúde?',
-      subtexto: 'Ex: academia, terapias, suplementos, consultas particulares',
-      tipo: 'multiple',
-      max: 3,
-      opcoes: [
-        { 
-          valor: 'A', 
-          texto: 'Fisioterapia ou quiropraxia'
-        },
-        { 
-          valor: 'B', 
-          texto: 'Academia, pilates ou personal'
-        },
-        { 
-          valor: 'C', 
-          texto: 'Terapias alternativas (acupuntura, massagem)'
-        },
-        { 
-          valor: 'D', 
-          texto: 'Suplementos, vitaminas'
-        },
-        { 
-          valor: 'E', 
-          texto: 'Consultas médicas/exames particulares'
-        },
-        { 
-          valor: 'F', 
-          texto: 'Não invisto em nada além do plano de saúde'
-        }
-      ]
-    },
-    {
-      id: 'P21',
-      texto: 'Quanto você gasta POR MÊS para lidar com esse problema de saúde?',
-      subtexto: 'Considere remédios, consultas, exames, tratamentos, etc.',
+      etapa: 'etapa6',
+      texto: 'Quando você decide investir em algo importante (como sua saúde), você:',
       tipo: 'single',
       opcoes: [
-        { 
-          valor: 'A', 
-          texto: 'Menos de R$ 100',
-          custo: 50
-        },
-        { 
-          valor: 'B', 
-          texto: 'Entre R$ 100 e R$ 300',
-          custo: 200
-        },
-        { 
-          valor: 'C', 
-          texto: 'Entre R$ 300 e R$ 500',
-          custo: 400
-        },
-        { 
-          valor: 'D', 
-          texto: 'Entre R$ 500 e R$ 1.000',
-          custo: 750
-        },
-        { 
-          valor: 'E', 
-          texto: 'Mais de R$ 1.000',
-          custo: 1200
-        },
-        { 
-          valor: 'F', 
-          texto: 'Não gasto nada (só uso o plano de saúde)',
-          custo: 0
-        }
+        { valor: 'A', texto: 'Decido sozinha, não preciso consultar ninguém' },
+        { valor: 'B', texto: 'Gosto de ouvir opinião do marido/filhos mas a decisão final é minha' },
+        { valor: 'C', texto: 'Preciso conversar com a família antes de decidir' },
+        { valor: 'D', texto: 'Depende da aprovação/ajuda financeira da família' }
       ]
     }
   ];
@@ -586,7 +781,26 @@ const QuizMTC = () => {
       setErro(`Por favor, digite um celular válido para ${pais}. Verifique o número digitado.`);
       return;
     }
+    setStep('intro');
+  };
+
+  // Handler para começar o quiz após a tela de intro
+  const handleComecarConsulta = () => {
     setStep('quiz');
+    setPerguntaAtual(0);
+    setEtapaAtual(0);
+  };
+
+  // Handler para avançar da tela de transição
+  const handleAvancarTransicao = () => {
+    setMostrandoTransicao(false);
+  };
+
+  // Função auxiliar para encontrar a etapa de uma pergunta
+  const getEtapaDaPergunta = (perguntaIndex) => {
+    const pergunta = perguntas[perguntaIndex];
+    if (!pergunta) return null;
+    return etapas.findIndex(e => e.id === pergunta.etapa);
   };
 
   const handleResposta = (perguntaId, valor) => {
@@ -614,16 +828,52 @@ const QuizMTC = () => {
 
   const proximaPergunta = () => {
     if (perguntaAtual < perguntas.length - 1) {
+      const perguntaAtualObj = perguntas[perguntaAtual];
+      const proximaPerguntaObj = perguntas[perguntaAtual + 1];
+
+      // Verifica se está mudando de etapa
+      if (perguntaAtualObj.etapa !== proximaPerguntaObj.etapa) {
+        // Encontra a etapa atual e verifica se tem transição
+        const etapaAtualObj = etapas.find(e => e.id === perguntaAtualObj.etapa);
+        if (etapaAtualObj && etapaAtualObj.transicao) {
+          setMostrandoTransicao(true);
+          setEtapaAtual(etapas.findIndex(e => e.id === proximaPerguntaObj.etapa));
+        }
+      }
+
       setPerguntaAtual(perguntaAtual + 1);
     } else {
-      finalizarQuiz();
+      // Última pergunta - mostrar campo aberto opcional
+      setMostrarCampoAberto(true);
     }
   };
 
   const voltarPergunta = () => {
+    if (mostrandoTransicao) {
+      setMostrandoTransicao(false);
+      return;
+    }
     if (perguntaAtual > 0) {
+      const perguntaAtualObj = perguntas[perguntaAtual];
+      const perguntaAnteriorObj = perguntas[perguntaAtual - 1];
+
+      // Atualiza a etapa se necessário
+      if (perguntaAtualObj.etapa !== perguntaAnteriorObj.etapa) {
+        setEtapaAtual(etapas.findIndex(e => e.id === perguntaAnteriorObj.etapa));
+      }
+
       setPerguntaAtual(perguntaAtual - 1);
     }
+  };
+
+  // Handler para pular ou enviar campo aberto
+  const handleFinalizarComCampoAberto = (pular = false) => {
+    if (!pular && campoAberto.trim()) {
+      // Salva o campo aberto nas respostas
+      setRespostas(prev => ({ ...prev, CAMPO_ABERTO: campoAberto.trim() }));
+    }
+    setMostrarCampoAberto(false);
+    finalizarQuiz();
   };
 
   const respostaAtualValida = () => {
@@ -717,6 +967,9 @@ const QuizMTC = () => {
       }
       
       if (result.success) {
+        // Limpar progresso salvo após envio bem-sucedido
+        limparProgressoSalvo();
+
         console.log('✅ QUIZ SALVO COM SUCESSO!');
         console.log('  User ID:', result.user_id);
         console.log('  Novo usuário?', result.is_new_user);
@@ -757,6 +1010,11 @@ const QuizMTC = () => {
         console.log('🔄 Redirecionando para:', redirectUrl);
         console.log('📊 Funil:', funil);
         console.log('🔗 URLs configuradas:', funilUrls);
+
+        // Aguardar pelo menos 7 segundos na tela de processamento
+        // para dar a sensação de análise personalizada
+        await new Promise(resolve => setTimeout(resolve, 7000));
+
         window.location.href = redirectUrl;
       } else {
         throw new Error(result.message || 'Erro desconhecido');
@@ -776,9 +1034,73 @@ const QuizMTC = () => {
     }
   };
 
+  // Progresso geral (perguntas respondidas / total)
   const progresso = ((perguntaAtual + 1) / perguntas.length) * 100;
 
-  // Render da tela de identificação
+  // Progresso da etapa atual
+  const etapaAtualObj = etapas[etapaAtual];
+  const perguntasEtapaAtual = etapaAtualObj ? etapaAtualObj.perguntas : [];
+  const perguntaAtualObj = perguntas[perguntaAtual];
+  const indexNaEtapa = perguntaAtualObj ? perguntasEtapaAtual.indexOf(perguntaAtualObj.id) : 0;
+  const progressoEtapa = perguntasEtapaAtual.length > 0 ? ((indexNaEtapa + 1) / perguntasEtapaAtual.length) * 100 : 0;
+
+  // ========================================
+  // MODAL DE RETOMAR PROGRESSO
+  // ========================================
+  if (mostrarResumeModal && progressoSalvo) {
+    const perguntasRespondidas = Object.keys(progressoSalvo.respostas || {}).length;
+    return (
+      <div className="min-h-screen p-4 pt-8 flex items-center justify-center" style={{ background: 'transparent' }}>
+        <div className="w-full max-w-md mx-auto">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 animate-fade-in text-center">
+
+            {/* Ícone */}
+            <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Activity className="w-8 h-8 text-cyan-600" />
+            </div>
+
+            {/* Título */}
+            <h2 className="text-2xl font-bold text-slate-900 mb-3">
+              Continuar de onde parou?
+            </h2>
+
+            {/* Info do progresso */}
+            <p className="text-slate-600 mb-2">
+              Olá, <span className="font-semibold">{progressoSalvo.dadosLead?.NOME?.split(' ')[0] || 'visitante'}</span>!
+            </p>
+            <p className="text-slate-500 text-sm mb-6">
+              Você respondeu {perguntasRespondidas} de {perguntas.length} perguntas.
+            </p>
+
+            {/* Barra de progresso visual */}
+            <div className="w-full bg-slate-200 rounded-full h-2 mb-8">
+              <div
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(perguntasRespondidas / perguntas.length) * 100}%` }}
+              />
+            </div>
+
+            {/* Botões */}
+            <div className="space-y-3">
+              <button
+                onClick={handleContinuarProgresso}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg"
+              >
+                Continuar diagnóstico
+              </button>
+              <button
+                onClick={handleRecomecarQuiz}
+                className="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium py-3 px-6 rounded-xl transition-all duration-200"
+              >
+                Recomeçar do início
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Render da tela de identificação
 if (step === 'identificacao') {
   return (
@@ -971,8 +1293,8 @@ if (step === 'identificacao') {
 
           {/* Info de Segurança */}
           <div className="text-center mb-6">
-            <p className="text-slate-500 text-xs">
-              🔒 Seus dados estão seguros • ⏱️ Tempo estimado: 4 minutos
+            <p className="text-slate-500 text-sm">
+              🔒 Seus dados estão seguros • ⏱️ Tempo estimado: 5 minutos
             </p>
           </div>
 
@@ -985,14 +1307,315 @@ if (step === 'identificacao') {
             <ChevronRight className="w-5 h-5" />
           </button>
         </div>
-        
+
       </div>
     </div>
   );
-} 
+}
 
-  // Render da tela de quiz
-  // Render da tela de quiz
+// ========================================
+// TELA DE INTRODUÇÃO (Mestre Ye)
+// ========================================
+if (step === 'intro') {
+  return (
+    <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+      <div className="w-full max-w-lg mx-auto">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 animate-fade-in">
+
+          {/* Foto do Mestre Ye */}
+          <div className="text-center mb-6">
+            <img
+              src="/images/mestre_ye_confra.jpg"
+              alt="Mestre Ye"
+              className="w-48 h-48 mx-auto object-cover rounded-full drop-shadow-lg mb-4 border-4 border-cyan-100"
+            />
+          </div>
+
+          {/* Texto de Apresentação */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-slate-900 mb-4">
+              Olá! Eu sou o Mestre Ye.
+            </h1>
+            <div className="text-slate-600 text-base leading-relaxed space-y-4">
+              <p>Há mais de 30 anos estudo a Medicina Tradicional Chinesa.</p>
+              <p>Na China aprendemos que o corpo raramente adoece de repente.</p>
+              <p>Antes disso, ele envia pequenos sinais.</p>
+              <p className="font-medium text-slate-800">
+                Dor. Cansaço. Insônia. Rigidez. Ansiedade. Falta de energia.
+              </p>
+              <p>
+                Durante esta consulta vou procurar esses sinais para montar seu{' '}
+                <span className="font-semibold text-cyan-600">
+                  Mapa de Elementos da Medicina Tradicional Chinesa
+                </span>.
+              </p>
+            </div>
+          </div>
+
+          {/* Botão */}
+          <button
+            onClick={handleComecarConsulta}
+            className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-2 transform hover:scale-[1.02]"
+          >
+            Começar minha consulta
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// TELA DE TRANSIÇÃO ENTRE ETAPAS
+// ========================================
+if (step === 'quiz' && mostrandoTransicao) {
+  const etapaAnterior = etapas[etapaAtual - 1] || etapas[etapaAtual];
+  const transicao = etapaAnterior?.transicao;
+
+  if (transicao) {
+    return (
+      <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+        <div className="w-full max-w-lg mx-auto">
+
+          {/* Barra de Progresso */}
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-cyan-500 text-sm font-medium">Etapa {etapaAtual + 1} de {etapas.length}</span>
+              <span className="text-cyan-500 text-sm font-bold">{Math.round(progresso)}%</span>
+            </div>
+            <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-cyan-500 via-cyan-500 to-blue-500 transition-all duration-500"
+                style={{ width: `${progresso}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl shadow-2xl p-8 animate-fade-in text-center">
+
+            {/* Ícone (se houver) */}
+            {transicao.icone && (
+              <div className="text-5xl mb-4">{transicao.icone}</div>
+            )}
+
+            {/* Checklist (se houver) */}
+            {transicao.checklist && (
+              <div className="mb-6">
+                <p className="text-xl font-bold text-slate-900 mb-4">{transicao.texto}</p>
+                <div className="space-y-2">
+                  {transicao.checklist.map((item, idx) => (
+                    <div key={idx} className="flex items-center justify-center gap-2 text-green-600">
+                      <CheckCircle className="w-5 h-5" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Texto simples (sem checklist) */}
+            {!transicao.checklist && (
+              <div className="mb-6">
+                <p className="text-lg text-slate-700 leading-relaxed">
+                  {transicao.texto}
+                </p>
+                {transicao.destaque && (
+                  <p className="text-base text-slate-600 mt-3 italic">
+                    {transicao.destaque}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Próxima etapa */}
+            {transicao.proximo && (
+              <p className="text-cyan-600 font-medium mb-6">
+                {transicao.proximo}
+              </p>
+            )}
+
+            {/* Botão Continuar */}
+            <button
+              onClick={handleAvancarTransicao}
+              className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-2 mx-auto transform hover:scale-[1.02]"
+            >
+              Continuar
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+// ========================================
+// TELA DE CAMPO ABERTO (Opcional)
+// ========================================
+if (mostrarCampoAberto) {
+  return (
+    <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+      <div className="w-full max-w-lg mx-auto">
+
+        {/* Barra de Progresso - 100% */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-cyan-500 text-sm font-medium">Quase lá!</span>
+            <span className="text-cyan-500 text-sm font-bold">95%</span>
+          </div>
+          <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 via-cyan-500 to-blue-500 transition-all duration-500"
+              style={{ width: '95%' }}
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow-2xl p-8 animate-fade-in">
+
+          <h2 className="text-xl font-bold text-slate-900 mb-4">
+            Antes de concluirmos a avaliação, gostaria de abrir um espaço para você.
+          </h2>
+
+          <p className="text-slate-600 mb-6 leading-relaxed">
+            Às vezes, existem sintomas, preocupações ou detalhes que não aparecem nas perguntas anteriores,
+            mas que podem ser importantes para entender melhor o que você está vivendo.
+          </p>
+
+          <label className="block text-slate-800 font-semibold mb-3">
+            Existe mais alguma coisa sobre sua saúde que você gostaria que eu soubesse?
+          </label>
+
+          <textarea
+            value={campoAberto}
+            onChange={(e) => setCampoAberto(e.target.value)}
+            placeholder="Escreva livremente. Você pode contar sobre sintomas, dores, tratamentos que já tentou, preocupações ou qualquer outro detalhe que considere importante..."
+            className="w-full h-32 px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-all resize-none mb-6"
+          />
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => handleFinalizarComCampoAberto(true)}
+              className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 px-6 rounded-xl transition-all duration-200"
+            >
+              Pular
+            </button>
+            <button
+              onClick={() => handleFinalizarComCampoAberto(false)}
+              className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 flex items-center justify-center gap-2"
+            >
+              Finalizar Consulta
+              <CheckCircle className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// TELA DE PROCESSAMENTO (Enquanto envia)
+// ========================================
+if (processando) {
+  const itensAnalise = [
+    'Sintomas principais',
+    'Cinco Elementos',
+    'Emoções',
+    'Possíveis órgãos envolvidos',
+    'Tempo de evolução',
+    'Perfil energético'
+  ];
+
+  const itensResultado = [
+    'Qual Elemento merece mais atenção',
+    'Quais órgãos podem estar em desequilíbrio',
+    'Como seus sintomas podem estar relacionados',
+    'Quais primeiros passos fazem sentido para você'
+  ];
+
+  // etapaProcessamento: 0-5 = itens análise, 6 = transição, 7-10 = itens resultado
+  const mostrarFase2 = etapaProcessamento >= 6;
+
+  return (
+    <div className="min-h-screen p-4 pt-8" style={{ background: 'transparent' }}>
+      <div className="w-full max-w-lg mx-auto">
+        <div className="bg-white rounded-3xl shadow-2xl p-8">
+
+          {/* Fase 1: Cruzando informações */}
+          <div className="mb-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">
+              Estou cruzando todas as informações da sua consulta...
+            </h2>
+
+            <div className="space-y-3 mb-6">
+              {itensAnalise.map((item, index) => (
+                <div
+                  key={item}
+                  className={`flex items-center gap-3 transition-all duration-500 ${
+                    index <= etapaProcessamento ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                  }`}
+                >
+                  <CheckCircle className="w-5 h-5 text-cyan-500" />
+                  <span className="text-slate-700">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Barra de progresso */}
+          <div className="mb-8">
+            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${Math.min((etapaProcessamento / 10) * 100, 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Fase 2: Preparando mapa */}
+          <div className={`border-t border-slate-200 pt-6 transition-all duration-500 ${
+            mostrarFase2 ? 'opacity-100' : 'opacity-0'
+          }`}>
+            <h3 className="text-lg font-bold text-slate-900 mb-4">
+              Seu Mapa da Medicina Tradicional Chinesa está sendo preparado.
+            </h3>
+
+            <p className="text-slate-600 mb-4">Estou organizando as informações para mostrar:</p>
+
+            <div className="space-y-2 text-slate-600">
+              {itensResultado.map((item, index) => (
+                <p
+                  key={item}
+                  className={`flex items-start gap-2 transition-all duration-500 ${
+                    etapaProcessamento >= 7 + index ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4'
+                  }`}
+                >
+                  <CheckCircle className="w-4 h-4 text-cyan-500 mt-0.5 flex-shrink-0" />
+                  {item}
+                </p>
+              ))}
+            </div>
+          </div>
+
+          {/* Spinner */}
+          <div className="flex justify-center mt-8">
+            <div className="w-12 h-12 relative">
+              <div className="absolute inset-0 border-4 border-cyan-200 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-cyan-500 rounded-full border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// TELA DO QUIZ (Perguntas)
+// ========================================
 if (step === 'quiz') {
   const pergunta = perguntas[perguntaAtual];
   const respostaAtual = respostas[pergunta.id];
@@ -1034,10 +1657,43 @@ if (step === 'quiz') {
             </svg>
           </a>
           
+          {/* Header da Etapa (mostra na primeira pergunta de cada etapa) */}
+          {(() => {
+            const etapaObj = etapas.find(e => e.id === pergunta.etapa);
+            const etapaIndex = etapas.findIndex(e => e.id === pergunta.etapa);
+            const perguntasDaEtapa = etapaObj ? etapaObj.perguntas : [];
+            const isFirstOfEtapa = perguntasDaEtapa[0] === pergunta.id;
+
+            if (isFirstOfEtapa && etapaObj) {
+              return (
+                <div className="mb-6 -mx-6 -mt-6 px-6 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-t-2xl">
+                  <h4 className="text-white text-sm font-bold uppercase tracking-wide mb-1">
+                    Etapa {etapaIndex + 1}: {etapaObj.titulo}
+                  </h4>
+                  {etapaObj.subtexto && (
+                    <p className="text-cyan-100 text-sm">
+                      {etapaObj.subtexto}
+                    </p>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Título da Pergunta */}
-          <h3 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">
-            {pergunta.texto}
-          </h3>
+          {pergunta.textoDestaque ? (
+            <div className="mb-6">
+              <p className="text-lg text-slate-600 mb-1">{pergunta.texto}</p>
+              <h3 className="text-2xl font-bold text-slate-900 leading-tight">
+                {pergunta.textoDestaque}
+              </h3>
+            </div>
+          ) : (
+            <h3 className="text-2xl font-bold text-slate-900 mb-6 leading-tight">
+              {pergunta.texto}
+            </h3>
+          )}
 
           {/* Subtexto (se houver) */}
           {pergunta.subtexto && (
@@ -1062,8 +1718,8 @@ if (step === 'quiz') {
 
           {/* Opções de Resposta */}
           <div className={
-            pergunta.id === 'P10' || pergunta.id === 'P11' || pergunta.id === 'P17'
-              ? 'grid grid-cols-2 gap-3' 
+            pergunta.layout === 'grid'
+              ? 'grid grid-cols-2 gap-3'
               : 'space-y-3'
           }>
             {pergunta.opcoes.map((opcao) => {
