@@ -127,7 +127,8 @@ const QuizMTC = () => {
   // Função para continuar de onde parou
   const handleContinuarProgresso = () => {
     if (progressoSalvo) {
-      setStep(progressoSalvo.step);
+      // Nunca retomar na tela de intro (descontinuada)
+      setStep(progressoSalvo.step === 'intro' ? 'quiz' : progressoSalvo.step);
       setPerguntaAtual(progressoSalvo.perguntaAtual);
       setEtapaAtual(progressoSalvo.etapaAtual);
       setRespostas(progressoSalvo.respostas || {});
@@ -782,7 +783,10 @@ const QuizMTC = () => {
       setErro(`Por favor, digite um celular válido para ${pais}. Verifique o número digitado.`);
       return;
     }
-    setStep('intro');
+    // Pula a tela de intro e vai direto para as perguntas
+    setStep('quiz');
+    setPerguntaAtual(0);
+    setEtapaAtual(0);
   };
 
   // Handler para começar o quiz após a tela de intro
