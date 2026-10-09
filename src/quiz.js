@@ -35,7 +35,8 @@ const QuizMTC = () => {
   const temDadosURL = urlParams.nome && urlParams.email && urlParams.celular;
 
   // Estados principais - agora com tela de intro
-  const [step, setStep] = useState(temDadosURL ? 'intro' : 'identificacao');
+  // Se vier com dados na URL, pula a intro e vai direto para as perguntas
+  const [step, setStep] = useState(temDadosURL ? 'quiz' : 'identificacao');
   const [funil, setFunil] = useState(urlParams.funil); // 'perpetuo' ou 'lancamento'
   const [utmCampaign] = useState(urlParams.utm_campaign); // capturado uma vez e persistido
 
