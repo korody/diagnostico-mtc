@@ -988,7 +988,12 @@ const QuizMTC = () => {
 
         let redirectUrl;
         const campanhas = funilUrls.campanhas || [];
-        const campanha = utmCampaign ? campanhas.find(c => c.utm_campaign === utmCampaign) : null;
+        // Comparação case-insensitive (ex.: "BNY3" === "bny3") e sem espaços extras
+        const normalizar = (v) => (v || '').toString().trim().toLowerCase();
+        const utmCampaignNorm = normalizar(utmCampaign);
+        const campanha = utmCampaignNorm
+          ? campanhas.find(c => normalizar(c.utm_campaign) === utmCampaignNorm)
+          : null;
 
         // Elemento diagnosticado (RIM, FÍGADO, BAÇO, CORAÇÃO, PULMÃO) para URL específica
         const elemento = result.diagnostico && result.diagnostico.elemento;
