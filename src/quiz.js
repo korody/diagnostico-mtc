@@ -997,9 +997,24 @@ const QuizMTC = () => {
 
         // Elemento diagnosticado (RIM, FÍGADO, BAÇO, CORAÇÃO, PULMÃO) para URL específica
         const elemento = result.diagnostico && result.diagnostico.elemento;
+        // Normaliza removendo acentos + lowercase (ex.: "FÍGADO" === "figado")
+        const normalizarElemento = (v) => (v || '')
+          .toString()
+          .normalize('NFD')
+          .replace(/[̀-ͯ]/g, '')
+          .trim()
+          .toLowerCase();
+        // Busca a URL do elemento sem diferenciar acento/maiúsculas nas chaves configuradas
+        let urlPorElemento = null;
+        if (campanha && campanha.urls_por_elemento && elemento) {
+          const elementoNorm = normalizarElemento(elemento);
+          const chave = Object.keys(campanha.urls_por_elemento)
+            .find(k => normalizarElemento(k) === elementoNorm);
+          if (chave) urlPorElemento = campanha.urls_por_elemento[chave];
+        }
         // URL específica do elemento → senão URL de destino padrão da campanha
         const urlCampanha = campanha
-          ? ((campanha.urls_por_elemento && elemento && campanha.urls_por_elemento[elemento]) || campanha.url)
+          ? (urlPorElemento || campanha.url)
           : null;
 
         if (campanha && urlCampanha) {
