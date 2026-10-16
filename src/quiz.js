@@ -895,9 +895,12 @@ const QuizMTC = () => {
   const finalizarQuiz = async () => {
     console.log('\n🔵 INICIANDO FINALIZAÇÃO DO QUIZ');
     console.log('==================================');
-    
+
     setProcessando(true);
-    
+    // Controla se vamos redirecionar: evita re-renderizar a última pergunta
+    // enquanto o navegador ainda está navegando para a página de destino.
+    let redirecionando = false;
+
     try {
       // Converte telefone para E.164 antes de enviar
       let celularE164;
@@ -1040,6 +1043,8 @@ const QuizMTC = () => {
         // para dar a sensação de análise personalizada
         await new Promise(resolve => setTimeout(resolve, 7000));
 
+        // Mantém a tela de loading visível até o navegador trocar de página
+        redirecionando = true;
         window.location.href = redirectUrl;
       } else {
         throw new Error(result.message || 'Erro desconhecido');
@@ -1054,7 +1059,11 @@ const QuizMTC = () => {
       alert(`Erro ao finalizar quiz:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
       
     } finally {
-      setProcessando(false);
+      // Só esconde o loading se NÃO estamos redirecionando. Caso contrário,
+      // a última pergunta apareceria por um instante antes da navegação.
+      if (!redirecionando) {
+        setProcessando(false);
+      }
       console.log('🔵 Finalização concluída');
     }
   };
