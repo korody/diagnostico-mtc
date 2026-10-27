@@ -20,7 +20,7 @@ const { addLeadTags, TAGS } = require('../../../lib/tags');
 // Configuração Supabase - usar service_role para ter permissões completas
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.REACT_APP_SUPABASE_KEY
+  process.env.SUPABASE_SECRET_API_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.REACT_APP_SUPABASE_KEY
 );
 
 // Configurações ElevenLabs

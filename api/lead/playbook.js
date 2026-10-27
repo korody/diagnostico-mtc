@@ -15,7 +15,7 @@ module.exports = async (req, res) => {
     // Importar supabase aqui para evitar problema de inicialização
     const { createClient } = require('@supabase/supabase-js');
     const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.SUPABASE_URL;
-    const supabaseKey = process.env.REACT_APP_SUPABASE_KEY || process.env.SUPABASE_KEY;
+    const supabaseKey = process.env.SUPABASE_SECRET_API_KEY || process.env.REACT_APP_SUPABASE_KEY || process.env.SUPABASE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
       return res.status(500).json({
